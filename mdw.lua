@@ -766,6 +766,127 @@ MainTab:New("Button")({
 -- Tambahkan di PlayerTab
 PlayerTab:New("Title")({ Title = "🎭 Copy Player (Local)" })
 
+local SelectedTarget = nil
+
+PlayerTab:New("Title")({ Title = "👤 Smart Avatar Stealer" })
+
+-- FITUR 1: Dropdown yang bisa di-refresh
+local PlayerDropdown = PlayerTab:New("Dropdown")({
+    Title = "Pilih Target (Otomatis)",
+    Description = "Daftar pemain yang ada di server saat ini",
+    Options = GetPlayerList(),
+    Default = "",
+    Callback = function(v)
+        -- Mengambil username asli dari dalam kurung (@username)
+        local rawName = v:match("@(%w+)")
+        SelectedTarget = Players:FindFirstChild(rawName)
+        Notify("Target Terpilih", "Target: " .. SelectedTarget.Name, "Info")
+    end,
+})
+
+PlayerTab:New("Button")({
+    Title = "🔄 Refresh Daftar Pemain",
+    Description = "Update daftar nama jika ada yang baru join",
+    Callback = function()
+        PlayerDropdown:Refresh(GetPlayerList()) -- Menghapus list lama dan ambil yang baru
+        Notify("Updated", "Daftar pemain telah diperbarui", "Success")
+    end,
+})
+
+-- FITUR 2: Tombol Paling Otomatis (Nearest)
+PlayerTab:New("Button")({
+    Title = "🎭 Copy Orang Terdekat (Paling Cepat)",
+    Description = "Otomatis mencari player di dekatmu dan curi bajunya",
+    Callback = function()
+        local nearest = GetClosestPlayer()
+        if nearest then
+            SelectedTarget = nearest
+            Notify("Target Found", "Meniru: " .. nearest.DisplayName, "Success")
+            -- Jalankan fungsi Copy Visual
+            local myChar = LocalPlayer.Character
+            for _, obj in pairs(myChar:GetChildren()) do
+                if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") then obj:Destroy() end
+            end
+            for _, obj in pairs(nearest.Character:GetChildren()) do
+                if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") then
+                    obj:Clone().Parent = myChar
+                end
+            end
+        else
+            Notify("Error", "Tidak ada orang di sekitar!", "Warning")
+        end
+    end,
+})
+
+-- Tombol Eksekusi Copy (Visual & Server)
+PlayerTab:New("Button")({
+    Title = "✨ Terapkan Copy (Visual Only)",
+    Description = "Curi baju target yang sudah dipilih di atas",
+    Callback = function()
+        if SelectedTarget and SelectedTarget.Character then
+            local myChar = LocalPlayer.Character
+            for _, obj in pairs(myChar:GetChildren()) do
+                if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") then obj:Destroy() end
+            end
+            for _, obj in pairs(SelectedTarget.Character:GetChildren()) do
+                if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") then
+                    obj:Clone().Parent = myChar
+                end
+            end
+            Notify("Success", "Avatar copied!", "Success")
+        else
+            Notify("Error", "Pilih target dulu!", "Warning")
+        end
+    end,
+})
+
+PlayerTab:New("Button")({
+    Title = "Become Target (Try Replicate)",
+    Description = "Mencoba membuat orang lain melihat perubahanmu (Hanya kerja di game tertentu)",
+    Callback = function()
+        local target = GetPlayerByName(ImpersonateName)
+        if target and target.Character then
+            local targetUserId = target.UserId
+            
+            -- 1. Menggunakan HumanoidDescription (Metode yang paling sering tembus ke Server)
+            local myHum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if myHum then
+                pcall(function()
+                    local desc = game:GetService("Players"):GetHumanoidDescriptionFromUserId(targetUserId)
+                    myHum:ApplyDescription(desc) -- Mencoba meminta server untuk update
+                end)
+            end
+
+            -- 2. Mencoba mencari Remote Kustomisasi di Game ini
+            -- Banyak game memiliki Remote untuk ganti baju di toko/shop
+            local foundRemote = nil
+            for _, v in pairs(game:GetDescendants()) do
+                if v:IsA("RemoteEvent") and (v.Name:lower():find("appearance") or v.Name:lower():find("cloth") or v.Name:lower():find("morph")) then
+                    foundRemote = v
+                    break
+                end
+            end
+
+            if foundRemote then
+                -- Jika ketemu remote, kita coba "tembak" id target ke server
+                foundRemote:FireServer(targetUserId) 
+                Notify("Exploit", "Remote ditemukan: " .. foundRemote.Name .. ". Mencoba memaksa perubahan ke server!", "Success")
+            else
+                Notify("Info", "Visual berubah secara lokal. Replication bergantung pada keamanan game.", "Info")
+            end
+
+            -- Tetap jalankan visual lokal sebagai cadangan
+            local myChar = LocalPlayer.Character
+            for _, obj in pairs(target.Character:GetChildren()) do
+                if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") then
+                    local clone = obj:Clone()
+                    clone.Parent = myChar
+                end
+            end
+        end
+    end,
+})
+
 local ImpersonateName = ""
 PlayerTab:New("Input")({
     Title = "Target Username/Display",
@@ -1150,39 +1271,59 @@ PlayerTab:New("Button")({
 })
 
 PlayerTab:New("Toggle")({
-    Title = "Fly [DETECTED AFTER FEW SECONDS OF USE!]",
-    Description = "Toggle client fly",
+    Title = "Fly [DETECTED AFTER FEW SECONDS!]",
+    Description = "Terbang sesuai arah kamera (W=Maju, Space=Naik, Ctrl=Turun)",
     DefaultValue = false,
     Callback = function(v)
         if v then
             _G.Fly = true
             local root = GetRootPart()
-            if root then
-                local bodyVel = Instance.new("BodyVelocity")
-                bodyVel.Name = "FlyVel"
-                bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                bodyVel.Velocity = Vector3.new(0, 0, 0)
-                bodyVel.Parent = root
-                local bodyGyro = Instance.new("BodyGyro")
-                bodyGyro.Name = "FlyGyro"
-                bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                bodyGyro.P = 9e4
-                bodyGyro.Parent = root
-                _G.FlyCon = RunService.RenderStepped:Connect(function()
-                    if _G.Fly and root and root.Parent then
-                        local cam = Workspace.CurrentCamera
-                        local move = Vector3.new(0, 0, 0)
-                        local hum = GetHumanoid()
-                        if hum and hum.MoveDirection.Magnitude > 0 then
-                            move = cam.CFrame:VectorToWorldSpace(Vector3.new(hum.MoveDirection.X, 0, hum.MoveDirection.Z))
-                        end
-                        bodyVel.Velocity = move * Config.FlySpeed
-                        bodyGyro.CFrame = cam.CFrame
+            if not root then return end
+
+            -- Buat BodyVelocity agar karakter melayang
+            local bodyVel = Instance.new("BodyVelocity")
+            bodyVel.Name = "FlyVel"
+            bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bodyVel.Velocity = Vector3.new(0, 0, 0)
+            bodyVel.Parent = root
+
+            -- Buat BodyGyro agar karakter tidak jatuh terguling
+            local bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.Name = "FlyGyro"
+            bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            bodyGyro.P = 9e4
+            bodyGyro.Parent = root
+
+            _G.FlyCon = RunService.RenderStepped:Connect(function()
+                if _G.Fly and root and root.Parent then
+                    local cam = Workspace.CurrentCamera
+                    local hum = GetHumanoid()
+                    local moveDir = Vector3.new(0,0,0)
+
+                    -- LOGIKA BARU: Menggunakan LookVector Kamera
+                    -- Ini memastikan karakter terbang ke mana pun kamera menghadap
+                    if hum and hum.MoveDirection.Magnitude > 0 then
+                        -- Ambil arah input (W,A,S,D) dan kalikan dengan kecepatan
+                        moveDir = hum.MoveDirection * Config.FlySpeed
                     end
-                end)
-                Notify("Enabled", "Fly ON (Speed: " .. Config.FlySpeed .. ")", "Success")
-            end
+
+                    -- Tambahan: Terbang Naik (Space) atau Turun (LeftControl)
+                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                        moveDir = moveDir + Vector3.new(0, Config.FlySpeed, 0)
+                    elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                        moveDir = moveDir + Vector3.new(0, -Config.FlySpeed, 0)
+                    end
+
+                    -- Terapkan kecepatan
+                    bodyVel.Velocity = moveDir
+                    
+                    -- Karakter selalu menghadap ke arah kamera
+                    bodyGyro.CFrame = cam.CFrame
+                end
+            end)
+            Notify("Enabled", "Fly Aktif! Gunakan W,A,S,D + Space/Ctrl", "Success")
         else
+            -- Matikan Fly
             _G.Fly = false
             if _G.FlyCon then _G.FlyCon:Disconnect() end
             local root = GetRootPart()
@@ -1192,7 +1333,7 @@ PlayerTab:New("Toggle")({
                 if bv then bv:Destroy() end
                 if bg then bg:Destroy() end
             end
-            Notify("Disabled", "Fly OFF", "Info")
+            Notify("Disabled", "Fly Mati", "Info")
         end
     end,
 })
