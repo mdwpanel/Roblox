@@ -20,6 +20,7 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ESP_Objects = {}
 local LocalPlayer = Players.LocalPlayer
+local SelectedTarget = nil
 
 -- Config
 local Config = {
@@ -763,10 +764,8 @@ MainTab:New("Button")({
         end
     end,
 })
--- Tambahkan di PlayerTab
-PlayerTab:New("Title")({ Title = "🎭 Copy Player (Local)" })
 
-local SelectedTarget = nil
+
 
 PlayerTab:New("Title")({ Title = "👤 Smart Avatar Stealer" })
 
@@ -839,6 +838,10 @@ PlayerTab:New("Button")({
         end
     end,
 })
+
+-- Tambahkan di PlayerTab
+PlayerTab:New("Title")({ Title = "🎭 Copy Player (Local)" })
+
 
 PlayerTab:New("Button")({
     Title = "Become Target (Try Replicate)",
