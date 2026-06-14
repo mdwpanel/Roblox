@@ -18,7 +18,7 @@ local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
+local ESP_Objects = {}
 local LocalPlayer = Players.LocalPlayer
 
 -- Config
@@ -57,6 +57,93 @@ local UIElements = {
     FlySpeedSlider = nil,
     FlySpeedInput = nil,
 }
+local function ClearESP(player)
+    if ESP_Objects[player] then
+        for _, obj in pairs(ESP_Objects[player]) do
+            obj.Visible = false
+            obj:Remove()
+        end
+        ESP_Objects[player] = nil
+    end
+end
+
+-- Fungsi Utama Drawing ESP
+local function UpdateESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local character = player.Character
+            if character and character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
+                local rootPart = character.HumanoidRootPart
+                local humanoid = character.Humanoid
+                local pos, onScreen = Workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
+                
+                -- Jika fitur aktif dan pemain terlihat di layar
+                if onScreen then
+                    -- Buat objek Drawing jika belum ada
+                    if not ESP_Objects[player] then
+                        ESP_Objects[player] = {
+                            Box = Drawing.new("Square"),
+                            Line = Drawing.new("Line")
+                        }
+                    end
+
+                    local color = GetESPColor(player)
+                    local objects = ESP_Objects[player]
+
+                    -- 1. LOGIKA BOX ESP (SQUARE)
+                    if _G.BoxESP then
+                        -- Menentukan ukuran box berdasarkan jarak
+                        local sizeX = 2000 / pos.Z
+                        local sizeY = 3000 / pos.Z
+                        
+                        objects.Box.Visible = true
+                        objects.Box.Color = color
+                        objects.Box.Thickness = 1
+                        objects.Box.Filled = false
+                        objects.Box.Size = Vector2.new(sizeX, sizeY)
+                        objects.Box.Position = Vector2.new(pos.X - sizeX / 2, pos.Y - sizeY / 2)
+                    else
+                        objects.Box.Visible = false
+                    end
+
+                    -- 2. LOGIKA LINE ESP (TRACERS)
+                    if _G.LineESP then
+                        objects.Line.Visible = true
+                        objects.Line.Color = color
+                        objects.Line.Thickness = 1
+                        objects.Line.From = Vector2.new(Workspace.CurrentCamera.ViewportSize.X / 2, Workspace.CurrentCamera.ViewportSize.Y) -- Dari tengah bawah layar
+                        objects.Line.To = Vector2.new(pos.X, pos.Y)
+                    else
+                        objects.Line.Visible = false
+                    end
+                else
+                    -- Jika tidak di layar, sembunyikan
+                    if ESP_Objects[player] then
+                        ESP_Objects[player].Box.Visible = false
+                        ESP_Objects[player].Line.Visible = false
+                    end
+                end
+            else
+                ClearESP(player)
+            end
+        end
+    end
+end
+
+-- Jalankan Loop ESP
+RunService.RenderStepped:Connect(function()
+    if _G.BoxESP or _G.LineESP then
+        UpdateESP()
+    else
+        -- Jika semua mati, bersihkan semua objek
+        for player, _ in pairs(ESP_Objects) do
+            ClearESP(player)
+        end
+    end
+end)
+
+-- Bersihkan jika pemain keluar
+Players.PlayerRemoving:Connect(ClearESP)
 
 -- Helpers
 local function Notify(title, desc, typ)
@@ -536,6 +623,38 @@ local SettingsTab = Window:AddTab("Settings")
 -- MAIN TAB
 MainTab:New("Title")({ Title = "🛠️ Quick Actions" })
 
+-- Tambahkan di MainTab
+MainTab:New("Button")({
+    Title = "Get Gravity Gun",
+    Description = "Tool untuk menarik dan membawa objek di map",
+    Callback = function()
+        local tool = Instance.new("Tool")
+        tool.RequiresHandle = false
+        tool.Name = "🧲 Gravity Gun"
+        tool.Parent = LocalPlayer.Backpack
+        
+        local mouse = LocalPlayer:GetMouse()
+        local target = nil
+        local connection = nil
+        
+        tool.Activated:Connect(function()
+            target = mouse.Target
+            if target and not target.Anchored then
+                connection = RunService.RenderStepped:Connect(function()
+                    if target and tool.Parent == LocalPlayer.Character then
+                        target.Velocity = (LocalPlayer.Character.Head.CFrame * CFrame.new(0,0,-10).p - target.Position) * 10
+                    end
+                end)
+            end
+        end)
+        
+        tool.Deactivated:Connect(function()
+            if connection then connection:Disconnect() end
+            target = nil
+        end)
+    end,
+})
+
 MainTab:New("Button")({
     Title = "Reset Character",
     Description = "Respawn your character",
@@ -644,9 +763,125 @@ MainTab:New("Button")({
         end
     end,
 })
+-- Tambahkan di PlayerTab
+PlayerTab:New("Title")({ Title = "🎭 Copy Player (Local)" })
 
+local ImpersonateName = ""
+PlayerTab:New("Input")({
+    Title = "Target Username/Display",
+    Description = "Tulis nama pemain yang ada di server ini",
+    Placeholder = "Nama Target...",
+    Callback = function(v) ImpersonateName = v end,
+})
+
+PlayerTab:New("Button")({
+    Title = "Become Target (Full Copy)",
+    Description = "Copy Avatar, Nama, Display Name, & Tool",
+    Callback = function()
+        local target = GetPlayerByName(ImpersonateName)
+        if target and target.Character then
+            local myChar = LocalPlayer.Character
+            local myHum = GetHumanoid()
+            local targetHum = target.Character:FindFirstChildOfClass("Humanoid")
+            
+            if myChar and myHum and targetHum then
+                -- 1. Copy Avatar (Pakaian & Aksesoris)
+                local desc = Players:GetHumanoidDescriptionFromUserId(target.UserId)
+                myHum:ApplyDescription(desc)
+                
+                -- 2. Copy Display Name & Name Tag
+                myHum.DisplayName = targetHum.DisplayName
+                myChar.Name = target.Name -- Mengganti nama model (untuk beberapa overhead UI)
+                
+                -- 3. Copy Tools (Visual Copy)
+                -- Menghapus tool lama di tangan
+                for _, item in pairs(myChar:GetChildren()) do
+                    if item:IsA("Tool") then item:Destroy() end
+                end
+                -- Mencoba copy tool yang sedang dipegang target
+                for _, item in pairs(target.Character:GetChildren()) do
+                    if item:IsA("Tool") then
+                        local clone = item:Clone()
+                        clone.Parent = myChar
+                    end
+                end
+
+                Notify("Success", "Kamu sekarang adalah: " .. target.DisplayName, "Success")
+            end
+        else
+            Notify("Error", "Pemain tidak ditemukan di server!", "Error")
+        end
+    end,
+})
+
+PlayerTab:New("Button")({
+    Title = "Reset Identity",
+    Description = "Kembali ke diri sendiri",
+    Callback = function()
+        local myChar = LocalPlayer.Character
+        local myHum = GetHumanoid()
+        if myChar and myHum then
+            -- Reset Avatar
+            local originalDesc = Players:GetHumanoidDescriptionFromUserId(LocalPlayer.UserId)
+            myHum:ApplyDescription(originalDesc)
+            
+            -- Reset Nama
+            myHum.DisplayName = LocalPlayer.DisplayName
+            myChar.Name = LocalPlayer.Name
+            
+            Notify("Identity", "Kembali ke akun asli.", "Info")
+        end
+    end,
+})
 -- PLAYER TAB
 PlayerTab:New("Title")({ Title = "🏃 Movement" })
+
+-- Tambahkan di PlayerTab
+PlayerTab:New("Toggle")({
+    Title = "Air Walk (Jesus Mode)",
+    Description = "Menciptakan lantai tak terlihat di bawah kakimu",
+    DefaultValue = false,
+    Callback = function(v)
+        _G.AirWalk = v
+        local plat = Instance.new("Part")
+        plat.Size = Vector3.new(10, 1, 10)
+        plat.Anchored = true
+        plat.Transparency = 1
+        plat.Parent = Workspace
+        
+        spawn(function()
+            while _G.AirWalk do
+                task.wait()
+                local root = GetRootPart()
+                if root then
+                    plat.CFrame = root.CFrame * CFrame.new(0, -3.5, 0)
+                    plat.CanCollide = true
+                end
+            end
+            plat:Destroy()
+        end)
+    end,
+})
+
+-- Tambahkan di PlayerTab
+PlayerTab:New("Toggle")({
+    Title = "Anti-Ragdoll / No-Stun",
+    Description = "Mencegah karakter jatuh tersungkur atau kaku",
+    DefaultValue = false,
+    Callback = function(v)
+        _G.AntiRagdoll = v
+        spawn(function()
+            while _G.AntiRagdoll do
+                task.wait(0.1)
+                local hum = GetHumanoid()
+                if hum then
+                    if hum.PlatformStand then hum.PlatformStand = false end
+                    if hum.Sit then hum.Sit = false end
+                end
+            end
+        end)
+    end,
+})
 
 local currentWalkSpeed = Config.WalkSpeedDefault
 UIElements.WalkSpeedSlider = PlayerTab:New("Slider")({
@@ -963,46 +1198,137 @@ PlayerTab:New("Toggle")({
 })
 
 -- GAME TAB
+GameTab:New("Title")({ Title = "🎭 Visual ESP Fixed" })
+
+GameTab:New("Toggle")({
+    Title = "ESP Box (2D)",
+    Description = "Kotak garis di sekeliling pemain",
+    DefaultValue = false,
+    Callback = function(v) _G.BoxESP = v end,
+})
+
+GameTab:New("Toggle")({
+    Title = "ESP Tracers (Line)",
+    Description = "Garis dari bawah layar ke pemain",
+    DefaultValue = false,
+    Callback = function(v) _G.LineESP = v end,
+})
+
+-- Bagian Health (Tetap menggunakan BillboardGui karena paling stabil di Mobile)
+GameTab:New("Toggle")({
+    Title = "ESP Health Bar",
+    Description = "Bar nyawa di atas kepala",
+    DefaultValue = false,
+    Callback = function(v)
+        _G.HealthESP = v
+        if not v then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("HealthBarGui") then
+                    p.Character.Head.HealthBarGui:Destroy()
+                end
+            end
+        end
+    end,
+})
+
+-- Jalankan Health Bar secara terpisah (RenderStepped khusus Health)
+RunService.RenderStepped:Connect(function()
+    if _G.HealthESP then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                local head = player.Character.Head
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                if humanoid then
+                    local gui = head:FindFirstChild("HealthBarGui")
+                    if not gui then
+                        local bgui = Instance.new("BillboardGui", head)
+                        bgui.Name = "HealthBarGui"
+                        bgui.Size = UDim2.new(4, 0, 0.5, 0)
+                        bgui.StudsOffset = Vector3.new(0, 2, 0)
+                        bgui.AlwaysOnTop = true
+                        local back = Instance.new("Frame", bgui)
+                        back.Size = UDim2.new(1, 0, 1, 0)
+                        back.BackgroundColor3 = Color3.new(0, 0, 0)
+                        local bar = Instance.new("Frame", back)
+                        bar.Name = "Bar"
+                        bar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+                        bar.BackgroundColor3 = Color3.new(0, 1, 0)
+                    else
+                        gui.Frame.Bar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+                        gui.Frame.Bar.BackgroundColor3 = Color3.new(1 - (humanoid.Health/humanoid.MaxHealth), humanoid.Health/humanoid.MaxHealth, 0)
+                    end
+                end
+            end
+        end
+    end
+end)
+
 GameTab:New("Title")({ Title = "👁️ Visuals" })
 
 -- Tambahkan di GameTab
-GameTab:New("Title")({ Title = "🏔️ Mountain Auto-Progression" })
+-- Tambahkan di GameTab
+GameTab:New("Title")({ Title = "🏔️ Mountain Ordered Auto-CP" })
 
 GameTab:New("Toggle")({
-    Title = "Auto CP All Mountain",
-    Description = "Otomatis pindah ke semua Capture Point/Checkpoint di map gunung",
+    Title = "Auto CP Berurutan (1, 2, 3...)",
+    Description = "Teleport ke Checkpoint sesuai urutan angka",
     DefaultValue = false,
     Callback = function(v)
         _G.AutoCPMountain = v
         
         spawn(function()
             while _G.AutoCPMountain do
-                task.wait(1) -- Jeda agar tidak terkena kick/ban
                 local root = GetRootPart()
-                if root then
-                    -- Mencari semua kemungkinan nama CP di Map Gunung
-                    for _, obj in pairs(Workspace:GetDescendants()) do
-                        if not _G.AutoCPMountain then break end
+                if not root then task.wait(1) continue end
+
+                -- 1. Kumpulkan semua CP yang valid
+                local checkpoints = {}
+                for _, obj in pairs(Workspace:GetDescendants()) do
+                    local name = obj.Name:lower()
+                    if (obj:IsA("BasePart") or obj:IsA("Model")) and 
+                       (name:find("cp") or name:find("point") or name:find("stage") or name:find("checkpoint")) 
+                       and not obj:IsDescendantOf(LocalPlayer.Character) then
                         
-                        local name = obj.Name:lower()
-                        -- Filter: Mencari nama yang mengandung CP, Point, Flag, atau Objective
-                        if (obj:IsA("BasePart") or obj:IsA("Model")) and 
-                           (name:find("cp") or name:find("point") or name:find("flag") or name:find("capture") or name:find("objective")) 
-                           and not obj:IsDescendantOf(LocalPlayer.Character) then
-                            
-                            -- Deteksi posisi objek (apakah Model atau Part)
-                            local targetPos = obj:IsA("Model") and (obj.PrimaryPart and obj.PrimaryPart.CFrame or obj:GetModelCFrame()) or obj.CFrame
-                            
-                            -- Teleport sedikit di atas titik agar tidak terjepit tanah
-                            root.CFrame = targetPos + Vector3.new(0, 3, 0)
-                            
-                            Notify("Auto CP", "Teleport ke: " .. obj.Name, "Info")
-                            
-                            -- Jeda di setiap titik (Misal 5 detik untuk Capture)
-                            -- Ubah angka 5 di bawah sesuai kecepatan capture gamenya
-                            task.wait(5) 
+                        -- Ambil angka dari nama (contoh: "CP 1" jadi 1)
+                        local cpNumber = tonumber(obj.Name:match("%d+"))
+                        if cpNumber then
+                            table.insert(checkpoints, {Instance = obj, Number = cpNumber})
                         end
                     end
+                end
+
+                -- 2. Urutkan berdasarkan angka (dari yang terkecil ke terbesar)
+                table.sort(checkpoints, function(a, b)
+                    return a.Number < b.Number
+                end)
+
+                -- 3. Jalankan Teleportasi Berurutan
+                if #checkpoints > 0 then
+                    for _, cpData in ipairs(checkpoints) do
+                        if not _G.AutoCPMountain then break end
+                        
+                        local obj = cpData.Instance
+                        local num = cpData.Number
+                        
+                        -- Deteksi Posisi
+                        local targetPos = obj:IsA("Model") and (obj.PrimaryPart and obj.PrimaryPart.CFrame or obj:GetModelCFrame()) or obj.CFrame
+                        
+                        Notify("Auto CP", "Menuju Checkpoint " .. num, "Info")
+                        
+                        -- Teleport
+                        root.CFrame = targetPos + Vector3.new(0, 3, 0)
+                        
+                        -- JEDA WAKTU (PENTING!)
+                        -- Ubah task.wait(5) sesuai waktu yang dibutuhkan game untuk 'mengambil' CP tersebut
+                        task.wait(5) 
+                    end
+                    
+                    -- Jika sudah sampai CP terakhir, matikan otomatis agar tidak looping terus
+                    _G.AutoCPMountain = false
+                    Notify("Selesai", "Semua Checkpoint telah diambil!", "Success")
+                else
+                    Notify("Error", "Tidak ada CP dengan angka ditemukan!", "Error")
+                    task.wait(5)
                 end
             end
         end)
@@ -1032,9 +1358,49 @@ GameTab:New("Button")({
         end
     end,
 })
-
 -- Tambahkan di GameTab (Visuals)
-PlayerTab:New("Toggle")({
+GameTab:New("Toggle")({
+    Title = "Headlight (God Light)",
+    Description = "Lampu sorot super terang di kepalamu",
+    DefaultValue = false,
+    Callback = function(v)
+        local head = LocalPlayer.Character:FindFirstChild("Head")
+        if head then
+            local light = head:FindFirstChild("GodLight") or Instance.new("SpotLight", head)
+            light.Name = "GodLight"
+            light.Range = 150
+            light.Brightness = 5
+            light.Enabled = v
+        end
+    end,
+})
+
+-- Tambahkan di Visuals atau Settings
+GameTab:New("Toggle")({
+    Title = "Freecam (Ghost View)",
+    Description = "Lepaskan kamera untuk keliling map",
+    DefaultValue = false,
+    Callback = function(v)
+        local cam = workspace.CurrentCamera
+        if v then
+            _G.OldSubject = cam.CameraSubject
+            cam.CameraType = Enum.CameraType.Scriptable
+            Notify("Freecam", "Gunakan WASD & Q/E untuk terbang", "Info")
+            _G.FreecamLoop = RunService.RenderStepped:Connect(function()
+                -- Logika pergerakan kamera (Sederhana)
+                local move = Vector3.new(0,0,0)
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then cam.CFrame *= CFrame.new(0,0,-1) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then cam.CFrame *= CFrame.new(0,0,1) end
+            end)
+        else
+            if _G.FreecamLoop then _G.FreecamLoop:Disconnect() end
+            cam.CameraType = Enum.CameraType.Custom
+            cam.CameraSubject = _G.OldSubject
+        end
+    end,
+})
+-- Tambahkan di GameTab (Visuals)
+GameTab:New("Toggle")({
     Title = "X-Ray Mode",
     Description = "Melihat menembus semua tembok",
     DefaultValue = false,
@@ -1187,173 +1553,38 @@ GameTab:New("Toggle")({
     end,
 })
 
-GameTab:New("Title")({ Title = "⚡ Generator ESP" })
+-- Tambahkan di GameTab
+local hbSize = 2
+GameTab:New("Slider")({
+    Title = "Hitbox Expander",
+    Description = "Memperbesar ukuran tubuh pemain lain (Default 2)",
+    Default = 2,
+    Minimum = 2,
+    Maximum = 20,
+    Callback = function(v)
+        hbSize = v
+    end,
+})
 
--- TABS & TITLES (Cari bagian Visuals di script aslimu)
-GameTab:New("Title")({ Title = "🎭 Advanced ESP (Wallhack)" })
-
--- Variabel Global untuk Kontrol
-_G.BoxESP = false
-_G.LineESP = false
-_G.HealthESP = false
-_G.SkeletonESP = false
-
--- Fungsi Update ESP (Loop)
-RunService.RenderStepped:Connect(function()
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local character = player.Character
-            if character and character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
-                local rootPart = character.HumanoidRootPart
-                local humanoid = character.Humanoid
-                local pos, onScreen = Workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
-                
-                -- Hapus ESP lama jika tidak onScreen atau Toggle OFF
-                -- (Logika pembersihan biasanya otomatis di Drawing API)
-                
-                if onScreen then
-                    local color = GetESPColor(player)
-                    
-                    -- 1. BOX ESP (Menggunakan Highlight yang sudah ada di scriptmu atau Box baru)
-                    if _G.BoxESP then
-                        -- Kamu sudah punya Highlight di script asli, ini versi Box Line jika mau
-                    end
-
-                    -- 2. HEALTH BAR (BillboardGui)
-                    if _G.HealthESP then
-                        local head = character:FindFirstChild("Head")
-                        if head and not head:FindFirstChild("HealthBarGui") then
-                            local bgui = Instance.new("BillboardGui", head)
-                            bgui.Name = "HealthBarGui"
-                            bgui.Size = UDim2.new(4, 0, 0.5, 0)
-                            bgui.StudsOffset = Vector3.new(0, 2.5, 0)
-                            bgui.AlwaysOnTop = true
-                            
-                            local back = Instance.new("Frame", bgui)
-                            back.Size = UDim2.new(1, 0, 1, 0)
-                            back.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                            
-                            local bar = Instance.new("Frame", back)
-                            bar.Name = "Bar"
-                            bar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
-                            bar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-                        elseif head and head:FindFirstChild("HealthBarGui") then
-                            local bar = head.HealthBarGui.Frame.Bar
-                            bar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
-                            -- Ganti warna jika sekarat
-                            if humanoid.Health < 30 then bar.BackgroundColor3 = Color3.fromRGB(255,0,0) end
-                        end
+GameTab:New("Toggle")({
+    Title = "Enable Hitbox",
+    Description = "Aktifkan pembesar ukuran tubuh lawan",
+    DefaultValue = false,
+    Callback = function(v)
+        _G.Hitbox = v
+        spawn(function()
+            while _G.Hitbox do
+                task.wait(1)
+                for _, p in pairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        p.Character.HumanoidRootPart.Size = Vector3.new(hbSize, hbSize, hbSize)
+                        p.Character.HumanoidRootPart.Transparency = 0.7
+                        p.Character.HumanoidRootPart.Color = Color3.new(1, 0, 0)
+                        p.Character.HumanoidRootPart.CanCollide = false
                     end
                 end
             end
-        end
-    end
-end)
-
--- TOGGLES UNTUK UI
-GameTab:New("Toggle")({
-    Title = "ESP Box",
-    Description = "Kotak di sekeliling pemain",
-    DefaultValue = false,
-    Callback = function(v)
-        _G.BoxESP = v
-        -- Gunakan fitur ESP Players yang sudah ada di script aslimu (Highlight)
-        _G.ESP = v 
-    end,
-})
-
-GameTab:New("Toggle")({
-    Title = "ESP Tracers (Lines)",
-    Description = "Garis penghubung ke pemain",
-    DefaultValue = false,
-    Callback = function(v)
-        _G.LineESP = v
-        -- Fitur Line biasanya butuh library Drawing. 
-        -- Jika pakai executor mobile, aktifkan Tracer sederhana:
-        Notify("Fitur", "Tracers diaktifkan via Drawing API", "Info")
-    end,
-})
-
-GameTab:New("Toggle")({
-    Title = "ESP Health Bar",
-    Description = "Munculkan bar nyawa di atas kepala",
-    DefaultValue = false,
-    Callback = function(v)
-        _G.HealthESP = v
-        if not v then
-            -- Bersihkan bar jika dimatikan
-            for _, p in pairs(Players:GetPlayers()) do
-                if p.Character and p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("HealthBarGui") then
-                    p.Character.Head.HealthBarGui:Destroy()
-                end
-            end
-        end
-    end,
-})
-
-GameTab:New("Toggle")({
-    Title = "ESP Skeleton",
-    Description = "Melihat kerangka tubuh (Hanya Executor tertentu)",
-    DefaultValue = false,
-    Callback = function(v)
-        _G.SkeletonESP = v
-        Notify("Skeleton", "Fitur ini berat, pastikan HP kamu kuat!", "Warning")
-    end,
-})
-
-GameTab:New("Toggle")({
-    Title = "Generator ESP",
-    Description = "Incomplete=Orange, Complete=Green",
-    DefaultValue = false,
-    Callback = function(v)
-        if v then
-            _G.GenESP = true
-            
-            local generators = FindAllGenerators()
-            local genCount = 0
-            local completedCount = 0
-            
-            for _, gen in pairs(generators) do
-                CreateGeneratorESP(gen)
-                genCount = genCount + 1
-                if IsGeneratorCompleted(gen) then completedCount = completedCount + 1 end
-            end
-            
-            -- Start update loop
-            spawn(function()
-                while _G.GenESP do
-                    task.wait(0.5)
-                    UpdateGeneratorESP()
-                end
-            end)
-            
-            Notify("Enabled", genCount .. " generators (" .. completedCount .. " done, " .. (genCount - completedCount) .. " left)", "Success")
-        else
-            _G.GenESP = false
-            RemoveAllGeneratorESP()
-            Notify("Disabled", "Generator ESP OFF", "Info")
-        end
-    end,
-})
-
-GameTab:New("Button")({
-    Title = "Refresh Generator ESP",
-    Description = "Re-scan for generators",
-    Callback = function()
-        if not _G.GenESP then
-            Notify("Warning", "Enable Generator ESP first!", "Warning")
-            return
-        end
-        
-        local generators = FindAllGenerators()
-        local newCount = 0
-        for _, gen in pairs(generators) do
-            if not GenHighlights[gen] then
-                CreateGeneratorESP(gen)
-                newCount = newCount + 1
-            end
-        end
-        Notify("Refreshed", newCount .. " new generators found", "Success")
+        end)
     end,
 })
 
@@ -1459,18 +1690,79 @@ GameTab:New("Button")({
         Notify("Cleared", count .. " highlights removed!", "Info")
     end,
 })
+-- TABS & TITLES
+ServerTab:New("Title")({ Title = "🛡️ Self-Protection & Security" })
 
--- SERVER TAB
-ServerTab:New("Title")({ Title = "🌐 Server Info" })
+-- 1. FIXED ANTI-KICK (Melindungi Anda dari Kick otomatis oleh Script Game)
+ServerTab:New("Toggle")({
+    Title = "Anti-Kick Protection",
+    Description = "Mencegah script game (Anti-Cheat) menendangmu secara otomatis",
+    DefaultValue = false,
+    Callback = function(v)
+        _G.AntiKick = v
+        if v then
+            -- Menggunakan hookmetamethod agar lebih sulit dideteksi game
+            local oldNamecall
+            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                local method = getnamecallmethod()
+                if _G.AntiKick and self == LocalPlayer and method == "Kick" then
+                    Notify("Security", "Game mencoba menendangmu! (Kick diblokir)", "Warning")
+                    return nil -- Gagalkan perintah kick
+                end
+                return oldNamecall(self, ...)
+            end)
+            Notify("Anti-Kick", "Perlindungan aktif!", "Success")
+        end
+    end,
+})
 
--- Tambahkan di ServerTab
-ServerTab:New("Title")({ Title = "🚫 Kick & Security" })
+-- 2. ADMIN JOIN DETECTOR (Otomatis Kick diri sendiri jika Admin masuk)
+ServerTab:New("Toggle")({
+    Title = "Admin Join Detector",
+    Description = "Otomatis keluar jika Moderator/Admin masuk ke server",
+    DefaultValue = false,
+    Callback = function(v)
+        _G.AdminDetect = v
+        if v then
+            Notify("Security", "Scanning Moderator aktif...", "Info")
+            Players.PlayerAdded:Connect(function(player)
+                if _G.AdminDetect then
+                    -- Cek berdasarkan Rank (biasanya di atas 200 adalah Admin/Dev)
+                    if player:GetRankInGroup(game.CreatorId) >= 200 or player.AccountAge < 1 then
+                        LocalPlayer:Kick("FCAL HUB: Admin terdeteksi (" .. player.Name .. "). Keluar demi keamanan.")
+                    end
+                end
+            end)
+        end
+    end,
+})
 
+-- 3. IMPROVED SELF-KICK (Tombol Keluar Darurat)
 ServerTab:New("Button")({
-    Title = "Self Kick",
-    Description = "Tendang diri sendiri dari server (Emergency Exit)",
+    Title = "Manual Emergency Kick",
+    Description = "Keluar dari server secara instan jika dalam bahaya",
     Callback = function()
-        LocalPlayer:Kick("FCAL HUB: Kamu telah keluar secara aman.")
+        LocalPlayer:Kick("FCAL HUB: Sesi diakhiri secara manual oleh pengguna.")
+    end,
+})
+
+-- 4. SERVER HOP (Pindah Server jika merasa tidak aman)
+ServerTab:New("Button")({
+    Title = "Instant Server Hop",
+    Description = "Pindah ke server lain secepat mungkin",
+    Callback = function()
+        local servers = {}
+        local res = game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100")
+        for i,v in pairs(game:GetService("HttpService"):JSONDecode(res).data) do
+            if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                table.insert(servers, v.id)
+            end
+        end
+        if #servers > 0 then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
+        else
+            Notify("Error", "Tidak menemukan server lain!", "Error")
+        end
     end,
 })
 
@@ -1518,6 +1810,11 @@ ServerTab:New("Toggle")({
         end
     end,
 })
+
+-- SERVER TAB
+ServerTab:New("Title")({ Title = "🌐 Server Info" })
+
+-- Tambahkan di ServerTab
 
 -- Tambahkan di ServerTab
 ServerTab:New("Toggle")({
@@ -1642,6 +1939,23 @@ ServerTab:New("Button")({
         if LocalPlayer.Character then
             Workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid") or LocalPlayer.Character
             Notify("Stopped", "Returned to your view", "Info")
+        end
+    end,
+})
+
+-- Tambahkan di SettingsTab
+SettingsTab:New("Toggle")({
+    Title = "Streamer Mode",
+    Description = "Sembunyikan namamu di seluruh UI agar aman",
+    DefaultValue = false,
+    Callback = function(v)
+        _G.Streamer = v
+        if v then
+            Window:SetTitle("SECRET HUB")
+            Window:SetSubTitle("User: Anonymous")
+        else
+            Window:SetTitle("FCAL HUB")
+            Window:SetSubTitle("v1.0.6 | Client Sided")
         end
     end,
 })
