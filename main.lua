@@ -673,50 +673,35 @@ TpSection:AddToggle({
 })
 
 local QuickTpSection = MainTab:AddSection("🚀 Quick Player Teleport")
-
 local SelectedTarget = ""
 
 local PlayerDropdown = QuickTpSection:AddDropdown({
     Title = "Pilih Pemain",
-    Description = "Pilih target teleportasi dari daftar",
-    Options = GetAllPlayers(),
     Default = "",
-    Callback = function(v)
-        SelectedTarget = v
-        Library:MakeNotify({ Title = "Info", Content = "Target: " .. v })
-    end
+    Callback = function(v) SelectedTarget = v end
 })
+
+-- Mengisi Dropdown Pemain
+local function RefreshPlayerList()
+    PlayerDropdown:Clear() -- Bersihkan dulu jika ada
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            PlayerDropdown:Add(player.Name)
+        end
+    end
+end
 
 QuickTpSection:AddButton({
     Title = "🔄 Refresh Daftar Pemain",
-    Description = "Klik jika ada pemain baru yang masuk server",
-    Callback = function()
-        local currentPlayers = GetAllPlayers()
-        PlayerDropdown:Refresh(currentPlayers)
-        Library:MakeNotify({ Title = "Success", Content = "Daftar pemain telah diperbarui!" })
-    end
+    Callback = RefreshPlayerList
 })
 
 QuickTpSection:AddButton({
     Title = "Teleport Sekarang",
-    Description = "Pindah ke posisi pemain yang dipilih",
     Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "No Players" then
-            Library:MakeNotify({ Title = "Warning", Content = "Silakan pilih pemain dari daftar dulu!" })
-            return
-        end
-
-        local target = game.Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local myRoot = GetRootPart()
-            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-            
-            if myRoot and targetRoot then
-                myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
-                Library:MakeNotify({ Title = "Success", Content = "Teleport ke " .. target.Name .. " Berhasil!" })
-            end
-        else
-            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan atau sudah keluar!" })
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame
         end
     end
 })
@@ -1684,29 +1669,34 @@ ActionsSection:AddButton({
 })
 
 local SpectateSection = ServerTab:AddSection("👁️ Spectate")
-
 local SpecTarget = ""
-SpectateSection:AddDropdown({
+
+local SpectateDropdown = SpectateSection:AddDropdown({
     Title = "Select Player",
-    Options = GetAllPlayers(),
     Default = "",
     Callback = function(v) SpecTarget = v end
 })
 
 SpectateSection:AddButton({
-    Title = "Spectate",
+    Title = "Refresh Daftar",
     Callback = function()
-        if SpecTarget ~= "" and SpecTarget ~= "No Players" then
-            local t = GetPlayerByName(SpecTarget)
-            if t and t.Character then
-                Workspace.CurrentCamera.CameraSubject = t.Character:FindFirstChildOfClass("Humanoid") or t.Character
-                Library:MakeNotify({ Title = "Spectating", Content = "Now watching " .. t.Name })
-            end
-        else
-            Library:MakeNotify({ Title = "Warning", Content = "Select a player first!" })
+        SpectateDropdown:Clear()
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer then SpectateDropdown:Add(p.Name) end
         end
     end
 })
+
+SpectateSection:AddButton({
+    Title = "Spectate",
+    Callback = function()
+        local t = Players:FindFirstChild(SpecTarget)
+        if t and t.Character then
+            Workspace.CurrentCamera.CameraSubject = t.Character:FindFirstChildOfClass("Humanoid")
+        end
+    end
+})
+
 
 SpectateSection:AddButton({
     Title = "Stop Spectating",
@@ -1753,16 +1743,20 @@ pengaturanSection:AddButton({
 
 local themeSection = SettingsTab:AddSection("🎨 Theme")
 
-themeSection:AddDropdown({
+local ThemeDropdown = themeSection:AddDropdown({
     Title = "Select Theme",
-    Description = "Change UI theme",
-    Options = {"Dark", "Light", "Midnight", "Rose", "Emerald"},
-    Default = Config.Theme,
+    Default = "Midnight",
     Callback = function(v)
         Window:SetTheme(v)
-        Notify("Theme", "Changed to " .. v, "Success")
     end
 })
+
+-- Mengisi Theme
+ThemeDropdown:Add("Dark")
+ThemeDropdown:Add("Light")
+ThemeDropdown:Add("Midnight")
+ThemeDropdown:Add("Rose")
+ThemeDropdown:Add("Emerald")
 
 local keybindSection = SettingsTab:AddSection("⌨️ Keybind")
 
