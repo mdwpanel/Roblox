@@ -767,120 +767,138 @@ MainTab:New("Button")({
 -- Tambahkan di PlayerTab
 PlayerTab:New("Title")({ Title = "🎭 Copy Player (Local)" })
 
-PlayerTab:New("Button")({
-    Title = "Become Target (Try Replicate)",
-    Description = "Mencoba membuat orang lain melihat perubahanmu (Hanya kerja di game tertentu)",
-    Callback = function()
-        local target = GetPlayerByName(ImpersonateName)
-        if target and target.Character then
-            local targetUserId = target.UserId
-            
-            -- 1. Menggunakan HumanoidDescription (Metode yang paling sering tembus ke Server)
-            local myHum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if myHum then
-                pcall(function()
-                    local desc = game:GetService("Players"):GetHumanoidDescriptionFromUserId(targetUserId)
-                    myHum:ApplyDescription(desc) -- Mencoba meminta server untuk update
-                end)
-            end
+-- Helper Functions (Taruh di bagian atas script atau dalam Tab)
+local function GetAllPlayerNames()
+    local names = {}
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= game.Players.LocalPlayer then
+            table.insert(names, p.Name)
+        end
+    end
+    return names
+end
 
-            -- 2. Mencoba mencari Remote Kustomisasi di Game ini
-            -- Banyak game memiliki Remote untuk ganti baju di toko/shop
-            local foundRemote = nil
-            for _, v in pairs(game:GetDescendants()) do
-                if v:IsA("RemoteEvent") and (v.Name:lower():find("appearance") or v.Name:lower():find("cloth") or v.Name:lower():find("morph")) then
-                    foundRemote = v
-                    break
-                end
-            end
-
-            if foundRemote then
-                -- Jika ketemu remote, kita coba "tembak" id target ke server
-                foundRemote:FireServer(targetUserId) 
-                Notify("Exploit", "Remote ditemukan: " .. foundRemote.Name .. ". Mencoba memaksa perubahan ke server!", "Success")
-            else
-                Notify("Info", "Visual berubah secara lokal. Replication bergantung pada keamanan game.", "Info")
-            end
-
-            -- Tetap jalankan visual lokal sebagai cadangan
-            local myChar = LocalPlayer.Character
-            for _, obj in pairs(target.Character:GetChildren()) do
-                if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") then
-                    local clone = obj:Clone()
-                    clone.Parent = myChar
-                end
+local function GetNearestPlayer()
+    local target = nil
+    local dist = math.huge
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local d = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+            if d < dist then
+                dist = d
+                target = p
             end
         end
+    end
+    return target
+end
+
+-- Variabel Penampung
+local SelectedAutoPlayer = ""
+
+PlayerTab:New("Title")({ Title = "👤 Smart Identity Stealer" })
+
+-- 1. PILIH NAMA OTOMATIS (Dropdown)
+local PlayerSelector = PlayerTab:New("Dropdown")({
+    Title = "Pilih Nama Pemain",
+    Description = "Nama otomatis terdaftar di sini",
+    Options = GetAllPlayerNames(),
+    Default = "",
+    Callback = function(v)
+        SelectedAutoPlayer = v
+        Notify("Target Terpilih", "Target: " .. v, "Info")
     end,
 })
 
-local ImpersonateName = ""
-PlayerTab:New("Input")({
-    Title = "Target Username/Display",
-    Description = "Tulis nama pemain yang ada di server ini",
-    Placeholder = "Nama Target...",
-    Callback = function(v) ImpersonateName = v end,
+-- Tombol Refresh Daftar Nama
+PlayerTab:New("Button")({
+    Title = "🔄 Refresh Daftar Nama",
+    Description = "Klik jika ada pemain baru masuk",
+    Callback = function()
+        PlayerSelector:Refresh(GetAllPlayerNames())
+        Notify("Updated", "Daftar pemain diperbarui!", "Success")
+    end,
 })
 
+-- 2. COPY PEMAIN TERDEKAT (Paling Otomatis)
 PlayerTab:New("Button")({
-    Title = "Become Target (Full Copy)",
-    Description = "Copy Avatar, Nama, Display Name, & Tool",
+    Title = "🎭 Copy Pemain Terdekat",
+    Description = "Otomatis meniru orang di sampingmu",
     Callback = function()
-        local target = GetPlayerByName(ImpersonateName)
-        if target and target.Character then
-            local myChar = LocalPlayer.Character
-            local myHum = GetHumanoid()
-            local targetHum = target.Character:FindFirstChildOfClass("Humanoid")
-            
-            if myChar and myHum and targetHum then
-                -- 1. Copy Avatar (Pakaian & Aksesoris)
-                local desc = Players:GetHumanoidDescriptionFromUserId(target.UserId)
-                myHum:ApplyDescription(desc)
-                
-                -- 2. Copy Display Name & Name Tag
-                myHum.DisplayName = targetHum.DisplayName
-                myChar.Name = target.Name -- Mengganti nama model (untuk beberapa overhead UI)
-                
-                -- 3. Copy Tools (Visual Copy)
-                -- Menghapus tool lama di tangan
-                for _, item in pairs(myChar:GetChildren()) do
-                    if item:IsA("Tool") then item:Destroy() end
-                end
-                -- Mencoba copy tool yang sedang dipegang target
-                for _, item in pairs(target.Character:GetChildren()) do
-                    if item:IsA("Tool") then
-                        local clone = item:Clone()
-                        clone.Parent = myChar
-                    end
-                end
-
-                Notify("Success", "Kamu sekarang adalah: " .. target.DisplayName, "Success")
-            end
+        local target = GetNearestPlayer()
+        if target then
+            SelectedAutoPlayer = target.Name
+            -- Jalankan Fungsi Copy (Sama seperti tombol di bawah)
+            ExecuteIdentityCopy(target)
         else
-            Notify("Error", "Pemain tidak ditemukan di server!", "Error")
+            Notify("Error", "Tidak ada pemain di sekitar!", "Warning")
+        end
+    end,
+})
+
+-- Fungsi Eksekusi (Agar bisa dipanggil berulang)
+function ExecuteIdentityCopy(target)
+    local myChar = game.Players.LocalPlayer.Character
+    local myHum = myChar:FindFirstChildOfClass("Humanoid")
+    local targetHum = target.Character:FindFirstChildOfClass("Humanoid")
+    
+    if myChar and myHum and targetHum then
+        -- Copy Avatar
+        pcall(function()
+            local desc = game.Players:GetHumanoidDescriptionFromUserId(target.UserId)
+            myHum:ApplyDescription(desc)
+        end)
+        
+        -- Copy Display Name
+        myHum.DisplayName = targetHum.DisplayName
+        
+        -- Copy Badges/Tags
+        for _, obj in pairs(myChar:GetDescendants()) do
+            if obj.Name == "StealedBadge" then obj:Destroy() end
+        end
+        
+        for _, obj in pairs(target.Character:GetDescendants()) do
+            if obj:IsA("BillboardGui") then
+                local clone = obj:Clone()
+                clone.Name = "StealedBadge"
+                clone.Adornee = myChar:FindFirstChild("Head")
+                clone.Parent = myChar:FindFirstChild("Head")
+            end
+        end
+        Notify("Success", "Berhasil meniru: " .. target.DisplayName, "Success")
+    end
+end
+
+-- Tombol Terapkan untuk Dropdown
+PlayerTab:New("Button")({
+    Title = "✨ Terapkan dari Dropdown",
+    Description = "Copy pemain yang dipilih dari daftar di atas",
+    Callback = function()
+        local target = game.Players:FindFirstChild(SelectedAutoPlayer)
+        if target then
+            ExecuteIdentityCopy(target)
+        else
+            Notify("Error", "Pilih pemain dulu!", "Warning")
         end
     end,
 })
 
 PlayerTab:New("Button")({
-    Title = "Reset Identity",
-    Description = "Kembali ke diri sendiri",
+    Title = "🔄 Reset Identity",
+    Description = "Kembali ke wujud asli",
     Callback = function()
-        local myChar = LocalPlayer.Character
-        local myHum = GetHumanoid()
-        if myChar and myHum then
-            -- Reset Avatar
-            local originalDesc = Players:GetHumanoidDescriptionFromUserId(LocalPlayer.UserId)
-            myHum:ApplyDescription(originalDesc)
-            
-            -- Reset Nama
-            myHum.DisplayName = LocalPlayer.DisplayName
-            myChar.Name = LocalPlayer.Name
-            
-            Notify("Identity", "Kembali ke akun asli.", "Info")
+        local myHum = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        pcall(function()
+            local desc = game.Players:GetHumanoidDescriptionFromUserId(game.Players.LocalPlayer.UserId)
+            myHum:ApplyDescription(desc)
+            myHum.DisplayName = game.Players.LocalPlayer.DisplayName
+        end)
+        for _, obj in pairs(game.Players.LocalPlayer.Character:GetDescendants()) do
+            if obj.Name == "StealedBadge" then obj:Destroy() end
         end
+        Notify("Identity", "Kembali normal.", "Info")
     end,
-})
+}) 
 -- PLAYER TAB
 PlayerTab:New("Title")({ Title = "🏃 Movement" })
 
@@ -1344,7 +1362,7 @@ GameTab:New("Slider")({
 })
 
 GameTab:New("Toggle")({
-    Title = "Start Auto All CP",
+    Title = "Start Auto All CP (Fixed)",
     Description = "Teleport otomatis ke semua checkpoint berurutan",
     DefaultValue = false,
     Callback = function(v)
@@ -1356,48 +1374,78 @@ GameTab:New("Toggle")({
                     local root = GetRootPart()
                     if not root then task.wait(1) continue end
                     
-                    -- 1. Cari semua objek CP
+                    -- 1. Cari semua objek CP (Pencarian lebih luas)
                     local checkpoints = {}
-                    for _, obj in pairs(Workspace:GetDescendants()) do
-                        local name = obj.Name:lower()
-                        if (obj:IsA("BasePart") or obj:IsA("Model")) and 
-                           (name:find("checkpoint") or name:find("stage") or name:find("point") or name:find("cp")) 
-                           and not obj:IsDescendantOf(LocalPlayer.Character) then
-                            
-                            -- Ambil angka dari nama (Contoh: "Stage 5" -> 5)
-                            local num = tonumber(obj.Name:match("%d+"))
-                            if num then
-                                table.insert(checkpoints, {Instance = obj, Number = num})
+                    
+                    -- Cek folder-folder umum di Workspace
+                    local searchTargets = {}
+                    local folders = {"Stages", "Checkpoints", "Levels", "CheckPoints"}
+                    
+                    for _, folderName in pairs(folders) do
+                        local folder = workspace:FindFirstChild(folderName)
+                        if folder then
+                            for _, obj in pairs(folder:GetChildren()) do
+                                table.insert(searchTargets, obj)
                             end
                         end
                     end
                     
-                    -- 2. Urutkan berdasarkan angka terkecil ke terbesar
+                    -- Jika folder tidak ditemukan, cari di seluruh Workspace
+                    if #searchTargets == 0 then
+                        searchTargets = workspace:GetDescendants()
+                    end
+
+                    for _, obj in pairs(searchTargets) do
+                        local name = obj.Name:lower()
+                        -- Mendeteksi objek: CP, Stage, atau SpawnLocation
+                        if (obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("SpawnLocation")) then
+                            if name:find("checkpoint") or name:find("stage") or name:find("point") or name:find("cp") or obj:IsA("SpawnLocation") then
+                                
+                                -- Ambil angka dari nama
+                                local num = tonumber(obj.Name:match("%d+"))
+                                if num then
+                                    table.insert(checkpoints, {Instance = obj, Number = num})
+                                end
+                            end
+                        end
+                    end
+                    
+                    -- 2. Urutkan berdasarkan angka
                     table.sort(checkpoints, function(a, b)
                         return a.Number < b.Number
                     end)
                     
                     -- 3. Eksekusi Teleportasi
                     if #checkpoints > 0 then
-                        Notify("Auto CP", "Ditemukan " .. #checkpoints .. " Checkpoints. Memulai...", "Success")
+                        Notify("Auto CP", "Ditemukan " .. #checkpoints .. " Checkpoints.", "Success")
                         
                         for _, cp in ipairs(checkpoints) do
                             if not _G.AutoCP then break end
                             
                             local target = cp.Instance
-                            local pos = target:IsA("Model") and (target.PrimaryPart and target.PrimaryPart.Position or target:GetModelCFrame().p) or target.Position
+                            local targetPos
                             
-                            -- Teleport sedikit di atas CP agar tidak tembus lantai
-                            root.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+                            -- Deteksi posisi (Model vs Part)
+                            if target:IsA("Model") then
+                                targetPos = target.PrimaryPart and target.PrimaryPart.Position or target:GetModelCFrame().p
+                            else
+                                targetPos = target.Position
+                            end
+                            
+                            -- Teleport
+                            root.CFrame = CFrame.new(targetPos + Vector3.new(0, 4, 0))
                             
                             Notify("Progress", "Teleport ke Stage: " .. cp.Number, "Info")
-                            task.wait(_G.CPDelay) -- Jeda penting agar server mencatat progresmu
+                            
+                            -- JEDA: Sangat penting! 
+                            -- Gunakan minimal 2-3 detik agar checkpoint ter-registrasi oleh game
+                            task.wait(_G.CPDelay or 2) 
                         end
                         
-                        _G.AutoCP = false -- Matikan jika sudah sampai akhir
+                        _G.AutoCP = false
                         Notify("Selesai", "Semua checkpoint telah diambil!", "Success")
                     else
-                        Notify("Error", "Tidak menemukan Checkpoint dengan angka!", "Warning")
+                        Notify("Error", "Gagal menemukan Checkpoint!", "Warning")
                         _G.AutoCP = false
                         break
                     end
@@ -1405,7 +1453,7 @@ GameTab:New("Toggle")({
             end)
         end
     end,
-})
+}) 
 
 GameTab:New("Button")({
     Title = "TP to Top of Mountain",
