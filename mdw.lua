@@ -20,7 +20,8 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ESP_Objects = {}
 local LocalPlayer = Players.LocalPlayer
-
+_G.AutoCP = false
+_G.CPDelay = 1.0 -- Jeda antar CP agar tidak di-kick anti-cheat
 -- Config
 local Config = {
     WalkSpeedDefault = 16,
@@ -766,6 +767,53 @@ MainTab:New("Button")({
 -- Tambahkan di PlayerTab
 PlayerTab:New("Title")({ Title = "🎭 Copy Player (Local)" })
 
+PlayerTab:New("Button")({
+    Title = "Become Target (Try Replicate)",
+    Description = "Mencoba membuat orang lain melihat perubahanmu (Hanya kerja di game tertentu)",
+    Callback = function()
+        local target = GetPlayerByName(ImpersonateName)
+        if target and target.Character then
+            local targetUserId = target.UserId
+            
+            -- 1. Menggunakan HumanoidDescription (Metode yang paling sering tembus ke Server)
+            local myHum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if myHum then
+                pcall(function()
+                    local desc = game:GetService("Players"):GetHumanoidDescriptionFromUserId(targetUserId)
+                    myHum:ApplyDescription(desc) -- Mencoba meminta server untuk update
+                end)
+            end
+
+            -- 2. Mencoba mencari Remote Kustomisasi di Game ini
+            -- Banyak game memiliki Remote untuk ganti baju di toko/shop
+            local foundRemote = nil
+            for _, v in pairs(game:GetDescendants()) do
+                if v:IsA("RemoteEvent") and (v.Name:lower():find("appearance") or v.Name:lower():find("cloth") or v.Name:lower():find("morph")) then
+                    foundRemote = v
+                    break
+                end
+            end
+
+            if foundRemote then
+                -- Jika ketemu remote, kita coba "tembak" id target ke server
+                foundRemote:FireServer(targetUserId) 
+                Notify("Exploit", "Remote ditemukan: " .. foundRemote.Name .. ". Mencoba memaksa perubahan ke server!", "Success")
+            else
+                Notify("Info", "Visual berubah secara lokal. Replication bergantung pada keamanan game.", "Info")
+            end
+
+            -- Tetap jalankan visual lokal sebagai cadangan
+            local myChar = LocalPlayer.Character
+            for _, obj in pairs(target.Character:GetChildren()) do
+                if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") then
+                    local clone = obj:Clone()
+                    clone.Parent = myChar
+                end
+            end
+        end
+    end,
+})
+
 local ImpersonateName = ""
 PlayerTab:New("Input")({
     Title = "Target Username/Display",
@@ -1150,39 +1198,59 @@ PlayerTab:New("Button")({
 })
 
 PlayerTab:New("Toggle")({
-    Title = "Fly [DETECTED AFTER FEW SECONDS OF USE!]",
-    Description = "Toggle client fly",
+    Title = "Fly [DETECTED AFTER FEW SECONDS!]",
+    Description = "Terbang sesuai arah kamera (W=Maju, Space=Naik, Ctrl=Turun)",
     DefaultValue = false,
     Callback = function(v)
         if v then
             _G.Fly = true
             local root = GetRootPart()
-            if root then
-                local bodyVel = Instance.new("BodyVelocity")
-                bodyVel.Name = "FlyVel"
-                bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                bodyVel.Velocity = Vector3.new(0, 0, 0)
-                bodyVel.Parent = root
-                local bodyGyro = Instance.new("BodyGyro")
-                bodyGyro.Name = "FlyGyro"
-                bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                bodyGyro.P = 9e4
-                bodyGyro.Parent = root
-                _G.FlyCon = RunService.RenderStepped:Connect(function()
-                    if _G.Fly and root and root.Parent then
-                        local cam = Workspace.CurrentCamera
-                        local move = Vector3.new(0, 0, 0)
-                        local hum = GetHumanoid()
-                        if hum and hum.MoveDirection.Magnitude > 0 then
-                            move = cam.CFrame:VectorToWorldSpace(Vector3.new(hum.MoveDirection.X, 0, hum.MoveDirection.Z))
-                        end
-                        bodyVel.Velocity = move * Config.FlySpeed
-                        bodyGyro.CFrame = cam.CFrame
+            if not root then return end
+
+            -- Buat BodyVelocity agar karakter melayang
+            local bodyVel = Instance.new("BodyVelocity")
+            bodyVel.Name = "FlyVel"
+            bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bodyVel.Velocity = Vector3.new(0, 0, 0)
+            bodyVel.Parent = root
+
+            -- Buat BodyGyro agar karakter tidak jatuh terguling
+            local bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.Name = "FlyGyro"
+            bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            bodyGyro.P = 9e4
+            bodyGyro.Parent = root
+
+            _G.FlyCon = RunService.RenderStepped:Connect(function()
+                if _G.Fly and root and root.Parent then
+                    local cam = Workspace.CurrentCamera
+                    local hum = GetHumanoid()
+                    local moveDir = Vector3.new(0,0,0)
+
+                    -- LOGIKA BARU: Menggunakan LookVector Kamera
+                    -- Ini memastikan karakter terbang ke mana pun kamera menghadap
+                    if hum and hum.MoveDirection.Magnitude > 0 then
+                        -- Ambil arah input (W,A,S,D) dan kalikan dengan kecepatan
+                        moveDir = hum.MoveDirection * Config.FlySpeed
                     end
-                end)
-                Notify("Enabled", "Fly ON (Speed: " .. Config.FlySpeed .. ")", "Success")
-            end
+
+                    -- Tambahan: Terbang Naik (Space) atau Turun (LeftControl)
+                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                        moveDir = moveDir + Vector3.new(0, Config.FlySpeed, 0)
+                    elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                        moveDir = moveDir + Vector3.new(0, -Config.FlySpeed, 0)
+                    end
+
+                    -- Terapkan kecepatan
+                    bodyVel.Velocity = moveDir
+                    
+                    -- Karakter selalu menghadap ke arah kamera
+                    bodyGyro.CFrame = cam.CFrame
+                end
+            end)
+            Notify("Enabled", "Fly Aktif! Gunakan W,A,S,D + Space/Ctrl", "Success")
         else
+            -- Matikan Fly
             _G.Fly = false
             if _G.FlyCon then _G.FlyCon:Disconnect() end
             local root = GetRootPart()
@@ -1192,7 +1260,7 @@ PlayerTab:New("Toggle")({
                 if bv then bv:Destroy() end
                 if bg then bg:Destroy() end
             end
-            Notify("Disabled", "Fly OFF", "Info")
+            Notify("Disabled", "Fly Mati", "Info")
         end
     end,
 })
@@ -1263,75 +1331,79 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-GameTab:New("Title")({ Title = "👁️ Visuals" })
 
--- Tambahkan di GameTab
--- Tambahkan di GameTab
 GameTab:New("Title")({ Title = "🏔️ Mountain Ordered Auto-CP" })
 
+GameTab:New("Slider")({
+    Title = "Teleport Delay (Detik)",
+    Description = "Semakin kecil semakin cepat, tapi berisiko di-kick",
+    Default = 1.0,
+    Minimum = 0.5,
+    Maximum = 5.0,
+    Callback = function(v) _G.CPDelay = v end,
+})
+
 GameTab:New("Toggle")({
-    Title = "Auto CP Berurutan (1, 2, 3...)",
-    Description = "Teleport ke Checkpoint sesuai urutan angka",
+    Title = "Start Auto All CP",
+    Description = "Teleport otomatis ke semua checkpoint berurutan",
     DefaultValue = false,
     Callback = function(v)
-        _G.AutoCPMountain = v
+        _G.AutoCP = v
         
-        spawn(function()
-            while _G.AutoCPMountain do
-                local root = GetRootPart()
-                if not root then task.wait(1) continue end
-
-                -- 1. Kumpulkan semua CP yang valid
-                local checkpoints = {}
-                for _, obj in pairs(Workspace:GetDescendants()) do
-                    local name = obj.Name:lower()
-                    if (obj:IsA("BasePart") or obj:IsA("Model")) and 
-                       (name:find("cp") or name:find("point") or name:find("stage") or name:find("checkpoint")) 
-                       and not obj:IsDescendantOf(LocalPlayer.Character) then
-                        
-                        -- Ambil angka dari nama (contoh: "CP 1" jadi 1)
-                        local cpNumber = tonumber(obj.Name:match("%d+"))
-                        if cpNumber then
-                            table.insert(checkpoints, {Instance = obj, Number = cpNumber})
+        if v then
+            spawn(function()
+                while _G.AutoCP do
+                    local root = GetRootPart()
+                    if not root then task.wait(1) continue end
+                    
+                    -- 1. Cari semua objek CP
+                    local checkpoints = {}
+                    for _, obj in pairs(Workspace:GetDescendants()) do
+                        local name = obj.Name:lower()
+                        if (obj:IsA("BasePart") or obj:IsA("Model")) and 
+                           (name:find("checkpoint") or name:find("stage") or name:find("point") or name:find("cp")) 
+                           and not obj:IsDescendantOf(LocalPlayer.Character) then
+                            
+                            -- Ambil angka dari nama (Contoh: "Stage 5" -> 5)
+                            local num = tonumber(obj.Name:match("%d+"))
+                            if num then
+                                table.insert(checkpoints, {Instance = obj, Number = num})
+                            end
                         end
                     end
-                end
-
-                -- 2. Urutkan berdasarkan angka (dari yang terkecil ke terbesar)
-                table.sort(checkpoints, function(a, b)
-                    return a.Number < b.Number
-                end)
-
-                -- 3. Jalankan Teleportasi Berurutan
-                if #checkpoints > 0 then
-                    for _, cpData in ipairs(checkpoints) do
-                        if not _G.AutoCPMountain then break end
-                        
-                        local obj = cpData.Instance
-                        local num = cpData.Number
-                        
-                        -- Deteksi Posisi
-                        local targetPos = obj:IsA("Model") and (obj.PrimaryPart and obj.PrimaryPart.CFrame or obj:GetModelCFrame()) or obj.CFrame
-                        
-                        Notify("Auto CP", "Menuju Checkpoint " .. num, "Info")
-                        
-                        -- Teleport
-                        root.CFrame = targetPos + Vector3.new(0, 3, 0)
-                        
-                        -- JEDA WAKTU (PENTING!)
-                        -- Ubah task.wait(5) sesuai waktu yang dibutuhkan game untuk 'mengambil' CP tersebut
-                        task.wait(5) 
-                    end
                     
-                    -- Jika sudah sampai CP terakhir, matikan otomatis agar tidak looping terus
-                    _G.AutoCPMountain = false
-                    Notify("Selesai", "Semua Checkpoint telah diambil!", "Success")
-                else
-                    Notify("Error", "Tidak ada CP dengan angka ditemukan!", "Error")
-                    task.wait(5)
+                    -- 2. Urutkan berdasarkan angka terkecil ke terbesar
+                    table.sort(checkpoints, function(a, b)
+                        return a.Number < b.Number
+                    end)
+                    
+                    -- 3. Eksekusi Teleportasi
+                    if #checkpoints > 0 then
+                        Notify("Auto CP", "Ditemukan " .. #checkpoints .. " Checkpoints. Memulai...", "Success")
+                        
+                        for _, cp in ipairs(checkpoints) do
+                            if not _G.AutoCP then break end
+                            
+                            local target = cp.Instance
+                            local pos = target:IsA("Model") and (target.PrimaryPart and target.PrimaryPart.Position or target:GetModelCFrame().p) or target.Position
+                            
+                            -- Teleport sedikit di atas CP agar tidak tembus lantai
+                            root.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+                            
+                            Notify("Progress", "Teleport ke Stage: " .. cp.Number, "Info")
+                            task.wait(_G.CPDelay) -- Jeda penting agar server mencatat progresmu
+                        end
+                        
+                        _G.AutoCP = false -- Matikan jika sudah sampai akhir
+                        Notify("Selesai", "Semua checkpoint telah diambil!", "Success")
+                    else
+                        Notify("Error", "Tidak menemukan Checkpoint dengan angka!", "Warning")
+                        _G.AutoCP = false
+                        break
+                    end
                 end
-            end
-        end)
+            end)
+        end
     end,
 })
 
@@ -1358,6 +1430,11 @@ GameTab:New("Button")({
         end
     end,
 })
+GameTab:New("Title")({ Title = "👁️ Visuals" })
+
+-- Tambahkan di GameTab
+-- Tambahkan di GameTab
+
 -- Tambahkan di GameTab (Visuals)
 GameTab:New("Toggle")({
     Title = "Headlight (God Light)",
