@@ -841,59 +841,40 @@ PlayerTab:New("Button")({
 function ExecuteIdentityCopy(target)
     local myChar = game.Players.LocalPlayer.Character
     local myHum = myChar and myChar:FindFirstChildOfClass("Humanoid")
-    
-    if not myChar or not myHum or not target.Character then 
-        Notify("Error", "Karakter tidak ditemukan!", "Warning")
-        return 
+    if not myChar or not target.Character then return end
+
+    -- 1. Bersihkan Karakter (Hapus baju/topi lama)
+    for _, v in pairs(myChar:GetChildren()) do
+        if v:IsA("Accessory") or v:IsA("Shirt") or v:IsA("Pants") or v:IsA("CharacterMesh") then
+            v:Destroy()
+        end
     end
 
-    local targetHum = target.Character:FindFirstChildOfClass("Humanoid")
-
-    -- 1. COPY AVATAR (Pakaian, Aksesoris, Bentuk Tubuh)
+    -- 2. Terapkan Avatar Baru
     pcall(function()
         local desc = game.Players:GetHumanoidDescriptionFromUserId(target.UserId)
-        -- Reset aksesoris lama agar tidak double/berantakan
-        for _, accessory in pairs(myHum:GetAccessories()) do
-            accessory:Destroy()
-        end
-        -- Terapkan deskripsi avatar baru
         myHum:ApplyDescription(desc)
     end)
 
-    -- 2. FIX DISPLAY NAME (Mencegah Double Name)
-    -- Kita set DisplayName kosong dulu agar tag asli Roblox hilang, 
-    -- lalu diisi dengan nama target.
-    myHum.DisplayName = " " 
-    task.wait(0.1)
-    myHum.DisplayName = targetHum.DisplayName
-
-    -- 3. COPY BADGES / TAGS (BillboardGui)
-    -- Hapus tag curian yang lama
+    -- 3. FIX NAMA DOUBLE (Sembunyikan nama asli Roblox)
+    myHum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None -- Matikan nama asli
+    
+    -- 4. Bersihkan Tag Curian Lama
     for _, obj in pairs(myChar:GetDescendants()) do
-        if obj.Name == "StealedBadge" or obj.Name == "StealedNameTag" then 
-            obj:Destroy() 
-        end
+        if obj.Name == "StealedIdent" then obj:Destroy() end
     end
 
-    -- Copy Tag dari target
+    -- 5. Copy Tag Nama/Badge dari Target
     for _, obj in pairs(target.Character:GetDescendants()) do
         if obj:IsA("BillboardGui") then
-            -- Pastikan kita tidak mengcopy GUI sistem yang tidak perlu
             local clone = obj:Clone()
-            clone.Name = "StealedBadge"
+            clone.Name = "StealedIdent"
             clone.Adornee = myChar:FindFirstChild("Head")
             clone.Parent = myChar:FindFirstChild("Head")
-            
-            -- Jika di dalam tag ada teks nama, kita pastikan tampil
-            for _, txt in pairs(clone:GetDescendants()) do
-                if txt:IsA("TextLabel") then
-                    txt.Visible = true
-                end
-            end
+            clone.Enabled = true
         end
     end
-
-    Notify("Success", "Meniru Identitas: " .. target.DisplayName, "Success")
+    Notify("Success", "Berhasil meniru: " .. target.DisplayName, "Success")
 end
 
 -- Tombol Terapkan untuk Dropdown
@@ -1381,87 +1362,54 @@ GameTab:New("Title")({ Title = "🏔️ Mountain Ordered Auto-CP" })
 
 -- VERSI MOUNTAIN-AWARE DENGAN NOTIFIKASI JUMLAH CP PER GUNUNG
 GameTab:New("Toggle")({
-    Title = "Start Auto All CP (Gunung Detector)",
-    Description = "Teleport otomatis dengan info jumlah CP per gunung",
+    Title = "Start Auto All CP (Gunung Fixed)",
+    Description = "Teleport + Force Touch agar CP terdaftar",
     DefaultValue = false,
     Callback = function(v)
         _G.AutoCP = v
-        
         if v then
             task.spawn(function()
                 while _G.AutoCP do
                     local root = GetRootPart()
                     if not root then task.wait(1) continue end
                     
-                    -- 1. Cari semua wilayah yang terdeteksi sebagai Gunung/Map
-                    local mountainList = {}
+                    -- Cari Checkpoint
+                    local cps = {}
                     for _, obj in pairs(workspace:GetDescendants()) do
-                        if (obj:IsA("Model") or obj:IsA("Folder")) then
-                            local name = obj.Name:lower()
-                            -- Deteksi nama umum map/gunung
-                            if name:find("mount") or name:find("gunung") or name:find("puncak") or name:find("map") or name:find("stage") then
-                                table.insert(mountainList, obj)
+                        if obj:IsA("BasePart") or obj:IsA("SpawnLocation") then
+                            local n = obj.Name:lower()
+                            if (n:find("cp") or n:find("stage") or n:find("point")) and tonumber(obj.Name:match("%d+")) then
+                                table.insert(cps, {Part = obj, Num = tonumber(obj.Name:match("%d+"))})
                             end
                         end
                     end
+                    table.sort(cps, function(a,b) return a.Num < b.Num end)
 
-                    -- Jika tidak ada folder khusus, gunakan Workspace sebagai cadangan
-                    if #mountainList == 0 then table.insert(mountainList, workspace) end
-
-                    -- 2. Loop setiap wilayah gunung yang ditemukan
-                    for _, mountain in ipairs(mountainList) do
-                        if not _G.AutoCP then break end
-                        
-                        local cpsInThisMountain = {}
-                        
-                        -- Cari semua CP di dalam gunung ini
-                        for _, cp in pairs(mountain:GetDescendants()) do
-                            if cp:IsA("BasePart") or cp:IsA("SpawnLocation") or cp:IsA("Model") then
-                                local cpName = cp.Name:lower()
-                                -- Kriteria Checkpoint
-                                if cpName:find("checkpoint") or cpName:find("cp") or cpName:find("stage") or cp:IsA("SpawnLocation") then
-                                    local num = tonumber(cp.Name:match("%d+")) or 0
-                                    table.insert(cpsInThisMountain, {Instance = cp, Number = num})
-                                end
-                            end
+                    if #cps > 0 then
+                        Notify("Auto CP", "Ditemukan " .. #cps .. " CP. Menjalankan...", "Success")
+                        for _, data in ipairs(cps) do
+                            if not _G.AutoCP then break end
+                            
+                            -- TELEPORT
+                            root.CFrame = data.Part.CFrame * CFrame.new(0, 3, 0)
+                            Notify("Progress", "Gunung CP: " .. data.Num, "Info")
+                            
+                            -- FORCE TOUCH (Sangat Penting: Gerak sedikit agar CP deteksi kamu)
+                            task.wait(0.2)
+                            root.CFrame = root.CFrame * CFrame.new(0, -3.2, 0) -- Injak tanah
+                            task.wait(0.1)
+                            root.CFrame = root.CFrame * CFrame.new(0, 0.5, 0) -- Angkat lagi
+                            
+                            -- JEDA (Atur di slider minimal 2 detik agar progress masuk database game)
+                            task.wait(_G.CPDelay or 2)
                         end
-
-                        -- Urutkan CP berdasarkan angka (Stage 1, Stage 2, dst)
-                        table.sort(cpsInThisMountain, function(a, b) return a.Number < b.Number end)
-
-                        -- 3. Berikan Notifikasi JUMLAH CP (Permintaan Anda)
-                        if #cpsInThisMountain > 0 then
-                            Notify("Gunung Terdeteksi", "(Terdapat " .. #cpsInThisMountain .. " CP Di Gunung " .. mountain.Name .. ")", "Info")
-                            task.wait(1) -- Beri waktu sebentar agar user bisa baca notifnya
-
-                            -- Mulai Teleportasi di Gunung ini
-                            for _, cpData in ipairs(cpsInThisMountain) do
-                                if not _G.AutoCP then break end
-                                
-                                local target = cpData.Instance
-                                local targetPos = target:IsA("Model") and (target.PrimaryPart and target.PrimaryPart.Position or target:GetModelCFrame().p) or target.Position
-                                
-                                -- Eksekusi Teleport
-                                root.CFrame = CFrame.new(targetPos + Vector3.new(0, 4, 0))
-                                
-                                -- Update kemajuan kecil
-                                Notify("Progress", "OTW Gunung " .. mountain.Name .. " - CP: " .. cpData.Number, "Info")
-                                
-                                -- Tunggu progress tersimpan (Gunakan Delay dari Slider)
-                                task.wait(_G.CPDelay or 1.5)
-                                
-                                -- Goyangkan sedikit agar menyentuh (TouchInterest)
-                                root.CFrame = root.CFrame * CFrame.new(0, 0.2, 0)
-                            end
-                        end
+                    else
+                        Notify("Error", "CP Tidak ditemukan!", "Warning")
+                        _G.AutoCP = false
                     end
-                    
-                    _G.AutoCP = false
-                    Notify("Selesai", "Semua CP di semua gunung telah diambil!", "Success")
-                    break
                 end
             end)
-        end
+        end 
     end,
 })
 
