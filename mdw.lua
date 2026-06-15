@@ -33,7 +33,7 @@ local Config = {
 }
 
 -- Load Modal UI
-local Modal = loadstring(game:HttpGet("https://github.com/BloxCrypto/Modal/releases/download/v1.0-beta/main.lua"))()
+local Modal = loadstring(game:HttpGet("loadstring(game:HttpGet('https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main_example.lua"))()
 -- ADVANCED ANTI-KICK BYPASS
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
