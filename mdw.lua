@@ -33,7 +33,7 @@ local Config = {
 }
 
 -- Load Modal UI
-local Modal = loadstring(game:HttpGet('https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main_example.lua'))()
+local Modal = local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/raphaelmaboi/ui-libraries/refs/heads/main/VoidUi/source.lua"))()
 -- ADVANCED ANTI-KICK BYPASS
 local mt = getrawmetatable(game)
 local oldNamecall = mt.__namecall
