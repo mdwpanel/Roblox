@@ -548,7 +548,7 @@ local function CreateGeneratorESP(gen)
         LastProgress = progress
     }
 end
-
+local TweenService = game:GetService("TweenService")
 local function UpdateGeneratorESP()
     if not _G.GenESP then return end
     
@@ -1408,63 +1408,8 @@ end)
 
 
 GameTab:New("Title")({ Title = "🏔️ Mountain Ordered Auto-CP" })
-local TweenService = game:GetService("TweenService")
 
-GameTab:New("Toggle")({
-    Title = "Start Auto All CP (STEALTH MODE)",
-    Description = "Meluncur halus ke CP agar tidak terkena Anti-Cheat",
-    DefaultValue = false,
-    Callback = function(v)
-        _G.AutoCP = v
-        
-        if v then
-            task.spawn(function()
-                local lastNum = 0
-                while _G.AutoCP do
-                    local root = GetRootPart()
-                    if not root then task.wait(1) continue end
-                    
-                    -- Cari CP selanjutnya
-                    local allCPs = {}
-                    for _, obj in pairs(workspace:GetDescendants()) do
-                        if obj:IsA("BasePart") or obj:IsA("SpawnLocation") then
-                            local num = tonumber(obj.Name:match("%d+"))
-                            if num and num > lastNum then
-                                table.insert(allCPs, {Part = obj, Num = num})
-                            end
-                        end
-                    end
-                    table.sort(allCPs, function(a, b) return a.Num < b.Num end)
 
-                    if #allCPs > 0 then
-                        local nextCP = allCPs[1]
-                        Notify("Stealth CP", "Meluncur ke Stage: " .. nextCP.Num, "Info")
-
-                        -- LOGIKA STEALTH: Jangan Teleport, tapi Meluncur (Tween)
-                        -- Jarak tempuh / kecepatan = durasi (Misal kecepatan 100 studs per detik)
-                        local distance = (root.Position - nextCP.Part.Position).Magnitude
-                        local duration = distance / 150 -- Kamu bisa ubah 150 ke 100 kalau masih kena kick
-                        
-                        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                        local tween = TweenService:Create(root, tweenInfo, {CFrame = nextCP.Part.CFrame * CFrame.new(0, 3, 0)})
-                        
-                        tween:Play()
-                        tween.Completed:Wait() -- Tunggu sampai sampai di lokasi
-
-                        -- Jeda Acak agar terlihat manusiawi (Sangat penting!)
-                        local randomDelay = _G.CPDelay + (math.random(1, 10) / 10)
-                        task.wait(randomDelay)
-                        
-                        lastNum = nextCP.Num
-                    else
-                        Notify("Selesai", "Semua CP terambil atau tidak ada CP baru.", "Success")
-                        _G.AutoCP = false
-                    end
-                end
-            end)
-        end
-    end,
-})
 -- VERSI MOUNTAIN-AWARE DENGAN NOTIFIKASI JUMLAH CP PER GUNUNG
 -- VERSI ULTIMATE AUTO CP (ANTI-STUCK)
 GameTab:New("Toggle")({
@@ -1528,6 +1473,64 @@ GameTab:New("Toggle")({
                         Notify("Selesai", "Tidak ditemukan CP baru. Mencoba scan ulang...", "Warning")
                         task.wait(3)
                         -- Jika masih tidak ada, mungkin memang sudah habis atau harus pindah gunung
+                    end
+                end
+            end)
+        end
+    end,
+})
+
+
+
+GameTab:New("Toggle")({
+    Title = "Start Auto All CP (STEALTH MODE)",
+    Description = "Meluncur halus ke CP agar tidak terkena Anti-Cheat",
+    DefaultValue = false,
+    Callback = function(v)
+        _G.AutoCP = v
+        
+        if v then
+            task.spawn(function()
+                local lastNum = 0
+                while _G.AutoCP do
+                    local root = GetRootPart()
+                    if not root then task.wait(1) continue end
+                    
+                    -- Cari CP selanjutnya
+                    local allCPs = {}
+                    for _, obj in pairs(workspace:GetDescendants()) do
+                        if obj:IsA("BasePart") or obj:IsA("SpawnLocation") then
+                            local num = tonumber(obj.Name:match("%d+"))
+                            if num and num > lastNum then
+                                table.insert(allCPs, {Part = obj, Num = num})
+                            end
+                        end
+                    end
+                    table.sort(allCPs, function(a, b) return a.Num < b.Num end)
+
+                    if #allCPs > 0 then
+                        local nextCP = allCPs[1]
+                        Notify("Stealth CP", "Meluncur ke Stage: " .. nextCP.Num, "Info")
+
+                        -- LOGIKA STEALTH: Jangan Teleport, tapi Meluncur (Tween)
+                        -- Jarak tempuh / kecepatan = durasi (Misal kecepatan 100 studs per detik)
+                        local distance = (root.Position - nextCP.Part.Position).Magnitude
+                        local duration = distance / 150 -- Kamu bisa ubah 150 ke 100 kalau masih kena kick
+                        
+                        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                        local tween = TweenService:Create(root, tweenInfo, {CFrame = nextCP.Part.CFrame * CFrame.new(0, 3, 0)})
+                        
+                        tween:Play()
+                        tween.Completed:Wait() -- Tunggu sampai sampai di lokasi
+
+                        -- Jeda Acak agar terlihat manusiawi (Sangat penting!)
+                        local randomDelay = _G.CPDelay + (math.random(1, 10) / 10)
+                        task.wait(randomDelay)
+                        
+                        lastNum = nextCP.Num
+                    else
+                        Notify("Selesai", "Semua CP terambil atau tidak ada CP baru.", "Success")
+                        _G.AutoCP = false
                     end
                 end
             end)
