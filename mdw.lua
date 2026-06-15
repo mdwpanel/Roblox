@@ -719,29 +719,66 @@ UserInputService.TouchTapInWorld:Connect(function(position, processed)
     end
 end)
 
-local TargetName = ""
-MainTab:New("Input")({
-    Title = "Player Name",
-    Description = "Enter target player name",
-    Placeholder = "Type name here...",
-    Callback = function(v) TargetName = v end,
+local function GetAllPlayers()
+    local names = {}
+    for _, p in pairs(game.Players:GetPlayers()) do
+        -- Jangan masukkan nama kita sendiri ke dalam daftar teleport
+        if p ~= LocalPlayer then
+            table.insert(names, p.Name)
+        end
+    end
+    return names
+end
+
+MainTab:New("Title")({ Title = "🚀 Quick Player Teleport" })
+
+local SelectedTarget = ""
+
+-- 1. Create Dropdown
+local PlayerDropdown = MainTab:New("Dropdown")({
+    Title = "Pilih Pemain",
+    Description = "Pilih target teleportasi dari daftar",
+    Options = GetAllPlayers(),
+    Default = "",
+    Callback = function(v)
+        SelectedTarget = v
+        Notify("Target Dipilih", "Target: " .. v, "Info")
+    end,
 })
 
+-- 2. Button Refresh Daftar (Penting jika ada orang baru masuk)
 MainTab:New("Button")({
-    Title = "Teleport To",
-    Description = "Go to target player",
+    Title = "🔄 Refresh Daftar Pemain",
+    Description = "Klik jika ada pemain baru yang masuk server",
     Callback = function()
-        if TargetName == "" then Notify("Warning", "Enter a player name!", "Warning") return end
-        local target = GetPlayerByName(TargetName)
+        local currentPlayers = GetAllPlayers()
+        PlayerDropdown:Refresh(currentPlayers)
+        Notify("Updated", "Daftar pemain telah diperbarui!", "Success")
+    end,
+})
+
+-- 3. Tombol Eksekusi Teleport
+MainTab:New("Button")({
+    Title = "Teleport Sekarang",
+    Description = "Pindah ke posisi pemain yang dipilih",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == nil then
+            Notify("Warning", "Silakan pilih pemain dari daftar dulu!", "Warning")
+            return
+        end
+
+        local target = game.Players:FindFirstChild(SelectedTarget)
         if target and target.Character then
             local myRoot = GetRootPart()
-            local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
-            if myRoot and tRoot then
-                myRoot.CFrame = tRoot.CFrame * CFrame.new(0, 0, 3)
-                Notify("Success", "Teleported to " .. target.Name, "Success")
+            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+            
+            if myRoot and targetRoot then
+                -- Teleport ke belakang pemain target agar tidak menabrak
+                myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+                Notify("Success", "Teleport ke " .. target.Name .. " Berhasil!", "Success")
             end
         else
-            Notify("Error", "Player not found!", "Error")
+            Notify("Error", "Pemain tidak ditemukan atau sudah keluar!", "Error")
         end
     end,
 })
@@ -1361,55 +1398,72 @@ end)
 GameTab:New("Title")({ Title = "🏔️ Mountain Ordered Auto-CP" })
 
 -- VERSI MOUNTAIN-AWARE DENGAN NOTIFIKASI JUMLAH CP PER GUNUNG
+-- VERSI ULTIMATE AUTO CP (ANTI-STUCK)
 GameTab:New("Toggle")({
-    Title = "Start Auto All CP (Gunung Fixed)",
-    Description = "Teleport + Force Touch agar CP terdaftar",
+    Title = "Start Auto All CP (Master Fix)",
+    Description = "Teleport cerdas yang mencari CP selanjutnya secara otomatis",
     DefaultValue = false,
     Callback = function(v)
         _G.AutoCP = v
+        
         if v then
             task.spawn(function()
+                -- Simpan nomor CP terakhir agar tidak bolak-balik
+                local lastCPNumber = 0
+                
                 while _G.AutoCP do
                     local root = GetRootPart()
                     if not root then task.wait(1) continue end
                     
-                    -- Cari Checkpoint
-                    local cps = {}
+                    -- 1. SCAN SELURUH WORKSPACE UNTUK CP TERDEKAT
+                    local allCPs = {}
                     for _, obj in pairs(workspace:GetDescendants()) do
                         if obj:IsA("BasePart") or obj:IsA("SpawnLocation") then
-                            local n = obj.Name:lower()
-                            if (n:find("cp") or n:find("stage") or n:find("point")) and tonumber(obj.Name:match("%d+")) then
-                                table.insert(cps, {Part = obj, Num = tonumber(obj.Name:match("%d+"))})
+                            local name = obj.Name:lower()
+                            -- Cari angka di nama objek
+                            local num = tonumber(obj.Name:match("%d+"))
+                            
+                            -- Kriteria Checkpoint (CP, Stage, Level, atau Angka murni)
+                            if (name:find("cp") or name:find("stage") or name:find("point") or name:find("level") or obj:IsA("SpawnLocation")) and num then
+                                -- Hanya ambil CP yang nomornya LEBIH BESAR dari yang terakhir kita ambil
+                                if num > lastCPNumber then
+                                    table.insert(allCPs, {Part = obj, Num = num})
+                                end
                             end
                         end
                     end
-                    table.sort(cps, function(a,b) return a.Num < b.Num end)
-
-                    if #cps > 0 then
-                        Notify("Auto CP", "Ditemukan " .. #cps .. " CP. Menjalankan...", "Success")
-                        for _, data in ipairs(cps) do
-                            if not _G.AutoCP then break end
-                            
-                            -- TELEPORT
-                            root.CFrame = data.Part.CFrame * CFrame.new(0, 3, 0)
-                            Notify("Progress", "Gunung CP: " .. data.Num, "Info")
-                            
-                            -- FORCE TOUCH (Sangat Penting: Gerak sedikit agar CP deteksi kamu)
-                            task.wait(0.2)
-                            root.CFrame = root.CFrame * CFrame.new(0, -3.2, 0) -- Injak tanah
-                            task.wait(0.1)
-                            root.CFrame = root.CFrame * CFrame.new(0, 0.5, 0) -- Angkat lagi
-                            
-                            -- JEDA (Atur di slider minimal 2 detik agar progress masuk database game)
-                            task.wait(_G.CPDelay or 2)
-                        end
+                    
+                    -- 2. URUTKAN CP DARI NOMOR TERKECIL
+                    table.sort(allCPs, function(a, b) return a.Num < b.Num end)
+                    
+                    -- 3. EKSEKUSI TELEPORT KE CP BERIKUTNYA
+                    if #allCPs > 0 then
+                        local nextCP = allCPs[1] -- Ambil CP nomor terkecil yang tersedia
+                        
+                        Notify("Auto CP", "Menuju CP Nomor: " .. nextCP.Num, "Info")
+                        
+                        -- Teleport sedikit di atas CP
+                        root.CFrame = nextCP.Part.CFrame * CFrame.new(0, 3, 0)
+                        
+                        -- TEKNIK "LEG TOUCH": Turunkan karakter perlahan sampai menyentuh tanah
+                        task.wait(0.3)
+                        root.CFrame = nextCP.Part.CFrame * CFrame.new(0, 1.2, 0)
+                        
+                        -- TUNGGU SERVER MENCATAT PROGRESS (WAJIB JEDA)
+                        -- Gunakan minimal 2 detik agar tidak di-reset oleh Anti-Cheat
+                        task.wait(_G.CPDelay or 2)
+                        
+                        -- Update nomor terakhir yang berhasil
+                        lastCPNumber = nextCP.Num
                     else
-                        Notify("Error", "CP Tidak ditemukan!", "Warning")
-                        _G.AutoCP = false
+                        -- Jika tidak ada CP lagi dengan nomor lebih tinggi
+                        Notify("Selesai", "Tidak ditemukan CP baru. Mencoba scan ulang...", "Warning")
+                        task.wait(3)
+                        -- Jika masih tidak ada, mungkin memang sudah habis atau harus pindah gunung
                     end
                 end
             end)
-        end 
+        end
     end,
 })
 
