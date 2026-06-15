@@ -635,11 +635,11 @@ local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 -- ==========================================
 -- MAIN TAB
 -- ==========================================
--- ================= SECTION: QUICK ACTIONS =================
 local QuickSection = MainTab:AddSection("🛠️ Quick Actions")
- 
+
 QuickSection:AddButton({
     Title = "Get Gravity Gun",
+    Description = "Tool untuk menarik dan membawa objek di map",
     Callback = function()
         local tool = Instance.new("Tool")
         tool.RequiresHandle = false
@@ -653,7 +653,7 @@ QuickSection:AddButton({
         tool.Activated:Connect(function()
             target = mouse.Target
             if target and not target.Anchored then
-                connection = game:GetService("RunService").RenderStepped:Connect(function()
+                connection = RunService.RenderStepped:Connect(function()
                     if target and tool.Parent == LocalPlayer.Character then
                         target.Velocity = (LocalPlayer.Character.Head.CFrame * CFrame.new(0,0,-10).p - target.Position) * 10
                     end
@@ -665,8 +665,6 @@ QuickSection:AddButton({
             if connection then connection:Disconnect() end
             target = nil
         end)
-        
-        Library:MakeNotify({ Title = "Success", Content = "Gravity Gun added to Backpack!" })
     end
 })
 
@@ -686,87 +684,99 @@ QuickSection:AddButton({
             LocalPlayer.Character.Humanoid.JumpPower = 50
         end
         Workspace.Gravity = 196
-        Library:MakeNotify({ Title = "Success", Content = "Movement & Gravity Refreshed!" })
+        Library:MakeNotify({ Title = "Success", Content = "Movement Refreshed!" })
     end
 })
 
--- ================= SECTION: TELEPORT =================
 local TpSection = MainTab:AddSection("🎯 Teleport")
 
 TpSection:AddToggle({
     Title = "Tap to Teleport",
+    Description = "Ketuk lokasi di layar untuk pindah (Mobile Friendly)",
     Default = false,
     Callback = function(v) 
         _G.TapTP = v 
     end
 })
 
--- ================= SECTION: PLAYER TELEPORT =================
-local PlayerTpSection = MainTab:AddSection("🚀 Quick Player Teleport")
+local QuickTpSection = MainTab:AddSection("🚀 Quick Player Teleport")
 
 local SelectedTarget = ""
 
-local PlayerDropdown = PlayerTpSection:AddDropdown({
+local PlayerDropdown = QuickTpSection:AddDropdown({
     Title = "Pilih Pemain",
-    Values = GetAllPlayers(), -- Pastikan fungsi ini tersedia
+    Description = "Pilih target teleportasi dari daftar",
+    Options = GetAllPlayers(),
     Default = "",
     Callback = function(v)
         SelectedTarget = v
+        Library:MakeNotify({ Title = "Info", Content = "Target: " .. v })
     end
 })
 
-PlayerTpSection:AddButton({
+QuickTpSection:AddButton({
     Title = "🔄 Refresh Daftar Pemain",
+    Description = "Klik jika ada pemain baru yang masuk server",
     Callback = function()
         local currentPlayers = GetAllPlayers()
-        PlayerDropdown:SetValues(currentPlayers) -- Menggunakan SetValues sesuai standar library baru
-        Library:MakeNotify({ Title = "Updated", Content = "Daftar pemain telah diperbarui!" })
+        PlayerDropdown:Refresh(currentPlayers)
+        Library:MakeNotify({ Title = "Success", Content = "Daftar pemain telah diperbarui!" })
     end
 })
 
-PlayerTpSection:AddButton({
-    Title = "Teleport Ke Target",
+QuickTpSection:AddButton({
+    Title = "Teleport Sekarang",
+    Description = "Pindah ke posisi pemain yang dipilih",
     Callback = function()
-        if SelectedTarget == "" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" }) 
-            return 
+        if SelectedTarget == "" or SelectedTarget == nil then
+            Library:MakeNotify({ Title = "Warning", Content = "Silakan pilih pemain dari daftar dulu!" })
+            return
         end
 
         local target = game.Players:FindFirstChild(SelectedTarget)
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if myRoot then
-                myRoot.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-                Library:MakeNotify({ Title = "Success", Content = "Teleport Berhasil!" })
+        if target and target.Character then
+            local myRoot = GetRootPart()
+            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+            
+            if myRoot and targetRoot then
+                -- Teleport ke belakang pemain target agar tidak menabrak
+                myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+                Library:MakeNotify({ Title = "Success", Content = "Teleport ke " .. target.Name .. " Berhasil!" })
             end
         else
-            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan!" })
+            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan atau sudah keluar!" })
         end
     end
 })
 
-PlayerTpSection:AddButton({
-    Title = "Bring Player (Visual)",
+QuickTpSection:AddButton({
+    Title = "Bring Player",
+    Description = "Bring target to you (visual)",
     Callback = function()
-        if SelectedTarget == "" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" }) 
+        if TargetName == "" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Enter a player name!" }) 
             return 
         end
-
-        local target = game.Players:FindFirstChild(SelectedTarget)
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if myRoot then
-                target.Character.HumanoidRootPart.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
-                Library:MakeNotify({ Title = "Success", Content = "Player Brought!" })
+        
+        local target = GetPlayerByName(TargetName)
+        if target and target.Character then
+            local myRoot = GetRootPart()
+            local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
+            if myRoot and tRoot then
+                tRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
+                Library:MakeNotify({ Title = "Success", Content = "Brought " .. target.Name })
             end
+        else
+            Library:MakeNotify({ Title = "Error", Content = "Player not found!" })
         end
     end
-})
-
+}) 
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
+-- =================================================================
+-- 🏃 MOVEMENT SETTINGS SECTION
+-- =================================================================
 local MoveSection = PlayerTab:AddSection("🏃 Movement Settings")
 
 MoveSection:AddInput({
@@ -789,47 +799,241 @@ MoveSection:AddInput({
     end
 })
 
+MoveSection:AddInput({
+    Title = "Gravity",
+    Default = 196,
+    Callback = function(v)
+        Workspace.Gravity = tonumber(v) or 196
+    end
+})
+
 MoveSection:AddToggle({
     Title = "Infinite Jump",
     Default = false,
-    Callback = function(v) _G.InfJump = v end
+    Callback = function(v) 
+        _G.InfJump = v
+        if v then
+            if not _G.InfJumpCon then
+                _G.InfJumpCon = UserInputService.JumpRequest:Connect(function()
+                    if _G.InfJump then
+                        local hum = GetHumanoid()
+                        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+                    end
+                end)
+            end
+            Library:MakeNotify({ Title = "Enabled", Content = "Infinite Jump ON" })
+        else
+            if _G.InfJumpCon then _G.InfJumpCon:Disconnect() _G.InfJumpCon = nil end
+            Library:MakeNotify({ Title = "Disabled", Content = "Infinite Jump OFF" })
+        end
+    end
 })
 
 MoveSection:AddToggle({
     Title = "NoClip (Tembus Tembok)",
     Default = false,
-    Callback = function(v) _G.NC = v end
+    Callback = function(v) 
+        _G.NC = v
+        if v then
+            if not _G.NCCon then
+                _G.NCCon = RunService.Stepped:Connect(function()
+                    if _G.NC and LocalPlayer.Character then
+                        for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
+                            if p:IsA("BasePart") then p.CanCollide = false end
+                        end
+                    end
+                end)
+            end
+            Library:MakeNotify({ Title = "Enabled", Content = "NoClip ON" })
+        else
+            if _G.NCCon then _G.NCCon:Disconnect() _G.NCCon = nil end
+            Library:MakeNotify({ Title = "Disabled", Content = "NoClip OFF" })
+        end
+    end
 })
 
-local IdentitySection = PlayerTab:AddSection("🎭 Identity Stealer")
-
-local SelectedPlayer = ""
-local PlayerDropdown = IdentitySection:AddDropdown({
-    Title = "Pilih Pemain",
-    Options = (function()
-        local t = {}
-        for _,p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then table.insert(t, p.Name) end end
-        return t
-    end)(),
-    Callback = function(v) SelectedPlayer = v end
-})
-
-IdentitySection:AddButton({
-    Title = "Terapkan Identity",
-    Callback = function()
-        local target = Players:FindFirstChild(SelectedPlayer)
-        if target and target.Character then
-            pcall(function()
-                local desc = Players:GetHumanoidDescriptionFromUserId(target.UserId)
-                LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ApplyDescription(desc)
+MoveSection:AddToggle({
+    Title = "Air Walk (Jesus Mode)",
+    Default = false,
+    Callback = function(v)
+        _G.AirWalk = v
+        if v then
+            local plat = Instance.new("Part")
+            plat.Size = Vector3.new(10, 1, 10)
+            plat.Anchored = true
+            plat.Transparency = 1
+            plat.Parent = Workspace
+            
+            task.spawn(function()
+                while _G.AirWalk do
+                    task.wait()
+                    local root = GetRootPart()
+                    if root then
+                        plat.CFrame = root.CFrame * CFrame.new(0, -3.5, 0)
+                        plat.CanCollide = true
+                    end
+                end
+                plat:Destroy()
             end)
         end
     end
 })
 
+-- =================================================================
+-- 🛡️ PROTECTION SETTINGS SECTION
+-- =================================================================
+local AntiSection = PlayerTab:AddSection("🛡️ Protection Settings")
+
+AntiSection:AddToggle({
+    Title = "Anti-Ragdoll / No-Stun",
+    Default = false,
+    Callback = function(v)
+        _G.AntiRagdoll = v
+        if v then
+            task.spawn(function()
+                while _G.AntiRagdoll do
+                    task.wait(0.1)
+                    local hum = GetHumanoid()
+                    if hum then
+                        if hum.PlatformStand then hum.PlatformStand = false end
+                        if hum.Sit then hum.Sit = false end
+                    end
+                end
+            end)
+        end
+    end
+})
+
+AntiSection:AddToggle({
+    Title = "Anti-Void",
+    Default = false,
+    Callback = function(v)
+        _G.AntiVoid = v
+        if v then
+            task.spawn(function()
+                local plate = Instance.new("Part", Workspace)
+                plate.Size = Vector3.new(100, 1, 100)
+                plate.Anchored = true
+                plate.Transparency = 1
+                plate.CanCollide = false
+                
+                while _G.AntiVoid do
+                    task.wait(0.1)
+                    local root = GetRootPart()
+                    if root then
+                        if root.Position.Y < -50 then
+                            plate.CFrame = CFrame.new(root.Position.X, -50, root.Position.Z)
+                            plate.CanCollide = true
+                        else
+                            plate.CanCollide = false
+                        end
+                    end
+                end
+                plate:Destroy()
+            end)
+        end
+    end
+})
+
+AntiSection:AddToggle({
+    Title = "Anti-Freeze & Anti-Stun",
+    Default = false,
+    Callback = function(v)
+        _G.AntiFreeze = v
+        if v then
+            task.spawn(function()
+                while _G.AntiFreeze do
+                    task.wait(0.1)
+                    local char = LocalPlayer.Character
+                    local hum = GetHumanoid()
+                    local root = GetRootPart()
+                    
+                    if char and hum and root then
+                        if root.Anchored then root.Anchored = false end
+                        if hum.PlatformStand then hum.PlatformStand = false end
+                        if hum.Sit then hum.Sit = false end
+                    end
+                end
+            end)
+        end
+    end
+})
+
+-- =================================================================
+-- ✈️ FLY SETTINGS SECTION
+-- =================================================================
+local FlySection = PlayerTab:AddSection("✈️ Fly Settings")
+
+FlySection:AddInput({
+    Title = "Fly Speed",
+    Default = 100,
+    Callback = function(v)
+        Config.FlySpeed = tonumber(v) or 100
+    end
+})
+
+FlySection:AddToggle({
+    Title = "Fly [DETECTED AFTER FEW SECONDS!]",
+    Default = false,
+    Callback = function(v)
+        _G.Fly = v
+        if v then
+            local root = GetRootPart()
+            if not root then return end
+
+            local bodyVel = Instance.new("BodyVelocity")
+            bodyVel.Name = "FlyVel"
+            bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bodyVel.Velocity = Vector3.new(0, 0, 0)
+            bodyVel.Parent = root
+
+            local bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.Name = "FlyGyro"
+            bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            bodyGyro.P = 9e4
+            bodyGyro.Parent = root
+
+            _G.FlyCon = RunService.RenderStepped:Connect(function()
+                if _G.Fly and root and root.Parent then
+                    local cam = Workspace.CurrentCamera
+                    local hum = GetHumanoid()
+                    local moveDir = Vector3.new(0,0,0)
+                    local speed = Config.FlySpeed or 100
+
+                    if hum and hum.MoveDirection.Magnitude > 0 then
+                        moveDir = hum.MoveDirection * speed
+                    end
+
+                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                        moveDir = moveDir + Vector3.new(0, speed, 0)
+                    elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                        moveDir = moveDir + Vector3.new(0, -speed, 0)
+                    end
+
+                    bodyVel.Velocity = moveDir
+                    bodyGyro.CFrame = cam.CFrame
+                end
+            end)
+            Library:MakeNotify({ Title = "Enabled", Content = "Fly Aktif! Gunakan W,A,S,D + Space/Ctrl" })
+        else
+            if _G.FlyCon then _G.FlyCon:Disconnect() _G.FlyCon = nil end
+            local root = GetRootPart()
+            if root then
+                local bv = root:FindFirstChild("FlyVel")
+                local bg = root:FindFirstChild("FlyGyro")
+                if bv then bv:Destroy() end
+                if bg then bg:Destroy() end
+            end
+            Library:MakeNotify({ Title = "Disabled", Content = "Fly Mati" })
+        end
+    end
+})
 -- ==========================================
 -- GAME TAB
 -- ==========================================
+-- =================================================================
+-- 🏔️ AUTO FARMING CP SECTION
+-- =================================================================
 local FarmSection = GameTab:AddSection("🏔️ Auto Farming CP")
 
 FarmSection:AddToggle({
@@ -842,19 +1046,81 @@ FarmSection:AddToggle({
                 local lastNum = 0
                 while _G.AutoCP do
                     local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if not root then task.wait(1) continue end
+                    
                     local allCPs = {}
                     for _, obj in pairs(Workspace:GetDescendants()) do
                         local num = tonumber(obj.Name:match("%d+"))
-                        if num and num > lastNum and (obj.Name:lower():find("cp") or obj:IsA("SpawnLocation")) then
+                        if num and num > lastNum and (obj.Name:lower():find("cp") or obj.Name:lower():find("stage") or obj.Name:lower():find("point") or obj.Name:lower():find("level") or obj:IsA("SpawnLocation")) then
                             table.insert(allCPs, {Part = obj, Num = num})
                         end
                     end
+                    
                     table.sort(allCPs, function(a,b) return a.Num < b.Num end)
+                    
                     if #allCPs > 0 then
-                        root.CFrame = allCPs[1].Part.CFrame * CFrame.new(0,3,0)
-                        lastNum = allCPs[1].Num
-                        task.wait(_G.CPDelay)
-                    else task.wait(1) end
+                        local nextCP = allCPs[1]
+                        Library:MakeNotify({ Title = "Auto CP", Content = "Menuju CP Nomor: " .. nextCP.Num })
+                        
+                        root.CFrame = nextCP.Part.CFrame * CFrame.new(0,3,0)
+                        task.wait(0.3)
+                        root.CFrame = nextCP.Part.CFrame * CFrame.new(0,1.2,0) -- Leg Touch
+                        
+                        lastNum = nextCP.Num
+                        task.wait(_G.CPDelay or 1.0)
+                    else 
+                        Library:MakeNotify({ Title = "Selesai", Content = "Tidak ditemukan CP baru. Scan ulang..." })
+                        task.wait(3) 
+                    end
+                end
+            end)
+        end
+    end
+})
+
+FarmSection:AddToggle({
+    Title = "Master Auto CP (STEALTH MODE)",
+    Default = false,
+    Callback = function(v)
+        _G.AutoCP = v
+        if v then
+            task.spawn(function()
+                local lastNum = 0
+                while _G.AutoCP do
+                    local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if not root then task.wait(1) continue end
+                    
+                    local allCPs = {}
+                    for _, obj in pairs(Workspace:GetDescendants()) do
+                        local num = tonumber(obj.Name:match("%d+"))
+                        if num and num > lastNum then
+                            table.insert(allCPs, {Part = obj, Num = num})
+                        end
+                    end
+                    
+                    table.sort(allCPs, function(a, b) return a.Num < b.Num end)
+
+                    if #allCPs > 0 then
+                        local nextCP = allCPs[1]
+                        Library:MakeNotify({ Title = "Stealth CP", Content = "Meluncur ke Stage: " .. nextCP.Num })
+
+                        local distance = (root.Position - nextCP.Part.Position).Magnitude
+                        local duration = distance / 150 
+                        
+                        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                        local tween = TweenService:Create(root, tweenInfo, {CFrame = nextCP.Part.CFrame * CFrame.new(0, 3, 0)})
+                        
+                        tween:Play()
+                        tween.Completed:Wait()
+
+                        local randomDelay = (_G.CPDelay or 1.0) + (math.random(1, 10) / 10)
+                        task.wait(randomDelay)
+                        
+                        lastNum = nextCP.Num
+                    else
+                        Library:MakeNotify({ Title = "Selesai", Content = "Semua CP terambil atau tidak ada CP baru." })
+                        _G.AutoCP = false
+                    end
                 end
             end)
         end
@@ -867,32 +1133,748 @@ FarmSection:AddInput({
     Callback = function(v) _G.CPDelay = tonumber(v) or 1.0 end
 })
 
--- ==========================================
--- SERVER TAB
--- ==========================================
-local ProtectSection = ServerTab:AddSection("🛡️ Protection")
+FarmSection:AddButton({
+    Title = "TP to Top of Mountain",
+    Callback = function()
+        local highestPart = nil
+        local maxWait = -99999
+        
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj.Position.Y > maxWait then
+                if obj.Size.Y > 5 and obj.CanCollide then
+                    maxWait = obj.Position.Y
+                    highestPart = obj
+                end
+            end
+        end
+        
+        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if highestPart and root then
+            root.CFrame = highestPart.CFrame + Vector3.new(0, 10, 0)
+            Library:MakeNotify({ Title = "Teleport", Content = "Berhasil ke Puncak Gunung!" })
+        end
+    end
+})
+
+
+-- =================================================================
+-- 🎭 VISUAL ESP & TRACKING SECTION
+-- =================================================================
+local VisualSection = GameTab:AddSection("🎭 Visual ESP & Tracking")
+
+VisualSection:AddToggle({
+    Title = "ESP Box (2D)",
+    Default = false,
+    Callback = function(v) _G.BoxESP = v end
+})
+
+VisualSection:AddToggle({
+    Title = "ESP Tracers (Line)",
+    Default = false,
+    Callback = function(v) _G.LineESP = v end
+})
+
+VisualSection:AddToggle({
+    Title = "ESP Health Bar",
+    Default = false,
+    Callback = function(v)
+        _G.HealthESP = v
+        if not v then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("HealthBarGui") then
+                    p.Character.Head.HealthBarGui:Destroy()
+                end
+            end
+        end
+    end
+})
+
+-- Loop RenderStepped untuk Health Bar tetap berjalan secara mandiri
+RunService.RenderStepped:Connect(function()
+    if _G.HealthESP then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                local head = player.Character.Head
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                if humanoid then
+                    local gui = head:FindFirstChild("HealthBarGui")
+                    if not gui then
+                        local bgui = Instance.new("BillboardGui", head)
+                        bgui.Name = "HealthBarGui"
+                        bgui.Size = UDim2.new(4, 0, 0.5, 0)
+                        bgui.StudsOffset = Vector3.new(0, 2, 0)
+                        bgui.AlwaysOnTop = true
+                        
+                        local back = Instance.new("Frame", bgui)
+                        back.Size = UDim2.new(1, 0, 1, 0)
+                        back.BackgroundColor3 = Color3.new(0, 0, 0)
+                        
+                        local bar = Instance.new("Frame", back)
+                        bar.Name = "Bar"
+                        bar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+                        bar.BackgroundColor3 = Color3.new(0, 1, 0)
+                    else
+                        gui.Frame.Bar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+                        gui.Frame.Bar.BackgroundColor3 = Color3.new(1 - (humanoid.Health/humanoid.MaxHealth), humanoid.Health/humanoid.MaxHealth, 0)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+VisualSection:AddToggle({
+    Title = "ESP Players",
+    Default = false,
+    Callback = function(v)
+        if v then
+            _G.ESP = true
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer then
+                    p.CharacterAdded:Connect(function(char)
+                        if _G.ESP then task.wait(0.5) CreateESPForPlayer(p) end
+                    end)
+                    if p.Character then CreateESPForPlayer(p) end
+                end
+            end
+            local playerAddedConn = Players.PlayerAdded:Connect(function(p)
+                p.CharacterAdded:Connect(function()
+                    if _G.ESP then task.wait(0.5) CreateESPForPlayer(p) end
+                end)
+            end)
+            table.insert(ESPConnections, playerAddedConn)
+            local updateConn = RunService.Heartbeat:Connect(function()
+                if _G.ESP then
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p ~= LocalPlayer and p.Character then UpdateESPForPlayer(p) end
+                    end
+                end
+            end)
+            table.insert(ESPConnections, updateConn)
+            Library:MakeNotify({ Title = "Enabled", Content = "ESP ON - Colors by role!" })
+        else
+            _G.ESP = false
+            for _, conn in pairs(ESPConnections) do if conn then conn:Disconnect() end end
+            ESPConnections = {}
+            for _, p in pairs(Players:GetPlayers()) do RemoveESPForPlayer(p) end
+            Library:MakeNotify({ Title = "Disabled", Content = "ESP OFF" })
+        end
+    end
+})
+
+VisualSection:AddToggle({
+    Title = "Headlight (God Light)",
+    Default = false,
+    Callback = function(v)
+        local head = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head")
+        if head then
+            local light = head:FindFirstChild("GodLight") or Instance.new("SpotLight", head)
+            light.Name = "GodLight"
+            light.Range = 150
+            light.Brightness = 5
+            light.Enabled = v
+        end
+    end
+})
+
+VisualSection:AddToggle({
+    Title = "Freecam (Ghost View)",
+    Default = false,
+    Callback = function(v)
+        local cam = workspace.CurrentCamera
+        if v then
+            _G.OldSubject = cam.CameraSubject
+            cam.CameraType = Enum.CameraType.Scriptable
+            Library:MakeNotify({ Title = "Freecam", Content = "Gunakan WASD & Q/E untuk terbang" })
+            _G.FreecamLoop = RunService.RenderStepped:Connect(function()
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then cam.CFrame *= CFrame.new(0,0,-1) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then cam.CFrame *= CFrame.new(0,0,1) end
+            end)
+        else
+            if _G.FreecamLoop then _G.FreecamLoop:Disconnect() end
+            cam.CameraType = Enum.CameraType.Custom
+            cam.CameraSubject = _G.OldSubject
+        end
+    end
+})
+
+VisualSection:AddToggle({
+    Title = "X-Ray Mode",
+    Default = false,
+    Callback = function(v)
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and not obj.Parent:FindFirstChild("Humanoid") then
+                if v then
+                    if not obj:GetAttribute("OldTrans") then
+                        obj:SetAttribute("OldTrans", obj.Transparency)
+                    end
+                    obj.Transparency = 0.5
+                else
+                    obj.Transparency = obj:GetAttribute("OldTrans") or 0
+                end
+            end
+        end
+    end
+})
+
+VisualSection:AddToggle({
+    Title = "Fullbright",
+    Default = false,
+    Callback = function(v)
+        if v then
+            _G.OldBright = Lighting.Brightness
+            _G.OldTime = Lighting.ClockTime
+            _G.OldFog = Lighting.FogEnd
+            _G.OldShadows = Lighting.GlobalShadows
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 100000
+            Lighting.GlobalShadows = false
+            Library:MakeNotify({ Title = "Enabled", Content = "Fullbright ON" })
+        else
+            Lighting.Brightness = _G.OldBright or 1
+            Lighting.ClockTime = _G.OldTime or 14
+            Lighting.FogEnd = _G.OldFog or 100000
+            Lighting.GlobalShadows = _G.OldShadows or true
+            Library:MakeNotify({ Title = "Disabled", Content = "Fullbright OFF" })
+        end
+    end
+})
+
+
+-- =================================================================
+-- 🎮 GAMEPLAY UTILITIES SECTION
+-- =================================================================
+local UtilSection = GameTab:AddSection("🎮 Gameplay Utilities")
+
+UtilSection:AddToggle({
+    Title = "Auto Skill Check (Mobile)",
+    Default = false,
+    Callback = function(v)
+        _G.AutoSkillMobile = v
+        if v then
+            task.spawn(function()
+                while _G.AutoSkillMobile do
+                    task.wait(0.1)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.Space, false, game)
+                    task.wait(0.05)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.Space, false, game)
+                end
+            end)
+        end
+    end
+})
+
+UtilSection:AddToggle({
+    Title = "Killer Proximity Warning",
+    Default = false,
+    Callback = function(v)
+        _G.KillerWarn = v
+        if v then
+            task.spawn(function()
+                while _G.KillerWarn do
+                    task.wait(0.5)
+                    for _, p in pairs(game.Players:GetPlayers()) do
+                        if GetPlayerRole(p) == "Killer" and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            if myRoot then
+                                local dist = (myRoot.Position - p.Character.HumanoidRootPart.Position).Magnitude
+                                if dist < 50 then
+                                    Library:MakeNotify({ Title = "⚠️ AWAS!", Content = "Killer mendekat! Jarak: " .. math.floor(dist) .. " studs" })
+                                    task.wait(2)
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+})
+
+UtilSection:AddToggle({
+    Title = "Auto Wiggle",
+    Default = false,
+    Callback = function(v)
+        _G.Wiggle = v
+        if v then
+            task.spawn(function()
+                while _G.Wiggle do
+                    task.wait(0.05)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.A, false, game)
+                    task.wait(0.05)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.A, false, game)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.D, false, game)
+                    task.wait(0.05)
+                    game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.D, false, game)
+                end
+            end)
+        end
+    end
+})
+
+local hbSize = 2
+UtilSection:AddSlider({
+    Title = "Hitbox Expander",
+    Default = 2,
+    Minimum = 2,
+    Maximum = 20,
+    Callback = function(v) hbSize = v end
+})
+
+UtilSection:AddToggle({
+    Title = "Enable Hitbox",
+    Default = false,
+    Callback = function(v)
+        _G.Hitbox = v
+        if v then
+            task.spawn(function()
+                while _G.Hitbox do
+                    task.wait(1)
+                    for _, p in pairs(Players:GetPlayers()) do
+                        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            p.Character.HumanoidRootPart.Size = Vector3.new(hbSize, hbSize, hbSize)
+                            p.Character.HumanoidRootPart.Transparency = 0.7
+                            p.Character.HumanoidRootPart.Color = Color3.new(1, 0, 0)
+                            p.Character.HumanoidRootPart.CanCollide = false
+                        end
+                    end
+                end
+            end)
+        end
+    end
+})
+
+
+-- =================================================================
+-- 🎯 FIND OBJECTS & DEBUG SECTION
+-- =================================================================
+local FindSection = GameTab:AddSection("🎯 Find Objects & Debug")
+
+FindSection:AddButton({
+    Title = "Find Generators",
+    Callback = function()
+        local generators = FindAllGenerators()
+        local c = 0
+        local completed = 0
+        
+        for _, gen in pairs(generators) do
+            local isComplete = IsGeneratorCompleted(gen)
+            local hl = Instance.new("Highlight")
+            
+            if isComplete then
+                hl.FillColor = Color3.fromRGB(0, 255, 100)
+                completed = completed + 1
+            else
+                hl.FillColor = Color3.fromRGB(255, 170, 0)
+            end
+            
+            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+            hl.FillTransparency = 0.5
+            hl.Adornee = gen
+            hl.Parent = gen
+            c = c + 1
+        end
+        Library:MakeNotify({ Title = "Found", Content = c .. " generators (" .. completed .. " done, " .. (c - completed) .. " left)" })
+    end
+})
+
+FindSection:AddButton({
+    Title = "Find Exit Gates",
+    Callback = function()
+        local c = 0
+        for _, o in pairs(Workspace:GetDescendants()) do
+            if (o.Name:lower():find("gate") or o.Name:lower():find("exit")) and (o:IsA("Model") or o:IsA("BasePart")) then
+                local hl = Instance.new("Highlight")
+                hl.FillColor = Color3.fromRGB(0, 255, 0)
+                hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                hl.FillTransparency = 0.5
+                hl.Adornee = o
+                hl.Parent = o
+                c = c + 1
+            end
+        end
+        Library:MakeNotify({ Title = "Found", Content = c .. " exit gates highlighted!" })
+    end
+})
+
+FindSection:AddButton({
+    Title = "Clear Highlights",
+    Callback = function()
+        local count = 0
+        for _, o in pairs(Workspace:GetDescendants()) do
+            if o:IsA("Highlight") then 
+                o:Destroy() 
+                count = count + 1
+            end
+        end
+        for _, o in pairs(game.CoreGui:GetChildren()) do
+            if o.Name:find("ESP_") or o.Name:find("GenESP_") then
+                o:Destroy()
+            end
+        end
+        ESPHighlights = {}
+        ESPLabels = {}
+        GenHighlights = {}
+        Library:MakeNotify({ Title = "Cleared", Content = count .. " highlights removed!" })
+    end
+})
+
+FindSection:AddButton({
+    Title = "Debug: Print All Objects",
+    Callback = function()
+        print("=== FCAL HUB - Workspace Objects ===")
+        local counted = {}
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") or obj:IsA("BasePart") then
+                local name = obj.Name
+                if not counted[name] then counted[name] = 0 end
+                counted[name] = counted[name] + 1
+            end
+        end
+        for name, count in pairs(counted) do
+            print(name .. " (x" .. count .. ")")
+        end
+        Library:MakeNotify({ Title = "Debug", Content = "Check console (F9) for object list!" })
+    end
+})
+
+-- =================================================================
+-- 🛡️ SELF-PROTECTION & SECURITY SECTION
+-- =================================================================
+local ProtectSection = ServerTab:AddSection("🛡️ Self-Protection & Security")
 
 ProtectSection:AddToggle({
     Title = "Anti-Kick Protection",
     Default = false,
-    Callback = function(v) _G.AntiKick = v end
+    Callback = function(v)
+        _G.AntiKick = v
+        if v then
+            local oldNamecall
+            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                local method = getnamecallmethod()
+                if _G.AntiKick and self == LocalPlayer and method == "Kick" then
+                    Library:MakeNotify({ Title = "Security", Content = "Game mencoba menendangmu! (Kick diblokir)" })
+                    return nil
+                end
+                return oldNamecall(self, ...)
+            end)
+            Library:MakeNotify({ Title = "Anti-Kick", Content = "Perlindungan aktif!" })
+        end
+    end
+})
+
+ProtectSection:AddToggle({
+    Title = "Admin Join Detector",
+    Default = false,
+    Callback = function(v)
+        _G.AdminDetect = v
+        if v then
+            Library:MakeNotify({ Title = "Security", Content = "Scanning Moderator aktif..." })
+            Players.PlayerAdded:Connect(function(player)
+                if _G.AdminDetect then
+                    if player:GetRankInGroup(game.CreatorId) >= 200 or player.AccountAge < 1 then
+                        LocalPlayer:Kick("FCAL HUB: Admin terdeteksi (" .. player.Name .. "). Keluar demi keamanan.")
+                    end
+                end
+            end)
+        end
+    end
+})
+
+ProtectSection:AddToggle({
+    Title = "Anti-Kick (Hanya Client)",
+    Default = false,
+    Callback = function(v)
+        _G.AntiKick = v
+        if v then
+            local mt = getrawmetatable(game)
+            setreadonly(mt, false)
+            local old = mt.__namecall
+            
+            mt.__namecall = newcclosure(function(self, ...)
+                local method = getnamecallmethod()
+                if _G.AntiKick and method == "Kick" then
+                    Library:MakeNotify({ Title = "Blocked!", Content = "Game mencoba menendangmu, tapi digagalkan." })
+                    return nil
+                end
+                return old(self, ...)
+            end)
+            setreadonly(mt, true)
+        end
+    end
 })
 
 ProtectSection:AddButton({
-    Title = "Server Hop",
+    Title = "Manual Emergency Kick",
+    Callback = function()
+        LocalPlayer:Kick("FCAL HUB: Sesi diakhiri secara manual oleh pengguna.")
+    end
+})
+
+ProtectSection:AddButton({
+    Title = "Instant Server Hop",
     Callback = function()
         local servers = {}
         local res = game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100")
         for i,v in pairs(game:GetService("HttpService"):JSONDecode(res).data) do
-            if v.playing < v.maxPlayers and v.id ~= game.JobId then table.insert(servers, v.id) end
+            if v.playing < v.maxPlayers and v.id ~= game.JobId then 
+                table.insert(servers, v.id) 
+            end
         end
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
+        if #servers > 0 then
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
+        else
+            Library:MakeNotify({ Title = "Error", Content = "Tidak menemukan server lain!" })
+        end
+    end
+})
+
+ProtectSection:AddButton({
+    Title = "Attempt Remote Kick Scan",
+    Callback = function()
+        Library:MakeNotify({ Title = "Scanning", Content = "Mencari Remote Event yang tidak aman..." })
+        local found = false
+        for _, obj in pairs(game:GetDescendants()) do
+            if obj:IsA("RemoteEvent") and (obj.Name:lower():find("kick") or obj.Name:lower():find("ban")) then
+                print("Ditemukan Remote Potensial: " .. obj:GetFullName())
+                found = true
+            end
+        end
+        
+        if found then
+            Library:MakeNotify({ Title = "Warning", Content = "Ditemukan celah potensial! Cek Console (F9)" })
+        else
+            Library:MakeNotify({ Title = "Safe", Content = "Tidak ditemukan celah kick sederhana." })
+        end
+    end
+})
+
+
+-- =================================================================
+-- 🌐 SERVER INFO SECTION
+-- =================================================================
+local InfoSection = ServerTab:AddSection("🌐 Server Info")
+
+local msg = "FCAL HUB ON TOP!"
+InfoSection:AddInput({
+    Title = "Custom Chat Message",
+    Default = "FCAL HUB ON TOP!",
+    Callback = function(v) msg = v end
+})
+
+InfoSection:AddToggle({
+    Title = "Auto Chat Spammer",
+    Default = false,
+    Callback = function(v)
+        _G.Spam = v
+        if v then
+            task.spawn(function()
+                while _G.Spam do
+                    game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
+                    task.wait(5)
+                end
+            end)
+        end
+    end
+})
+
+InfoSection:AddToggle({
+    Title = "Enable Chat Logger",
+    Default = false,
+    Callback = function(v)
+        _G.ChatLog = v
+        if v then
+            Library:MakeNotify({ Title = "Chat Logger", Content = "Logger Aktif. Tekan F9 untuk melihat." })
+            for _, player in pairs(game.Players:GetPlayers()) do
+                player.Chatted:Connect(function(msg)
+                    if _G.ChatLog then
+                        print("[" .. player.Name .. "]: " .. msg)
+                    end
+                end)
+            end
+        end
+    end
+})
+
+InfoSection:AddButton({
+    Title = "Copy Job ID",
+    Callback = function()
+        if setclipboard then
+            setclipboard(game.JobId)
+            Library:MakeNotify({ Title = "Copied", Content = "Job ID copied!" })
+        else
+            Library:MakeNotify({ Title = "Job ID", Content = game.JobId })
+        end
+    end
+})
+
+InfoSection:AddButton({
+    Title = "Copy Place ID",
+    Callback = function()
+        if setclipboard then
+            setclipboard(tostring(game.PlaceId))
+            Library:MakeNotify({ Title = "Copied", Content = "Place ID copied!" })
+        else
+            Library:MakeNotify({ Title = "Place ID", Content = tostring(game.PlaceId) })
+        end
+    end
+})
+
+
+-- =================================================================
+-- 🚪 ACTIONS SECTION
+-- =================================================================
+local ActionsSection = ServerTab:AddSection("🚪 Actions")
+
+ActionsSection:AddButton({
+    Title = "Rejoin",
+    Callback = function() 
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer) 
+    end
+})
+
+ActionsSection:AddButton({
+    Title = "Server Hop",
+    Callback = function() 
+        TeleportService:Teleport(game.PlaceId, LocalPlayer) 
+    end
+})
+
+
+-- =================================================================
+-- 👁️ SPECTATE SECTION
+-- =================================================================
+local SpectateSection = ServerTab:AddSection("👁️ Spectate")
+
+local SpecTarget = ""
+local names = {}
+for _, p in pairs(Players:GetPlayers()) do
+    if p ~= LocalPlayer then table.insert(names, p.Name) end
+end
+
+SpectateSection:AddDropdown({
+    Title = "Select Player",
+    Options = #names > 0 and names or {"No Players"},
+    Default = "",
+    Callback = function(v) SpecTarget = v end
+})
+
+SpectateSection:AddButton({
+    Title = "Spectate",
+    Callback = function()
+        if SpecTarget ~= "" and SpecTarget ~= "No Players" then
+            local t = GetPlayerByName(SpecTarget)
+            if t and t.Character then
+                Workspace.CurrentCamera.CameraSubject = t.Character:FindFirstChildOfClass("Humanoid") or t.Character
+                Library:MakeNotify({ Title = "Spectating", Content = "Now watching " .. t.Name })
+            end
+        else
+            Library:MakeNotify({ Title = "Warning", Content = "Select a player first!" })
+        end
+    end
+})
+
+SpectateSection:AddButton({
+    Title = "Stop Spectating",
+    Callback = function()
+        if LocalPlayer.Character then
+            Workspace.CurrentCamera.CameraSubject = LocalPlayer.Character:FindFirstChildOfClass("Humanoid") or LocalPlayer.Character
+            Library:MakeNotify({ Title = "Stopped", Content = "Returned to your view" })
+        end
     end
 })
 
 -- ==========================================
 -- LOOPS & LOGIC
 -- ==========================================
+-- =================================================================
+-- 🛡️ PROTECTION SECTION
+-- =================================================================
+local pengaturanSection = SettingsTab:AddSection("🛡️ Protection")
+
+pengaturanSection:AddToggle({
+    Title = "Streamer Mode",
+    Description = "Sembunyikan namamu di seluruh UI agar aman",
+    DefaultValue = false,
+    Callback = function(v)
+        _G.Streamer = v
+        if v then
+            Window:SetTitle("SECRET HUB")
+            Window:SetSubTitle("User: Anonymous")
+        else
+            Window:SetTitle("FCAL HUB")
+            Window:SetSubTitle("v1.0.6 | Client Sided")
+        end
+    end
+})
+
+pengaturanSection:AddButton({
+    Title = "Fake Name (Anti-Report)",
+    Description = "Ganti namamu jadi 'Anonymous' (Hanya di layar kamu)",
+    Callback = function()
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("Humanoid") then
+            char.Humanoid.DisplayName = "Anonymous_User"
+            Notify("Stealth", "Nama disamarkan!", "Success")
+        end
+    end
+})
+
+
+-- =================================================================
+-- 🎨 THEME SECTION
+-- =================================================================
+local themeSection = SettingsTab:AddSection("🎨 Theme")
+
+themeSection:AddDropdown({
+    Title = "Select Theme",
+    Description = "Change UI theme",
+    Options = {"Dark", "Light", "Midnight", "Rose", "Emerald"},
+    Default = Config.Theme,
+    Callback = function(v)
+        Window:SetTheme(v)
+        Notify("Theme", "Changed to " .. v, "Success")
+    end
+})
+
+
+-- =================================================================
+-- ⌨️ KEYBIND SECTION
+-- =================================================================
+local keybindSection = SettingsTab:AddSection("⌨️ Keybind")
+
+local ToggleKey = "RightControl"
+keybindSection:AddKeybind({
+    Title = "Toggle UI",
+    Description = "Key to hide/show",
+    DefaultKeybind = ToggleKey,
+    Callback = function(k) 
+        ToggleKey = k 
+    end
+})
+
+
+-- =================================================================
+-- ❌ EXIT SECTION
+-- =================================================================
+local exitSection = SettingsTab:AddSection("❌ Exit")
+
+exitSection:AddButton({
+    Title = "Destroy UI",
+    Description = "Close FCAL HUB",
+    Callback = function()
+        _G.InfJump = false; if _G.InfJumpCon then _G.InfJumpCon:Disconnect() end
+        _G.NC = false; if _G.NCCon then _G.NCCon:Disconnect() end
+        _G.Fly = false; if _G.FlyCon then _G.FlyCon:Disconnect() end
+        _G.ESP = false; _G.GenESP = false
+        for _, conn in pairs(ESPConnections) do if conn then conn:Disconnect() end end
+        for _, p in pairs(Players:GetPlayers()) do RemoveESPForPlayer(p) end
+        RemoveAllGeneratorESP()
+        Window:Destroy()
+    end
+})
+
 RunService.Stepped:Connect(function()
     if _G.NC and LocalPlayer.Character then
         for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
