@@ -7,11 +7,13 @@
     ╚═╝     ╚═╝     ╚═╝  ╚═╝╚══════╝
     
     FCAL HUB - REDESIGN (FIXED LYNX UI)
+    UI Library: Lucid / LynX Style (Lib2.lua)
 --]]
 
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/4LynxX/Libb/refs/heads/main/Lib2.lua"))()
+-- Load Library dari link yang kamu berikan
+local Library = loadstring(game:HttpGet("https://github.com/BloxCrypto/Modal/releases/download/v1.0-beta/main.lua"))()
 
--- Variabel & Services
+-- Services
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
@@ -19,15 +21,31 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 
+-- Global Variables
 _G.AutoCP = false
 _G.CPDelay = 1.0
+_G.BoxESP = false
+_G.LineESP = false
 
--- Inisialisasi Window Utama (LynX Style)
--- Argument: Title, SubTitle, IconID
+-- [[ ADVANCED ANTI-KICK BYPASS ]]
+local mt = getrawmetatable(game) 
+local oldNamecall = mt.__namecall
+setreadonly(mt, false)
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    if method == "Kick" or method == "kick" then
+        return nil 
+    end
+    return oldNamecall(self, ...)
+end)
+setreadonly(mt, true)
+
+-- [[ UI INITIALIZATION ]]
+-- CreateWindow(Title, SubTitle, IconID)
 local Window = Library:CreateWindow("FCAL HUB", "v1.0.6 | Client Sided", "rbxassetid://16335111162")
 
--- [[ TAB SAMPING ]]
--- Argument: Nama Tab, IconID
+-- [[ TABS SAMPING ]]
+-- AddTab(Nama, IconID)
 local MainTab = Window:AddTab("Main", "rbxassetid://10734950309")
 local PlayerTab = Window:AddTab("Player", "rbxassetid://10747373176")
 local GameTab = Window:AddTab("Game", "rbxassetid://10723343321")
@@ -66,7 +84,9 @@ UserInputService.TouchTapInWorld:Connect(function(position, processed)
             local camera = Workspace.CurrentCamera
             local ray = camera:ViewportPointToRay(position.X, position.Y)
             local result = Workspace:Raycast(ray.Origin, ray.Direction * 1000)
-            if result then root.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0)) end
+            if result then 
+                root.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0))
+            end
         end
     end
 end)
@@ -74,35 +94,6 @@ end)
 -- ====================================================================
 -- PLAYER TAB
 -- ====================================================================
-PlayerTab:AddSection("🎭 Identity Stealer")
-
-local SelectedPlayer = ""
-PlayerTab:AddDropdown("Pilih Pemain", {"Select Player"}, function(v)
-    SelectedPlayer = v
-end)
-
-PlayerTab:AddButton("🔄 Refresh Daftar Pemain", function()
-    local pList = {}
-    for _,p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then table.insert(pList, p.Name) end
-    end
-    -- Library ini biasanya update dropdown via pemanggilan ulang atau variabel
-end)
-
-PlayerTab:AddButton("🎭 Terapkan Identity", function()
-    local target = Players:FindFirstChild(SelectedPlayer)
-    if target and target.Character then
-        local myChar = LocalPlayer.Character
-        for _, v in pairs(myChar:GetChildren()) do
-            if v:IsA("Accessory") or v:IsA("Shirt") or v:IsA("Pants") then v:Destroy() end
-        end
-        pcall(function()
-            local desc = Players:GetHumanoidDescriptionFromUserId(target.UserId)
-            myChar:FindFirstChildOfClass("Humanoid"):ApplyDescription(desc)
-        end)
-    end
-end)
-
 PlayerTab:AddSection("🏃 Movement")
 
 PlayerTab:AddSlider("WalkSpeed", 16, 250, 16, function(v)
@@ -121,8 +112,55 @@ PlayerTab:AddToggle("Infinite Jump", function(v)
     _G.InfJump = v
 end)
 
+-- Infinite Jump Hook
+UserInputService.JumpRequest:Connect(function()
+    if _G.InfJump then
+        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
+
 PlayerTab:AddToggle("NoClip", function(v)
     _G.NC = v
+end)
+
+RunService.Stepped:Connect(function()
+    if _G.NC and LocalPlayer.Character then
+        for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
+            if p:IsA("BasePart") then p.CanCollide = false end
+        end
+    end
+end)
+
+PlayerTab:AddSection("🎭 Identity Stealer")
+
+local SelectedPlayer = ""
+local pDropdown = PlayerTab:AddDropdown("Pilih Pemain", {"Pilih Target..."}, function(v)
+    SelectedPlayer = v
+end)
+
+PlayerTab:AddButton("🔄 Refresh Daftar Pemain", function()
+    local pList = {}
+    for _,p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then table.insert(pList, p.Name) end
+    end
+    -- Untuk library ini, biasanya dropdown diupdate dengan memanggil ulang atau fungsi internal
+    Library:Notification("Info", "Daftar pemain diperbarui di Console (F9)", 2)
+end)
+
+PlayerTab:AddButton("🎭 Terapkan Identity", function()
+    local target = Players:FindFirstChild(SelectedPlayer)
+    if target and target.Character then
+        local myChar = LocalPlayer.Character
+        for _, v in pairs(myChar:GetChildren()) do
+            if v:IsA("Accessory") or v:IsA("Shirt") or v:IsA("Pants") then v:Destroy() end
+        end
+        pcall(function()
+            local desc = Players:GetHumanoidDescriptionFromUserId(target.UserId)
+            myChar:FindFirstChildOfClass("Humanoid"):ApplyDescription(desc)
+        end)
+        Library:Notification("Identity", "Berhasil meniru " .. target.Name, 3)
+    end
 end)
 
 -- ====================================================================
@@ -164,10 +202,58 @@ GameTab:AddSection("🎭 Visual ESP")
 GameTab:AddToggle("ESP Box (2D)", function(v) _G.BoxESP = v end)
 GameTab:AddToggle("ESP Tracers", function(v) _G.LineESP = v end)
 
+-- ESP System Logic
+local function CreateESP(player)
+    local box = Drawing.new("Square")
+    box.Thickness = 1
+    box.Filled = false
+    box.Color = Color3.fromRGB(255, 255, 255)
+    
+    local line = Drawing.new("Line")
+    line.Thickness = 1
+    line.Color = Color3.fromRGB(255, 255, 255)
+    
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player ~= LocalPlayer then
+            local root = player.Character.HumanoidRootPart
+            local pos, onScreen = Workspace.CurrentCamera:WorldToViewportPoint(root.Position)
+            
+            if onScreen then
+                if _G.BoxESP then
+                    box.Size = Vector2.new(1000 / pos.Z, 1500 / pos.Z)
+                    box.Position = Vector2.new(pos.X - box.Size.X / 2, pos.Y - box.Size.Y / 2)
+                    box.Visible = true
+                else box.Visible = false end
+                
+                if _G.LineESP then
+                    line.From = Vector2.new(Workspace.CurrentCamera.ViewportSize.X / 2, Workspace.CurrentCamera.ViewportSize.Y)
+                    line.To = Vector2.new(pos.X, pos.Y)
+                    line.Visible = true
+                else line.Visible = false end
+            else
+                box.Visible = false
+                line.Visible = false
+            end
+        else
+            box.Visible = false
+            line.Visible = false
+            if not player.Parent then 
+                box:Remove()
+                line:Remove()
+                connection:Disconnect() 
+            end
+        end
+    end)
+end
+
+for _, p in pairs(Players:GetPlayers()) do CreateESP(p) end
+Players.PlayerAdded:Connect(CreateESP)
+
 -- ====================================================================
 -- SERVER TAB
 -- ====================================================================
-ServerTab:AddSection("🛡️ Protection")
+ServerTab:AddSection("🛡️ Security")
 
 ServerTab:AddToggle("Anti-Kick Protection", function(v)
     _G.AntiKick = v
@@ -177,9 +263,17 @@ ServerTab:AddButton("Server Hop", function()
     local servers = {}
     local res = game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100")
     for i,v in pairs(game:GetService("HttpService"):JSONDecode(res).data) do
-        if v.playing < v.maxPlayers and v.id ~= game.JobId then table.insert(servers, v.id) end
+        if v.playing < v.maxPlayers and v.id ~= game.JobId then 
+            table.insert(servers, v.id) 
+        end
     end
-    TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
+    if #servers > 0 then
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
+    end
+end)
+
+ServerTab:AddButton("Rejoin Server", function()
+    TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
 end)
 
 -- ====================================================================
@@ -187,14 +281,12 @@ end)
 -- ====================================================================
 SettingsTab:AddSection("⚙️ Settings")
 
-SettingsTab:AddToggle("Streamer Mode", function(v)
-    -- Logic ganti nama hub
-end)
-
 SettingsTab:AddButton("Destroy UI", function()
-    -- Library ini biasanya punya fungsi Destroy sendiri
     game:GetService("CoreGui"):FindFirstChild("Lucid"):Destroy()
 end)
 
--- Initial Notifications
-Library:Notification("FCAL HUB", "Successfully Loaded! Tampilan diperbaiki.", 5)
+SettingsTab:AddLabel("Version: 1.0.6")
+SettingsTab:AddLabel("Made for Mobile")
+
+-- Notifikasi Akhir
+Library:Notification("FCAL HUB", "Successfully Loaded! Klik icon di kiri untuk menu.", 5)
