@@ -15,8 +15,6 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/4LynxX/Libb/refs/heads/main/Lib2.lua"))()
 
 -- Services
-
-
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
@@ -24,8 +22,11 @@ local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
 local ESP_Objects = {}
 local LocalPlayer = Players.LocalPlayer
+
 -- Global Variables
 _G.AutoCP = false
 _G.CPDelay = 1.0
@@ -41,6 +42,7 @@ local Config = {
     FlySpeed = 100,
     FlySpeedDefault = 100,
 }
+
 -- [[ ANTI-KICK BYPASS ]]
 local mt = getrawmetatable(game) 
 local oldNamecall = mt.__namecall
@@ -182,41 +184,39 @@ local function GetPlayerByName(name)
     return nil
 end
 
+-- [FUNGSI BARU] Mengambil semua pemain untuk dropdown
+local function GetAllPlayers()
+    local list = {}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(list, p.Name)
+        end
+    end
+    if #list == 0 then
+        table.insert(list, "No Players")
+    end
+    return list
+end
+
 -- Update UI Elements (Sync sliders and inputs)
 local function UpdateWalkSpeedUI(value)
-    if UIElements.WalkSpeedSlider then
-        pcall(function() UIElements.WalkSpeedSlider:Set(value) end)
-    end
-    if UIElements.WalkSpeedInput then
-        pcall(function() UIElements.WalkSpeedInput:Set(tostring(value)) end)
-    end
+    if UIElements.WalkSpeedSlider then pcall(function() UIElements.WalkSpeedSlider:Set(value) end) end
+    if UIElements.WalkSpeedInput then pcall(function() UIElements.WalkSpeedInput:Set(tostring(value)) end) end
 end
 
 local function UpdateJumpPowerUI(value)
-    if UIElements.JumpPowerSlider then
-        pcall(function() UIElements.JumpPowerSlider:Set(value) end)
-    end
-    if UIElements.JumpPowerInput then
-        pcall(function() UIElements.JumpPowerInput:Set(tostring(value)) end)
-    end
+    if UIElements.JumpPowerSlider then pcall(function() UIElements.JumpPowerSlider:Set(value) end) end
+    if UIElements.JumpPowerInput then pcall(function() UIElements.JumpPowerInput:Set(tostring(value)) end) end
 end
 
 local function UpdateGravityUI(value)
-    if UIElements.GravitySlider then
-        pcall(function() UIElements.GravitySlider:Set(value) end)
-    end
-    if UIElements.GravityInput then
-        pcall(function() UIElements.GravityInput:Set(tostring(value)) end)
-    end
+    if UIElements.GravitySlider then pcall(function() UIElements.GravitySlider:Set(value) end) end
+    if UIElements.GravityInput then pcall(function() UIElements.GravityInput:Set(tostring(value)) end) end
 end
 
 local function UpdateFlySpeedUI(value)
-    if UIElements.FlySpeedSlider then
-        pcall(function() UIElements.FlySpeedSlider:Set(value) end)
-    end
-    if UIElements.FlySpeedInput then
-        pcall(function() UIElements.FlySpeedInput:Set(tostring(value)) end)
-    end
+    if UIElements.FlySpeedSlider then pcall(function() UIElements.FlySpeedSlider:Set(value) end) end
+    if UIElements.FlySpeedInput then pcall(function() UIElements.FlySpeedInput:Set(tostring(value)) end) end
 end
 
 -- Role Detection
@@ -304,30 +304,22 @@ local function IsGenerator(obj)
     
     local name = obj.Name:lower()
     
-    -- EXCLUDE: Player characters, NPCs, tools, GUI elements
     if name:find("player") or name:find("character") or name:find("npc") 
         or name:find("killer") or name:find("survivor") or name:find("humanoid") then
         return false
     end
     
-    -- Check if it's actually a player character (has Humanoid)
     if obj:IsA("Model") then
         if obj:FindFirstChildOfClass("Humanoid") then return false end
-        -- Also check if it's in Players folder
         for _, p in pairs(Players:GetPlayers()) do
             if p.Character == obj then return false end
         end
     end
     
-    -- ONLY match specific generator patterns
     local isGen = false
-    
-    -- Direct generator names
     if name:find("generator") then isGen = true end
     if name:find("gen%d") or name:find("gen_%d") or name:find("gen %d") then isGen = true end
     if name == "gen" then isGen = true end
-    
-    -- Forsaken specific (common patterns)
     if name:find("fusebox") or name:find("fuse_box") or name:find("fuse box") then isGen = true end
     if name:find("powerbox") or name:find("power_box") or name:find("power box") then isGen = true end
     if name:find("switchbox") or name:find("switch_box") then isGen = true end
@@ -338,36 +330,28 @@ end
 
 -- Generator Status Detection
 local function IsGeneratorCompleted(gen)
-    local genName = gen.Name:lower()
-    
-    -- Check attributes
     if gen:GetAttribute("Completed") == true then return true end
     if gen:GetAttribute("IsCompleted") == true then return true end
     if gen:GetAttribute("Finished") == true then return true end
     if gen:GetAttribute("Powered") == true then return true end
     if gen:GetAttribute("Done") == true then return true end
     
-    -- Progress check
     local progress = gen:GetAttribute("Progress")
     if progress and (progress >= 1 or progress >= 100) then return true end
     
-    -- Check children for completion
     for _, child in pairs(gen:GetChildren()) do
         local childName = child.Name:lower()
-        
         if child:IsA("BoolValue") then
             if (childName:find("complet") or childName:find("finish") or childName:find("done")) and child.Value then 
                 return true 
             end
         end
-        
         if child:IsA("NumberValue") or child:IsA("IntValue") then
             if childName:find("progress") and (child.Value >= 100 or child.Value >= 1) then
                 return true
             end
         end
     end
-    
     return false
 end
 
@@ -387,7 +371,6 @@ local function GetGeneratorProgress(gen)
             end
         end
     end
-    
     return 0
 end
 
@@ -403,7 +386,6 @@ local function CreateESPForPlayer(player)
     local character = player.Character
     if not character then return end
     
-    -- Clean up existing
     if ESPHighlights[player] then
         if ESPHighlights[player].Parent then ESPHighlights[player]:Destroy() end
     end
@@ -486,7 +468,6 @@ end
 
 -- Generator ESP System
 local function CreateGeneratorESP(gen)
-    -- Skip if already tracked
     if GenHighlights[gen] then return end
     
     local isCompleted = IsGeneratorCompleted(gen)
@@ -503,7 +484,6 @@ local function CreateGeneratorESP(gen)
         textColor = Color3.fromRGB(255, 170, 0)
     end
     
-    -- Create highlight
     local hl = Instance.new("Highlight")
     hl.Name = "GenESP_Highlight"
     hl.FillColor = fillColor
@@ -512,7 +492,6 @@ local function CreateGeneratorESP(gen)
     hl.Adornee = gen
     hl.Parent = gen
     
-    -- Create label (only one)
     local billboard = nil
     local primaryPart = gen:IsA("Model") and gen.PrimaryPart 
         or (gen:IsA("BasePart") and gen or gen:FindFirstChildWhichIsA("BasePart"))
@@ -539,7 +518,6 @@ local function CreateGeneratorESP(gen)
         label.Parent = billboard
     end
     
-    -- Store reference
     GenHighlights[gen] = {
         Highlight = hl, 
         Label = billboard, 
@@ -547,7 +525,7 @@ local function CreateGeneratorESP(gen)
         LastProgress = progress
     }
 end
-local TweenService = game:GetService("TweenService")
+
 local function UpdateGeneratorESP()
     if not _G.GenESP then return end
     
@@ -556,7 +534,6 @@ local function UpdateGeneratorESP()
             local isCompleted = IsGeneratorCompleted(gen)
             local progress = GetGeneratorProgress(gen)
             
-            -- Update if state changed
             if isCompleted ~= data.LastCompleted then
                 data.LastCompleted = isCompleted
                 
@@ -585,7 +562,6 @@ local function UpdateGeneratorESP()
                 end
             end
             
-            -- Update progress
             if not isCompleted and progress ~= data.LastProgress then
                 data.LastProgress = progress
                 if data.Label and data.Label.Parent then
@@ -596,7 +572,6 @@ local function UpdateGeneratorESP()
                 end
             end
         else
-            -- Clean up removed generators
             if data.Highlight then data.Highlight:Destroy() end
             if data.Label then data.Label:Destroy() end
             GenHighlights[gen] = nil
@@ -615,13 +590,11 @@ end
 -- Find all generators
 local function FindAllGenerators()
     local generators = {}
-    
     for _, obj in pairs(Workspace:GetDescendants()) do
         if IsGenerator(obj) then
             table.insert(generators, obj)
         end
     end
-    
     return generators
 end
 
@@ -728,7 +701,7 @@ QuickTpSection:AddButton({
     Title = "Teleport Sekarang",
     Description = "Pindah ke posisi pemain yang dipilih",
     Callback = function()
-        if SelectedTarget == "" or SelectedTarget == nil then
+        if SelectedTarget == "" or SelectedTarget == "No Players" then
             Library:MakeNotify({ Title = "Warning", Content = "Silakan pilih pemain dari daftar dulu!" })
             return
         end
@@ -739,7 +712,6 @@ QuickTpSection:AddButton({
             local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
             
             if myRoot and targetRoot then
-                -- Teleport ke belakang pemain target agar tidak menabrak
                 myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
                 Library:MakeNotify({ Title = "Success", Content = "Teleport ke " .. target.Name .. " Berhasil!" })
             end
@@ -753,30 +725,29 @@ QuickTpSection:AddButton({
     Title = "Bring Player",
     Description = "Bring target to you (visual)",
     Callback = function()
-        if TargetName == "" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Enter a player name!" }) 
+        -- FIX: Mengganti TargetName yang error menjadi SelectedTarget
+        if SelectedTarget == "" or SelectedTarget == "No Players" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dari daftar terlebih dahulu!" }) 
             return 
         end
         
-        local target = GetPlayerByName(TargetName)
+        local target = GetPlayerByName(SelectedTarget)
         if target and target.Character then
             local myRoot = GetRootPart()
             local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
             if myRoot and tRoot then
                 tRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
-                Library:MakeNotify({ Title = "Success", Content = "Brought " .. target.Name })
+                Library:MakeNotify({ Title = "Success", Content = "Membawa " .. target.Name })
             end
         else
-            Library:MakeNotify({ Title = "Error", Content = "Player not found!" })
+            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan!" })
         end
     end
 }) 
+
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
--- =================================================================
--- 🏃 MOVEMENT SETTINGS SECTION
--- =================================================================
 local MoveSection = PlayerTab:AddSection("🏃 Movement Settings")
 
 MoveSection:AddInput({
@@ -879,9 +850,6 @@ MoveSection:AddToggle({
     end
 })
 
--- =================================================================
--- 🛡️ PROTECTION SETTINGS SECTION
--- =================================================================
 local AntiSection = PlayerTab:AddSection("🛡️ Protection Settings")
 
 AntiSection:AddToggle({
@@ -959,9 +927,6 @@ AntiSection:AddToggle({
     end
 })
 
--- =================================================================
--- ✈️ FLY SETTINGS SECTION
--- =================================================================
 local FlySection = PlayerTab:AddSection("✈️ Fly Settings")
 
 FlySection:AddInput({
@@ -1028,12 +993,10 @@ FlySection:AddToggle({
         end
     end
 })
+
 -- ==========================================
 -- GAME TAB
 -- ==========================================
--- =================================================================
--- 🏔️ AUTO FARMING CP SECTION
--- =================================================================
 local FarmSection = GameTab:AddSection("🏔️ Auto Farming CP")
 
 FarmSection:AddToggle({
@@ -1064,7 +1027,7 @@ FarmSection:AddToggle({
                         
                         root.CFrame = nextCP.Part.CFrame * CFrame.new(0,3,0)
                         task.wait(0.3)
-                        root.CFrame = nextCP.Part.CFrame * CFrame.new(0,1.2,0) -- Leg Touch
+                        root.CFrame = nextCP.Part.CFrame * CFrame.new(0,1.2,0)
                         
                         lastNum = nextCP.Num
                         task.wait(_G.CPDelay or 1.0)
@@ -1156,10 +1119,6 @@ FarmSection:AddButton({
     end
 })
 
-
--- =================================================================
--- 🎭 VISUAL ESP & TRACKING SECTION
--- =================================================================
 local VisualSection = GameTab:AddSection("🎭 Visual ESP & Tracking")
 
 VisualSection:AddToggle({
@@ -1189,7 +1148,6 @@ VisualSection:AddToggle({
     end
 })
 
--- Loop RenderStepped untuk Health Bar tetap berjalan secara mandiri
 RunService.RenderStepped:Connect(function()
     if _G.HealthESP then
         for _, player in pairs(Players:GetPlayers()) do
@@ -1341,10 +1299,6 @@ VisualSection:AddToggle({
     end
 })
 
-
--- =================================================================
--- 🎮 GAMEPLAY UTILITIES SECTION
--- =================================================================
 local UtilSection = GameTab:AddSection("🎮 Gameplay Utilities")
 
 UtilSection:AddToggle({
@@ -1445,10 +1399,6 @@ UtilSection:AddToggle({
     end
 })
 
-
--- =================================================================
--- 🎯 FIND OBJECTS & DEBUG SECTION
--- =================================================================
 local FindSection = GameTab:AddSection("🎯 Find Objects & Debug")
 
 FindSection:AddButton({
@@ -1650,10 +1600,6 @@ ProtectSection:AddButton({
     end
 })
 
-
--- =================================================================
--- 🌐 SERVER INFO SECTION
--- =================================================================
 local InfoSection = ServerTab:AddSection("🌐 Server Info")
 
 local msg = "FCAL HUB ON TOP!"
@@ -1721,10 +1667,6 @@ InfoSection:AddButton({
     end
 })
 
-
--- =================================================================
--- 🚪 ACTIONS SECTION
--- =================================================================
 local ActionsSection = ServerTab:AddSection("🚪 Actions")
 
 ActionsSection:AddButton({
@@ -1741,21 +1683,12 @@ ActionsSection:AddButton({
     end
 })
 
-
--- =================================================================
--- 👁️ SPECTATE SECTION
--- =================================================================
 local SpectateSection = ServerTab:AddSection("👁️ Spectate")
 
 local SpecTarget = ""
-local names = {}
-for _, p in pairs(Players:GetPlayers()) do
-    if p ~= LocalPlayer then table.insert(names, p.Name) end
-end
-
 SpectateSection:AddDropdown({
     Title = "Select Player",
-    Options = #names > 0 and names or {"No Players"},
+    Options = GetAllPlayers(),
     Default = "",
     Callback = function(v) SpecTarget = v end
 })
@@ -1786,11 +1719,8 @@ SpectateSection:AddButton({
 })
 
 -- ==========================================
--- LOOPS & LOGIC
+-- SETTINGS TAB
 -- ==========================================
--- =================================================================
--- 🛡️ PROTECTION SECTION
--- =================================================================
 local pengaturanSection = SettingsTab:AddSection("🛡️ Protection")
 
 pengaturanSection:AddToggle({
@@ -1821,10 +1751,6 @@ pengaturanSection:AddButton({
     end
 })
 
-
--- =================================================================
--- 🎨 THEME SECTION
--- =================================================================
 local themeSection = SettingsTab:AddSection("🎨 Theme")
 
 themeSection:AddDropdown({
@@ -1838,10 +1764,6 @@ themeSection:AddDropdown({
     end
 })
 
-
--- =================================================================
--- ⌨️ KEYBIND SECTION
--- =================================================================
 local keybindSection = SettingsTab:AddSection("⌨️ Keybind")
 
 local ToggleKey = "RightControl"
@@ -1854,10 +1776,6 @@ keybindSection:AddKeybind({
     end
 })
 
-
--- =================================================================
--- ❌ EXIT SECTION
--- =================================================================
 local exitSection = SettingsTab:AddSection("❌ Exit")
 
 exitSection:AddButton({
