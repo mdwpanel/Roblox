@@ -826,17 +826,41 @@ WalkSection:AddToggle({
     end
 })
 
-local AutoWSection = AutoWalking:AddSection({"🗻 Speed Auto Walk Mountain"})
+
+local AutoWSection = AutoWalking:AddSection("🗻 Speed Auto Walk Mountain")
 
 AutoWSection:AddSlider({
-    Title = "Auto Walk Speed",
-    Min = 10,
-    Max = 100,
-    Default = 25,
-    Callback = function(v) _G.AutoWalkSpeed = v end
+    Title = "WalkSpeed Hack",
+    Description = "Semakin tinggi angkanya, semakin cepat larinya.",
+    Min = 16,          -- 16 adalah kecepatan asli Roblox
+    Max = 300,         -- Batas maksimal geser
+    DefaultValue = 16, -- Angka awal saat UI muncul
+    Callback = function(value)
+        -- 'value' adalah angka yang sedang digeser oleh pemain
+        local character = game.Players.LocalPlayer.Character
+        if character and character:FindFirstChild("Humanoid") then
+            character.Humanoid.WalkSpeed = value
+        end
+    end
 })
 
-WalkSection:AddButton({
+-- 4. Memasang Slider untuk Tinggi Lompatan (JumpPower)
+AutoWSection:AddSlider({
+    Title = "JumpPower Hack",
+    Description = "Semakin tinggi angkanya, semakin tinggi lompatannya.",
+    Min = 50,          -- 50 adalah tinggi lompatan asli Roblox
+    Max = 500,
+    DefaultValue = 50,
+    Callback = function(value)
+        local character = game.Players.LocalPlayer.Character
+        if character and character:FindFirstChild("Humanoid") then
+            character.Humanoid.UseJumpPower = true -- Memastikan game menggunakan sistem JumpPower
+            character.Humanoid.JumpPower = value
+        end
+    end
+})
+
+AutoWSection:AddButton({
     Title = "Rescan Rute",
     Callback = function()
         local total = ScanMountain()
