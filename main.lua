@@ -17,6 +17,7 @@ local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
+local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -1597,12 +1598,12 @@ FindSection:AddButton({
 -- =================================================================
 -- 🛡️ SELF-PROTECTION & SECURITY SECTION (KINI BERHASIL TAMPIL)
 -- =================================================================
-local ChatSection = ServerTab:AddSection("🌐 Chat Otomatis")
-
+local ChatSection = ServerTab:AddSection({"🌐 Chat Otomatis"})
+local ChatMsg = "IKY!"
 ChatSection:AddInput({ 
     Title = "Custom Chat Message", 
     Default = "IKY!", 
-    Callback = function(v) msg = v end 
+    Callback = function(v) ChatMsg = v end 
 })
 
 ChatSection:AddToggle({
@@ -1613,128 +1614,85 @@ ChatSection:AddToggle({
         if v then
             task.spawn(function()
                 while _G.Spam do
-                    -- Mendukung sistem chat lama dan baru (TextChatService)
-                    pcall(function() 
-                        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All") 
-                    end)
-                    pcall(function() 
-                        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg) 
-                    end)
-                    task.wait(5) -- Delay agar tidak terkena mute
+                    pcall(function() game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(ChatMsg, "All") end)
+                    pcall(function() game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(ChatMsg) end)
+                    task.wait(5)
                 end
             end)
         end
     end
 })
 
-InfoSection:AddToggle({
-    Title = "Enable Chat Logger",
+ChatSection:AddToggle({ Title = "Enable Chat Logger", Default = false, Callback = function(v) _G.ChatLog = v end })
+
+-- FITUR: INTERACTION TAP TELEPORT (Menambahkan yang hilang)
+local InteractSection = MainTab:AddSection({"🖱️ Interaction"}) -- Ditambahkan ke MainTab
+
+InteractSection:AddToggle({
+    Title = "Tap Teleport",
+    Description = "Tap/Klik lokasi untuk berpindah",
     Default = false,
-    Callback = function(v)
-        _G.ChatLog = v
-    end
+    Callback = function(v) _G.TapTP = v end
 })
 
-local ProtectSection = ServerTab:AddSection("🛡️ Self-Protection & Security")
-
-ProtectSection:AddToggle({
-    Title = "Anti-Kick Protection",
-    Description = "Mendeteksi upaya kick (Bukan bypass total)",
-    Default = false,
-    Callback = function(v)
-        _G.AntiKick = v
-        -- Catatan: Bypass kick total memerlukan hookmetamethod yang sering terdeteksi.
-        -- Ini hanya memberikan notifikasi keamanan.
+-- Logic Tap TP
+UserInputService.InputBegan:Connect(function(input, processed)
+    if _G.TapTP and not processed then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local ray = Workspace.CurrentCamera:ViewportPointToRay(UserInputService:GetMouseLocation().X, UserInputService:GetMouseLocation().Y)
+                local result = Workspace:Raycast(ray.Origin, ray.Direction * 1000)
+                if result then root.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0)) end
+            end
+        end
     end
-})
+end)
+ 
+local ProtectSection = ServerTab:AddSection({"🛡️ Self-Protection & Security"})
 
--- LOGIC: Admin Join Detector
-ProtectSection:AddToggle({
-    Title = "Admin Join Detector",
-    Default = false,
-    Callback = function(v)
-        _G.AdminDetect = v
-    end
-})
+ProtectSection:AddToggle({ Title = "Anti-Kick Protection", Default = false, Callback = function(v) _G.AntiKick = v end })
+ProtectSection:AddToggle({ Title = "Admin Join Detector", Default = false, Callback = function(v) _G.AdminDetect = v end })
 
--- LOGIC: Admin Detector
+-- Mesin Admin Detector
 Players.PlayerAdded:Connect(function(player)
     if _G.AdminDetect then
-        -- Cek rank (0 adalah ID Group, ganti jika perlu)
         if player:GetRankInGroup(0) > 10 or player.AccountAge < 2 then
-            Library:MakeNotify({ 
-                Title = "⚠️ WARNING", 
-                Content = "Admin/Pemain Baru Masuk: " .. player.Name, 
-                Time = 10 
-            })
+            Library:MakeNotify({ Title = "⚠️ ADMIN DETECTED", Content = "Pemain/Admin masuk: " .. player.Name, Time = 10 })
         end
     end
 end)
 
-ProtectSection:AddButton({ 
-    Title = "Manual Emergency Kick", 
-    Callback = function() LocalPlayer:Kick("FCAL HUB End.") end 
-})
+ProtectSection:AddButton({ Title = "Manual Emergency Kick", Callback = function() LocalPlayer:Kick("FCAL HUB End.") end })
 
 ProtectSection:AddButton({
     Title = "Instant Server Hop",
     Callback = function()
-        local servers = {}
-        local success, res = pcall(function()
-            return game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100")
-        end)
-        
+        local success, res = pcall(function() return game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100") end)
         if success then
             local data = HttpService:JSONDecode(res).data
+            local servers = {}
             for _, v in pairs(data) do
-                if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                    table.insert(servers, v.id)
-                end
+                if v.playing < v.maxPlayers and v.id ~= game.JobId then table.insert(servers, v.id) end
             end
-            if #servers > 0 then
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
-            else
-                Library:MakeNotify({ Title = "Error", Content = "Tidak ada server tersedia." })
-            end
+            if #servers > 0 then TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)]) end
         end
     end
 })
 
--- ================= SECTION: ACTIONS =================
-local ActionsSection = ServerTab:AddSection("🚪 Actions")
+local ActionsSection = ServerTab:AddSection({"🚪 Actions"})
+ActionsSection:AddButton({ Title = "Rejoin", Callback = function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer) end })
+ActionsSection:AddButton({ Title = "Server Hop", Callback = function() TeleportService:Teleport(game.PlaceId) end })
 
-ActionsSection:AddButton({ 
-    Title = "Rejoin", 
-    Callback = function() 
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer) 
-    end 
-})
-
-ActionsSection:AddButton({ 
-    Title = "Server Hop (Default)", 
-    Callback = function() 
-        TeleportService:Teleport(game.PlaceId, LocalPlayer) 
-    end 
-})
-
--- ================= SECTION: SPECTATE =================
-local SpectateSection = ServerTab:AddSection("👁️ Spectate")
-
-local SpectateDropdown = SpectateSection:AddDropdown({ 
-    Title = "Select Player", 
-    Default = "", 
-    Options = {}, 
-    Callback = function(v) SpecTarget = v end 
-})
+local SpectateSection = ServerTab:AddSection({"👁️ Spectate"})
+local SpectateDropdown = SpectateSection:AddDropdown({ Title = "Select Player", Options = {}, Callback = function(v) SpecTarget = v end })
 
 SpectateSection:AddButton({
     Title = "Refresh Daftar Pemain",
     Callback = function()
         local list = {}
-        for _, p in pairs(Players:GetPlayers()) do 
-            if p ~= LocalPlayer then table.insert(list, p.Name) end 
-        end
-        SafeRefreshDropdown(SpectateDropdown, list)
+        for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then table.insert(list, p.Name) end end
+        pcall(function() SpectateDropdown:SetOptions(list) end) -- Update untuk modern UI
     end
 })
 
@@ -1744,7 +1702,6 @@ SpectateSection:AddButton({
         local t = Players:FindFirstChild(SpecTarget)
         if t and t.Character and t.Character:FindFirstChildOfClass("Humanoid") then
             Workspace.CurrentCamera.CameraSubject = t.Character:FindFirstChildOfClass("Humanoid")
-            Library:MakeNotify({ Title = "Spectating", Content = "Menonton: " .. SpecTarget })
         end
     end
 })
@@ -1752,93 +1709,47 @@ SpectateSection:AddButton({
 SpectateSection:AddButton({ 
     Title = "Stop Spectating", 
     Callback = function() 
-        local h = GetHumanoid() 
-        if h then 
-            Workspace.CurrentCamera.CameraSubject = h 
-            Library:MakeNotify({ Title = "Stopped", Content = "Kembali ke karakter sendiri." })
-        end 
+        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then Workspace.CurrentCamera.CameraSubject = hum end 
     end 
 })
 
--- ==========================================
--- 5. SETTINGS TAB (FIXED RENDERING & CRASH BYPASS)
--- ==========================================
-local pengaturanSection = SettingsTab:AddSection("🛡️ Protection")
+-- ================= TAB: SETTINGS =================
+local pengaturanSection = SettingsTab:AddSection({"🛡️ Protection"})
 
 pengaturanSection:AddToggle({
     Title = "Streamer Mode",
-    Description = "Menyamarkan tampilan menu",
     Default = false,
     Callback = function(v)
-        -- RedzLib biasanya tidak mendukung ganti Title secara instan, 
-        -- tapi kita bisa memberikan notifikasi sebagai tanda aktif.
-        if v then
-            Library:MakeNotify({ Title = "Streamer Mode", Content = "Mode Penyamaran Aktif", Time = 3 })
-        end
+        if v then Library:MakeNotify({ Title = "Mode Aktif", Content = "Streamer Mode ON" }) end
     end
 })
 
 pengaturanSection:AddButton({
     Title = "Fake Name (Anti-Screenshot)",
     Callback = function()
-        local char = LocalPlayer.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.DisplayName = "Anonymous_User"
-            Library:MakeNotify({ Title = "Success", Content = "Display Name diubah (Hanya kamu yang lihat)", Time = 3 })
-        end
+        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum.DisplayName = "Anonymous_User" end
     end
 })
 
--- ================= SECTION: THEME =================
-local ThemeSection = SettingsTab:AddSection("🎨 Appearance")
-
--- Catatan: Ganti tema secara dinamis jarang didukung RedzLib V5 secara bawaan.
--- Fungsi ini hanya contoh jika library-mu mendukung SetTheme.
-ThemeSection:AddDropdown({ 
+local themeSection = SettingsTab:AddSection({"🎨 Theme"})
+themeSection:AddDropdown({ 
     Title = "Select Theme", 
     Options = {"Dark", "Light", "Midnight", "Rose", "Emerald"}, 
     Default = "Midnight", 
-    Callback = function(v) 
-        pcall(function() Window:SetTheme(v) end)
-    end 
+    Callback = function(v) pcall(function() Window:SetTheme(v) end) end 
 })
 
--- ================= SECTION: KEYBIND =================
-local keybindSection = SettingsTab:AddSection("⌨️ Keybind")
-
--- Format standar RedzLib V5 untuk Keybind
-keybindSection:AddKeybind({
-    Title = "Toggle UI Menu",
-    Default = Enum.KeyCode.RightControl, -- Ganti sesuai keinginan
-    Callback = function()
-        -- Logika menyembunyikan/memunculkan UI
-        local gui = game.CoreGui:FindFirstChild("MDW HUB") or game.Players.LocalPlayer.PlayerGui:FindFirstChild("MDW HUB")
-        if gui then
-            gui.Enabled = not gui.Enabled
-        end
-    end
-})
-
--- ================= SECTION: EXIT =================
-local ExitSection = SettingsTab:AddSection("❌ Exit")
-
-ExitSection:AddButton({
+local exitSection = SettingsTab:AddSection({"❌ Exit"})
+exitSection:AddButton({
     Title = "Destroy UI",
     Callback = function()
-        _G.Spam = false
-        _G.TapTP = false
-        _G.AdminDetect = false
-        Library:MakeNotify({ Title = "MDW HUB", Content = "Shutdown...", Time = 2 })
-        task.wait(1)
+        _G.Spam = false; _G.TapTP = false; _G.AdminDetect = false
         Window:Destroy()
     end
 })
--- Interaction Tap Teleport
 
-
--- ==========================================
--- PERSISTENT REPETITIVE LOOPS
 -- ==========================================
 -- [[ NOCLIP OPTIMIZED ]]
 RunService.Stepped:Connect(function()
@@ -1864,14 +1775,14 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- [[ TAP TO TELEPORT (PC & MOBILE SUPPORT) ]]
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end -- Jangan aktif jika sedang mengetik di chat
-    
-    if _G.TapTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-        local mouse = LocalPlayer:GetMouse()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            -- Teleport ke posisi klik
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.p + Vector3.new(0, 3, 0))
+UserInputService.InputBegan:Connect(function(position, processed)
+    if _G.TapTP and not processed then
+        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if root then
+            local camera = Workspace.CurrentCamera
+            local ray = camera:ViewportPointToRay(position.X, position.Y)
+            local result = Workspace:Raycast(ray.Origin, ray.Direction * 1000)
+            if result then root.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0)) end
         end
     end
 end)
