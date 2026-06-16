@@ -24,7 +24,6 @@ local TweenService = game:GetService("TweenService")
 
 -- Global Variables (Didefinisikan di awal agar tidak error)
 local LocalPlayer = Players.LocalPlayer
-local MountainRoute = {}
 local ESP_Objects = {}
 local ManualHighlights = {}
 local ESPHighlights = {}
@@ -49,7 +48,6 @@ _G.AntiKick = false
 _G.AdminDetect = false
 _G.Hitbox = false
 _G.CPDelay = 2.0 -- Inisialisasi default agar tidak nil
-_G.AutoWalkSpeed = 25 -- Kecepatan default
 
 local Config = {
     WalkSpeedDefault = 16,
@@ -457,6 +455,24 @@ local function SafeRefreshDropdown(dropdown, list)
         end
     end
 end
+
+-- ==========================================
+-- USER INTERFACE TABS SETUP
+-- ==========================================
+local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
+local AutoWalking = Window:AddTab({ Name = "AutoWalk", Icon = "player" })
+local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
+local GameTab = Window:AddTab({ Name = "Game", Icon = "gamepad" })
+local ServerTab = Window:AddTab({ Name = "Server", Icon = "web" })
+local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
+
+-- ==========================================
+-- MAIN TAB
+-- ==========================================
+local WalkSection = AutoWalking:AddSection({"🏔️ Auto Walk Mountain"})
+_G.AutoWalkSpeed = 25 -- Kecepatan default
+local MountainRoute = {}
+
 local function ScanMountain()
     MountainRoute = {}
     local allParts = workspace:GetDescendants()
@@ -482,22 +498,8 @@ local function ScanMountain()
     end)
     return #MountainRoute
 end
--- ==========================================
--- USER INTERFACE TABS SETUP
--- ==========================================
-local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local AutoWalking = Window:AddTab({ Name = "AutoWalk", Icon = "player" })
-local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
-local GameTab = Window:AddTab({ Name = "Game", Icon = "gamepad" })
-local ServerTab = Window:AddTab({ Name = "Server", Icon = "web" })
-local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 
--- ==========================================
--- MAIN TAB
--- ==========================================
-local WalkSection = AutoWalking:AddSection({"🏔️ Auto Walk Mountain"})
-
-WalkSection:AddToggle({
+WalkSection:AddToggle({  
     Title = "Start Auto Walk (Matcha/Universal)",
     Description = "Berjalan halus otomatis ke puncak gunung",
     Default = false,
@@ -506,7 +508,7 @@ WalkSection:AddToggle({
         if v then
             task.spawn(function()
                 Library:MakeNotify({ Title = "Scanning...", Content = "Mencari rute pendakian..." })
-                local total = ScanMountain()
+                local total = ScanMountain() 
                 Library:MakeNotify({ Title = "Success", Content = "Ditemukan " .. total .. " titik. Memulai jalan..." })
 
                 while _G.AutoWalk do
@@ -518,7 +520,7 @@ WalkSection:AddToggle({
                     local target = nil
                     for _, data in pairs(MountainRoute) do
                         if data.Y > root.Position.Y + 2 then -- Cari yang sedikit lebih tinggi
-                            target = data.Part
+                            target = data.Part 
                             break
                         end
                     end
@@ -561,7 +563,7 @@ WalkSection:AddToggle({
                         _G.AutoCP = false
                         break
                     end
-                    task.wait(0.1) 
+                    task.wait(0.1)
                 end
             end)
         end
