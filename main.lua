@@ -694,23 +694,29 @@ QuickTpSection:AddButton({
 -- MAIN TAB
 -- ==========================================
 local WalkSection =  AutoWalking:AddSection("🗻 Auto Walk Mountain")
-local jsonData = [[
-[{"jump":false,"hipHeight":5.85,"rotation":0.03,"moveDirection":{"y":0,"x":-0.02,"z":-0.99},"city":{"y":0,"x":-0.86,"z":-45.99},"position":{"y":25.45,"x":-14.15,"z":8.39},"times":0,"walkSpeed":46,"tool":"","states":"Running"}]
-]] 
+local jsonMatcha = [[
+[
+    {"position":{"x":-27.625, "y":188.38, "z":-503.16}, "walkSpeed":52, "states":"Running"},
+    {"position":{"x":-27.512, "y":188.38, "z":-502.30}, "walkSpeed":52, "states":"Running"},
+    {"position":{"x":-9448.06, "y":1788.38, "z":-2132.23}, "walkSpeed":52, "states":"Running"}
+]
+]]
+
 
 -- Variabel Kontrol
 _G.AutoWalkMatcha = false
 local waypoints = {}
 
 -- Fungsi Decode JSON
-local function loadData()
+local function loadWaypoints()
     local success, result = pcall(function()
-        return HttpService:JSONDecode(jsonData)
+        return HttpService:JSONDecode(jsonMatcha)
     end)
     if success then
         waypoints = result
         return #waypoints
     else
+        warn("Gagal membaca data JSON Waypoints!")
         return 0
     end
 end
@@ -876,25 +882,25 @@ WalkSection:AddButton({
 })
 
 WalkSection:AddToggle({
-    Title = "Start Matcha Autowalk",
-    Description = "Mengikuti rute presisi dari file JSON",
+    Title = "Start Matcha Autowalk (JSON)",
+    Description = "Berjalan mengikuti koordinat dari file JSON",
     Default = false,
     Callback = function(v)
-        _G.AutoWalkMatcha = v
+        _G.AutoWalkJSON = v
         
         if v then
             task.spawn(function()
-                local total = loadData()
+                local total = loadWaypoints()
                 if total == 0 then 
-                    Library:MakeNotify({ Title = "Error", Content = "Data JSON tidak valid atau kosong!" })
+                    Library:MakeNotify({ Title = "Error", Content = "Data Waypoint Kosong!" })
                     return 
                 end
 
-                Library:MakeNotify({ Title = "MDW HUB", Content = "Memulai Jalur Matcha: " .. total .. " Waypoints" })
+                Library:MakeNotify({ Title = "MDW HUB", Content = "Memulai Autowalk: " .. total .. " Titik." })
 
-                -- 1. Physics Setup (NoClip & PlatformStand agar mulus)
+                -- 1. NoClip & Physics Setup (Agar tidak nabrak tebing)
                 local ncLoop = RunService.Stepped:Connect(function()
-                    if _G.AutoWalkMatcha and LocalPlayer.Character then
+                    if _G.AutoWalkJSON and LocalPlayer.Character then
                         for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
                             if p:IsA("BasePart") then p.CanCollide = false end
                         end
@@ -905,57 +911,54 @@ WalkSection:AddToggle({
                 local hum = char:FindFirstChildOfClass("Humanoid")
                 local root = char:FindFirstChild("HumanoidRootPart")
 
-                if hum then hum.PlatformStand = true end 
+                if hum then hum.PlatformStand = true end -- Posisi meluncur
 
-                -- 2. Loop Mengikuti Jalur
+                -- 2. Loop Melewati Setiap Koordinat
                 for i, data in ipairs(waypoints) do
-                    if not _G.AutoWalkMatcha or hum.Health <= 0 then break end
+                    if not _G.AutoWalkJSON or hum.Health <= 0 then break end
 
-                    local pos = data.position
-                    local targetCFrame = CFrame.new(pos.x, pos.y, pos.z)
+                    local targetPos = Vector3.new(data.position.x, data.position.y + 3, data.position.z)
+                    local speed = data.walkSpeed or 25
                     
-                    -- Kecepatan diambil dari data JSON (walkSpeed: 46)
-                    local speed = data.walkSpeed or 30
-                    local distance = (root.Position - targetCFrame.Position).Magnitude
+                    -- Hitung waktu perjalanan berdasarkan jarak dan speed di JSON
+                    local distance = (root.Position - targetPos).Magnitude
                     local duration = distance / speed
 
-                    -- Jika dalam data tertulis sedang melompat, buat karakter sedikit menghadap ke atas
+                    -- Buat gerakan meluncur (Tween)
                     local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-                        CFrame = targetCFrame
+                        CFrame = CFrame.new(targetPos)
                     })
                     
                     tween:Play()
 
-                    -- Deteksi jika titik ini adalah titik lompatan (Optional visual)
-                    if data.jump == true and hum then
-                        hum.Jump = true
-                    end
-
-                    -- Tunggu sampai sampai di titik tersebut (Update sangat cepat karena data waypoint sangat rapat)
+                    -- Tunggu sampai sampai di titik tersebut
                     local reached = false
                     local finished = tween.Completed:Connect(function() reached = true end)
 
-                    repeat task.wait() until reached or not _G.AutoWalkMatcha
+                    repeat 
+                        task.wait(0.1)
+                        if not _G.AutoWalkJSON then tween:Cancel() reached = true end
+                    until reached
+
                     finished:Disconnect()
+                    print("Sampai di waypoint ke-" .. i)
                 end
 
-                -- 3. Cleanup
+                -- 3. Cleanup setelah selesai atau dimatikan
                 if ncLoop then ncLoop:Disconnect() end
                 if hum then hum.PlatformStand = false end
-                _G.AutoWalkMatcha = false
-                Library:MakeNotify({ Title = "Finish", Content = "Tiba di Puncak Matcha!" })
+                _G.AutoWalkJSON = false
+                Library:MakeNotify({ Title = "Selesai", Content = "Karakter sampai di tujuan akhir." })
             end)
         end
     end
 })
 
 WalkSection:AddButton({
-    Title = "Stop Autowalk",
+    Title = "Reload JSON Data",
     Callback = function()
-        _G.AutoWalkMatcha = false
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").PlatformStand = false
-        end
+        local count = loadWaypoints()
+        Library:MakeNotify({ Title = "Success", Content = "Data diupdate: " .. count .. " koordinat." })
     end
 })
 -- ==========================================
