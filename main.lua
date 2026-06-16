@@ -1585,7 +1585,7 @@ ChatSection:AddToggle({
     end
 })
 
-InfoSection:AddToggle({
+ChatSection:AddToggle({
     Title = "Enable Chat Logger",
     Default = false,
     Callback = function(v)
@@ -1680,7 +1680,7 @@ local SpectateSection = ServerTab:AddSection("👁️ Spectate")
 
 local SpectateDropdown = SpectateSection:AddDropdown({ 
     Title = "Select Player", 
-    Default = "", 
+    Default = "",  
     Options = {}, 
     Callback = function(v) SpecTarget = v end 
 })
