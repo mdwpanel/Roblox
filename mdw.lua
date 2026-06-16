@@ -303,6 +303,43 @@ local ESPHighlights = {}
 local ESPLabels = {}
 local GenHighlights = {}
 local CachedCPs = {}
+local MountainRoute = {}
+_G.AutoWalkSpeed = 25 
+_G.AutoWalk = false
+
+local function GetRoot()
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Fungsi Scan Jalur Gunung (Universal)
+local function ScanMountain()
+    MountainRoute = {}
+    local allParts = workspace:GetDescendants()
+    local count = 0
+    
+    for i, obj in pairs(allParts) do
+        -- Anti-lag: jeda setiap 500 objek agar Delta tidak freeze
+        if i % 500 == 0 then task.wait() end
+        
+        -- Kriteria Checkpoint: SpawnLocation atau Nama (CP, Stage, Camp, Matcha, Point)
+        if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
+            obj.Name:lower():find("cp") or 
+            obj.Name:lower():find("stage") or 
+            obj.Name:lower():find("camp") or 
+            obj.Name:lower():find("matcha") or
+            obj.Name:lower():find("point")
+        )) then
+            table.insert(MountainRoute, {Part = obj, Y = obj.Position.Y})
+            count = count + 1
+        end
+    end
+
+    -- URUTKAN: Dari posisi terendah ke tertinggi (Sumbu Y)
+    table.sort(MountainRoute, function(a, b)
+        return a.Y < b.Y
+    end)
+    return count
+end
 
 local function ScanMapForCPs()
     CachedCPs = {} -- Reset cache
@@ -689,41 +726,13 @@ QuickTpSection:AddButton({
             Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan!" })
         end
     end
-})
+}) 
 -- ==========================================
 -- MAIN TAB
 -- ==========================================
 local WalkSection =  AutoWalking:AddSection({"🏔️ Auto Walk Mountain"})
-_G.AutoWalkSpeed = 25 -- Kecepatan default
-local MountainRoute = {}
 
-local function ScanMountain()
-    MountainRoute = {}
-    local allParts = workspace:GetDescendants()
-    for i, obj in pairs(allParts) do
-        -- Anti-lag: jeda tiap 500 objek
-        if i % 500 == 0 then task.wait() end
-        
-        -- Mencari Checkpoint (SpawnLocation atau Part bernama CP/Stage/Camp/Matcha)
-        if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
-            obj.Name:lower():find("cp") or 
-            obj.Name:lower():find("stage") or 
-            obj.Name:lower():find("camp") or 
-            obj.Name:lower():find("matcha") or
-            obj.Name:lower():find("point")
-        )) then
-            table.insert(MountainRoute, {Part = obj, Y = obj.Position.Y})
-        end
-    end
-
-    -- URUTKAN: Dari bawah ke atas (Y Axis)
-    table.sort(MountainRoute, function(a, b)
-        return a.Y < b.Y
-    end)
-    return #MountainRoute
-end
-
-WalkSection:AddToggle({  
+WalkSection:AddToggle({
     Title = "Start Auto Walk (Matcha/Universal)",
     Description = "Berjalan halus otomatis ke puncak gunung",
     Default = false,
@@ -731,30 +740,42 @@ WalkSection:AddToggle({
         _G.AutoWalk = v
         if v then
             task.spawn(function()
-                Library:MakeNotify({ Title = "Scanning...", Content = "Mencari rute pendakian..." })
-                local total = ScanMountain() 
-                Library:MakeNotify({ Title = "Success", Content = "Ditemukan " .. total .. " titik. Memulai jalan..." })
- 
-                while _G.AutoWalk do
-                    local char = game.Players.LocalPlayer.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if not root then task.wait(1) continue end
+                Library:MakeNotify({ Title = "Scanning...", Content = "Mencari rute pendakian terbaik..." })
+                local total = ScanMountain()
+                
+                if total == 0 then
+                    Library:MakeNotify({ Title = "Error", Content = "Tidak ditemukan Checkpoint di map ini!" })
+                    _G.AutoWalk = false
+                    return
+                end
+                
+                Library:MakeNotify({ Title = "Success", Content = "Ditemukan " .. total .. " titik. Memulai..." })
 
-                    -- Cari target titik berikutnya yang lebih tinggi dari posisi sekarang
-                    local target = nil
+                while _G.AutoWalk do
+                    local root = GetRoot()
+                    if not root then 
+                        task.wait(1) -- Tunggu jika karakter sedang mati/respawn
+                        continue 
+                    end
+
+                    -- Cari target titik berikutnya yang lebih tinggi dari posisi kita sekarang
+                    local targetData = nil
                     for _, data in pairs(MountainRoute) do
-                        if data.Y > root.Position.Y + 2 then -- Cari yang sedikit lebih tinggi
-                            target = data.Part 
+                        -- Cari yang tingginya minimal 3 studs di atas kita
+                        if data.Y > root.Position.Y + 3 then 
+                            targetData = data
                             break
                         end
                     end
 
-                    if target then
-                        -- Hitung durasi berdasarkan jarak agar kecepatan stabil
+                    if targetData and targetData.Part then
+                        local target = targetData.Part
+                        
+                        -- Hitung durasi berdasarkan jarak agar kecepatan selalu stabil
                         local distance = (root.Position - target.Position).Magnitude
                         local duration = distance / (_G.AutoWalkSpeed or 25)
 
-                        -- Animasi Jalan Halus (Tween)
+                        -- Membuat gerakan halus (Tween)
                         local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
                         local tween = TweenService:Create(root, tweenInfo, {
                             CFrame = target.CFrame * CFrame.new(0, 3, 0)
@@ -762,35 +783,56 @@ WalkSection:AddToggle({
                         
                         tween:Play()
                         
-                        -- Tunggu sampai sampai di target atau toggle dimatikan
-                        local completed = false
-                        local conn = tween.Completed:Connect(function() completed = true end)
+                        -- Pantau progress jalan
+                        local reached = false
+                        local connection = tween.Completed:Connect(function() reached = true end)
                         
+                        -- Loop pengecekan saat berjalan
                         repeat 
                             task.wait(0.1)
-                            if not _G.AutoWalk then 
+                            -- Jika toggle dimatikan di tengah jalan, hentikan gerakan
+                            if not _G.AutoWalk or not GetRoot() then 
                                 tween:Cancel() 
-                                break 
+                                reached = true 
                             end
-                        until completed
+                        until reached
                         
-                        conn:Disconnect()
+                        if connection then connection:Disconnect() end
 
-                        -- Simulasi Checkpoint (FireTouch)
-                        if firetouchinterest then
+                        -- Simulasi Checkpoint (FireTouchInterest) agar terdaftar di server
+                        if firetouchinterest and _G.AutoWalk and GetRoot() then
                             firetouchinterest(root, target, 0)
                             task.wait(0.1)
                             firetouchinterest(root, target, 1)
-                        end 
+                        end
                     else
-                        Library:MakeNotify({ Title = "Selesai", Content = "Sudah mencapai puncak tertinggi!" })
-                        _G.AutoCP = false
+                        -- Jika tidak ada titik yang lebih tinggi lagi
+                        Library:MakeNotify({ Title = "Selesai", Content = "Anda sudah berada di titik tertinggi map ini!" })
+                        _G.AutoWalk = false
                         break
                     end
-                    task.wait(0.1)
+                    task.wait(0.5) -- Jeda antar checkpoint agar tidak dianggap lag oleh server
                 end
             end)
         end
+    end
+})
+
+WalkSection:AddSlider({
+    Title = "Auto Walk Speed",
+    Min = 10,
+    Max = 100,
+    Default = 25,
+    Callback = function(v)
+        _G.AutoWalkSpeed = v
+    end
+})
+
+WalkSection:AddButton({
+    Title = "Rescan Rute",
+    Callback = function()
+        local total = ScanMountain()
+        Library:MakeNotify({ Title = "MDW HUB", Content = "Rute dipindai ulang. Ditemukan: " .. total .. " titik." })
     end
 })
 
