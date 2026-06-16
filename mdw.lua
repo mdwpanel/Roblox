@@ -460,11 +460,105 @@ end
 -- USER INTERFACE TABS SETUP
 -- ==========================================
 local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
+local AutoWalk = Window:AddTab({ Name = "AutoWalk", Icon = "walk" })
 local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
 local GameTab = Window:AddTab({ Name = "Game", Icon = "gamepad" })
 local ServerTab = Window:AddTab({ Name = "Server", Icon = "web" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 
+-- ==========================================
+-- MAIN TAB
+-- ==========================================
+local WalkSection = AutoWalk:AddSection({"🏃 Auto Walk Mountain"})
+
+_G.AutoWalkSpeed = 20 -- Kecepatan jalan otomatis
+
+WalkSection:AddToggle({
+    Title = "Start Auto Walk",
+    Description = "Karakter akan berjalan sendiri ke puncak",
+    Default = false,
+    Callback = function(v)
+        _G.AutoWalk = v
+        if v then
+            task.spawn(function()
+                -- 1. Scan rute gunung (Gunakan fungsi ScanMountain yang sudah ada)
+                local total = ScanMountain()
+                if total == 0 then
+                    Library:MakeNotify({ Title = "Error", Content = "Jalur tidak ditemukan!" })
+                    return
+                end
+
+                Library:MakeNotify({ Title = "MDW HUB", Content = "Memulai perjalanan otomatis..." })
+
+                while _G.AutoWalk do
+                    local char = game.Players.LocalPlayer.Character
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+                    if not root then task.wait(1) continue end
+
+                    -- 2. Cari titik selanjutnya yang lebih tinggi dari kita
+                    local target = nil
+                    for _, cp in pairs(MountainRoute) do
+                        if cp.Y > root.Position.Y + 2 then -- Cari yang sedikit lebih tinggi
+                            target = cp.Part
+                            break
+                        end
+                    end
+
+                    if target then
+                        -- 3. Hitung durasi berdasarkan jarak (biar kecepatan stabil)
+                        local distance = (root.Position - target.Position).Magnitude
+                        local duration = distance / (_G.AutoWalkSpeed or 20)
+
+                        -- 4. Gerakan Halus (Tween)
+                        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+                        local tween = game:GetService("TweenService"):Create(root, tweenInfo, {
+                            CFrame = target.CFrame * CFrame.new(0, 3, 0)
+                        })
+                        
+                        tween:Play()
+                        
+                        -- Tunggu sampai sampai di titik tersebut atau toggle dimatikan
+                        local completed = false
+                        local conn = tween.Completed:Connect(function() completed = true end)
+                        
+                        repeat 
+                            task.wait(0.1) 
+                            -- Jika toggle dimatikan saat jalan, hentikan gerakan
+                            if not _G.AutoWalk then 
+                                tween:Cancel() 
+                                break 
+                            end
+                        until completed
+                        
+                        conn:Disconnect()
+
+                        -- Simulasi sentuhan Checkpoint
+                        if firetouchinterest then
+                            firetouchinterest(root, target, 0)
+                            task.wait(0.1)
+                            firetouchinterest(root, target, 1)
+                        end
+                    else
+                        Library:MakeNotify({ Title = "Selesai", Content = "Sudah sampai di puncak!" })
+                        _G.AutoWalk = false
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+})
+
+WalkSection:AddSlider({
+    Title = "Auto Walk Speed",
+    Description = "Semakin tinggi semakin cepat (Hati-hati Kick)",
+    Min = 10,
+    Max = 100,
+    Default = 20,
+    Callback = function(v)
+        _G.AutoWalkSpeed = v
+    end
+})
 -- ==========================================
 -- MAIN TAB
 -- ==========================================
