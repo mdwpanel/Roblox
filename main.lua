@@ -300,7 +300,30 @@ local ESPConnections = {}
 local ESPHighlights = {}
 local ESPLabels = {}
 local GenHighlights = {}
+local CachedCPs = {}
 
+local function ScanMapForCPs()
+    CachedCPs = {} -- Reset cache
+    local count = 0
+    
+    -- Kita scan map hanya SEKALI saat tombol ditekan
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("SpawnLocation") then
+            local name = obj.Name:lower()
+            local num = tonumber(obj.Name:match("%d+"))
+            
+            -- Kriteria pencarian universal
+            if num and (name:find("cp") or name:find("stage") or name:find("point") or name:find("level") or obj:IsA("SpawnLocation")) then
+                table.insert(CachedCPs, {Part = obj, Num = num})
+                count = count + 1
+            end
+        end
+    end
+    
+    -- Urutkan berdasarkan angka
+    table.sort(CachedCPs, function(a, b) return a.Num < b.Num end)
+    return count
+end
 local function CreateESPForPlayer(player)
     if player == LocalPlayer or not player.Character then return end
     
@@ -814,26 +837,57 @@ AntiSection:AddToggle({
     end
 })
 
+
+-- Variabel Platform
+local VoidPart = Instance.new("Part")
+VoidPart.Name = "AntiVoidPlatform"
+VoidPart.Size = Vector3.new(20, 1, 20) -- Ukuran lantai transparan
+VoidPart.Transparency = 1 -- 1 = Tidak terlihat
+VoidPart.Anchored = true
+VoidPart.CanCollide = false -- Default mati agar tidak mengganggu jalan biasa
+
 AntiSection:AddToggle({
-    Title = "Anti-Void / Anti-Fall",
-    Description = "Cegah mati karena jatuh ke jurang",
+    Title = "Walking Anti-Void (Air Walk)",
+    Description = "Berjalan di udara saat berada di jurang",
     Default = false,
     Callback = function(v)
-        _G.AntiVoid = v
-        task.spawn(function()
-            while _G.AntiVoid do
+        _G.WalkingAntiVoid = v
+        
+        if v then
+            task.spawn(function()
+                -- Simpan tinggi awal saat menyalakan (ketinggian aman)
+                local safeHeight = 0
                 local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if root and root.Position.Y < 0 then -- Sesuaikan angka 0 dengan batas bawah map
-                    root.Velocity = Vector3.new(0, 0, 0)
-                    root.CFrame = root.CFrame * CFrame.new(0, 50, 0) -- Teleport balik ke atas
-                    Library:MakeNotify({ Title = "Saved!", Content = "Hampir saja jatuh!" })
+                if root then safeHeight = root.Position.Y - 3.5 end
+
+                while _G.WalkingAntiVoid do
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    
+                    if hrp then
+                        -- Jika karakter jatuh di bawah ketinggian aman
+                        if hrp.Position.Y < (safeHeight - 5) then
+                            VoidPart.Parent = workspace
+                            VoidPart.CanCollide = true
+                            -- Posisi lantai mengikuti X dan Z pemain, tapi Y (tinggi) tetap di batas aman
+                            VoidPart.CFrame = CFrame.new(hrp.Position.X, safeHeight, hrp.Position.Z)
+                        else
+                            -- Jika sedang di daratan biasa, matikan tabrakan lantai agar tidak bug
+                            VoidPart.CanCollide = false
+                            VoidPart.Parent = nil
+                        end
+                    end
+                    task.wait() -- Update sangat cepat agar tidak tembus
                 end
-                task.wait(1)
-            end
-        end)
+                VoidPart:Destroy() -- Hapus jika toggle dimatikan
+            end)
+            Library:MakeNotify({ Title = "Anti-Void", Content = "Mode Berjalan di Udara Aktif!" })
+        else
+            VoidPart.Parent = nil
+            Library:MakeNotify({ Title = "Anti-Void", Content = "Mode Berjalan di Udara Mati" })
+        end
     end
 })
- 
 AntiSection:AddToggle({
     Title = "Anti-Void",
     Default = false,
@@ -1003,66 +1057,75 @@ local function FindNextCP(targetNum)
 end
 
 FarmSection:AddToggle({
-    Title = "Master Auto CP (Smart)",
+    Title = "Master Auto CP (Anti-Lag)",
+    Description = "Bisa untuk semua map tanpa membuat freeze",
     Default = false,
-    Callback = function(v)
+    Callback = function(v) 
         _G.AutoCP = v
         if v then
             task.spawn(function()
+                Library:MakeNotify({ Title = "Scanning...", Content = "Memindai map, mohon tunggu sebentar agar tidak freeze." })
+                
+                -- Jalankan pemindaian satu kali saja
+                local foundCount = ScanMapForCPs()
+                
+                if foundCount == 0 then
+                    Library:MakeNotify({ Title = "Error", Content = "Tidak ditemukan objek CP di map ini." })
+                    return
+                end
+                
+                Library:MakeNotify({ Title = "Success", Content = "Ditemukan " .. foundCount .. " Checkpoints. Memulai auto-farm..." })
+
                 while _G.AutoCP do
                     local char = game.Players.LocalPlayer.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if not root then task.wait(1) continue end
+                    
+                    if root then
+                        -- Ambil stage saat ini dari leaderstats
+                        local currentStage = 0
+                        local ls = game.Players.LocalPlayer:FindFirstChild("leaderstats")
+                        if ls then
+                            local st = ls:FindFirstChild("Stage") or ls:FindFirstChild("Checkpoint") or ls:FindFirstChild("Level")
+                            currentStage = st and st.Value or 0
+                        end
 
-                    local current = GetCurrentStage()
-                    local nextStage = current + 1
-                    local targetPart = FindNextCP(nextStage)
-
-                    if targetPart then
-                        Library:MakeNotify({ Title = "Auto CP", Content = "Menuju Stage: " .. nextStage })
-                        
-                        -- Simulasi gerakan agar sistem Touch game mendeteksi
-                        root.CFrame = targetPart.CFrame * CFrame.new(0, 3, 0) -- Di atas dulu
-                        task.wait(0.2)
-                        root.CFrame = targetPart.CFrame -- Turun ke part
-                        
-                        -- Memaksa trigger .Touched (Sangat Ampuh)
-                        firetouchinterest(root, targetPart, 0)
-                        task.wait(0.1)
-                        firetouchinterest(root, targetPart, 1)
-
-                        -- Tunggu sampai leaderstats berubah atau timeout 3 detik
-                        local startWait = tick()
-                        repeat task.wait(0.2) until GetCurrentStage() >= nextStage or tick() - startWait > 3 or not _G.AutoCP
-                        
-                        task.wait(_G.CPDelay or 1.0)
-                    else
-                        -- Jika tidak ketemu, coba cari objek yang namanya HANYA angka
-                        for _, obj in pairs(workspace:GetDescendants()) do
-                            if obj.Name == tostring(nextStage) and obj:IsA("BasePart") then
-                                targetPart = obj
+                        -- Cari CP selanjutnya di dalam tabel Cache (Bukan scan map lagi)
+                        local nextTarget = nil
+                        for _, cp in pairs(CachedCPs) do
+                            if cp.Num == currentStage + 1 then
+                                nextTarget = cp.Part
                                 break
                             end
                         end
-                        
-                        if not targetPart then
-                            Library:MakeNotify({ Title = "Info", Content = "Mencari Stage " .. nextStage .. "..." })
+
+                        if nextTarget then
+                            -- Teleportasi Aman
+                            root.CFrame = nextTarget.CFrame * CFrame.new(0, 3, 0)
+                            task.wait(0.2)
+                            root.CFrame = nextTarget.CFrame
+                            
+                            -- Simulasi sentuhan untuk trigger checkpoint
+                            if firetouchinterest then
+                                firetouchinterest(root, nextTarget, 0)
+                                task.wait(0.1)
+                                firetouchinterest(root, nextTarget, 1)
+                            end
+                            
+                            -- Tunggu delay sebelum lanjut ke stage berikutnya
+                            task.wait(_G.CPDelay or 1.5)
+                        else
+                            -- Jika tidak ketemu CP + 1, coba lompat ke stage yang lebih tinggi jika tersedia
                             task.wait(2)
                         end
                     end
+                    task.wait(0.1) -- Memberikan napas pada CPU
                 end
             end)
         end
     end
 })
 
-FarmSection:AddInput({ 
-    Title = "Delay Per Stage", 
-    Default = "1.0", 
-    Callback = function(v) 
-        _G.CPDelay = tonumber(v) or 1.0 
-    end 
-})
+FarmSection:AddInput({ Title = "Delay Per Stage", Default = 1.5, Callback = function(v) _G.CPDelay = tonumber(v) or 1.5 end })
 
 FarmSection:AddButton({
     Title = "TP to Top of Mountain",
