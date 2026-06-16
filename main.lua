@@ -558,6 +558,32 @@ QuickSection:AddButton({
     end
 })
 
+-- [[ PLAYER TELEPORT ]]
+local QuickTpSection = MainTab:AddSection("🚀 Quick Player Teleport")
+
+QuickTpSection:AddToggle({
+    Title = "Auto Pick Up / Interact",
+    Description = "Otomatis ambil item/oksigen terdekat",
+    Default = false,
+    Callback = function(v)
+        _G.AutoInteract = v
+        task.spawn(function()
+            while _G.AutoInteract do
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") then
+                        -- Cek jarak agar tidak mengambil barang yang terlalu jauh
+                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - obj.Parent:GetModelCFrame().p).Magnitude
+                        if dist < 15 then
+                            fireproximityprompt(obj)
+                        end
+                    end
+                end
+                task.wait(0.5)
+            end
+        end)
+    end
+})
+
 -- [[ TELEPORT ]]
 local TpSection = MainTab:AddSection("🎯 Teleport")
 
@@ -622,7 +648,6 @@ QuickTpSection:AddButton({
 -- Tombol Teleport
 QuickTpSection:AddButton({
     Title = "Teleport Sekarang",
-    Description = "Teleport ke pemain (Mendukung Jarak Jauh)",
     Callback = function()
         if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
             Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
@@ -630,38 +655,15 @@ QuickTpSection:AddButton({
         end
         
         local target = game.Players:FindFirstChild(SelectedTarget)
-        local myChar = game.Players.LocalPlayer.Character
-        local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-
-        if target and myRoot then
-            -- LOGIKA UNTUK JARAK JAUH (StreamingEnabled Bypass)
-            -- Kita mencoba mengambil posisi target melalui 'Pivot' karena lebih stabil
-            local targetPos = nil
-            
-            if target.Character and target.Character:GetPivot() then
-                targetPos = target.Character:GetPivot()
-            end
-
-            if targetPos then
-                -- Teleportasi Utama
-                myRoot.CFrame = targetPos * CFrame.new(0, 0, 3)
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+            local myChar = game.Players.LocalPlayer.Character
+            if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                -- Teleport ke posisi target
+                myChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
                 Library:MakeNotify({ Title = "Success", Content = "Berhasil ke " .. SelectedTarget })
-            else
-                -- Jika karakter target belum di-load (jarak sangat jauh)
-                Library:MakeNotify({ 
-                    Title = "Streaming Error", 
-                    Content = "Karakter target terlalu jauh dan belum dimuat oleh sistem Roblox. Coba lagi dalam 1-2 detik.",
-                    Time = 5
-                })
-                
-                -- Opsi Tambahan: Mencoba memaksa load area target (hanya bekerja di beberapa executor)
-                if target.Character == nil then
-                    -- Beritahu user untuk mencoba refresh
-                    UpdateDropdown()
-                end
             end
         else
-            Library:MakeNotify({ Title = "Error", Content = "Karakter Anda atau Target tidak siap!" })
+            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan/sudah keluar!" })
         end
     end
 })
@@ -2086,13 +2088,12 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- [[ TAP TO TELEPORT (PC & MOBILE SUPPORT) ]]
--- [[ LOGIKA TAP TO TELEPORT - STABLE VERSION ]]
 UserInputService.InputBegan:Connect(function(input, processed)
     -- Jangan teleport jika sedang klik menu atau ketik chat
     if processed then return end
     
     if _G.TapTP then
-        -- Deteksi Klik Kiri (PC) atau Sentuhan (Mobile) 
+        -- Deteksi Klik Kiri (PC) atau Sentuhan (Mobile)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
