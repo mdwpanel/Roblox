@@ -730,9 +730,9 @@ QuickTpSection:AddButton({
 -- ==========================================
 -- MAIN TAB
 -- ==========================================
-local WalkSection =  AutoWalking:AddSection({"🏔️ Auto Walk Mountain"})
+local WalkSection =  AutoWalking:AddSection("🗻 Auto Walk Mountain")
 
-WalkSection:AddToggle({
+AutoWalking:AddToggle({
     Title = "Start Auto Walk (Matcha/Universal)",
     Description = "Berjalan halus otomatis ke puncak gunung",
     Default = false,
@@ -781,6 +781,8 @@ WalkSection:AddToggle({
                             CFrame = target.CFrame * CFrame.new(0, 3, 0)
                         })
                         
+                        -- Mengaktifkan anchored supaya tidak jatuh/terganggu physics game saat tween
+                        root.Anchored = true
                         tween:Play()
                         
                         -- Pantau progress jalan
@@ -798,6 +800,7 @@ WalkSection:AddToggle({
                         until reached
                         
                         if connection then connection:Disconnect() end
+                        if GetRoot() then root.Anchored = false end -- Matikan anchored setelah sampai
 
                         -- Simulasi Checkpoint (FireTouchInterest) agar terdaftar di server
                         if firetouchinterest and _G.AutoWalk and GetRoot() then
@@ -811,14 +814,22 @@ WalkSection:AddToggle({
                         _G.AutoWalk = false
                         break
                     end
-                    task.wait(0.5) -- Jeda antar checkpoint agar tidak dianggap lag oleh server
+                    task.wait(0.5) -- Jeda antar checkpoint agar tidak dianggap lag/suspect oleh anti-cheat
                 end
+                
+                -- Memastikan anchored mati saat seluruh perulangan berhenti
+                local root = GetRoot()
+                if root then root.Anchored = false end
             end)
+        else
+            -- Memandulkan fungsi anchored jika player mematikan toggle secara manual
+            local root = GetRoot()
+            if root then root.Anchored = false end
         end
     end
 })
 
-WalkSection:AddSlider({
+AutoWalking:AddSlider({
     Title = "Auto Walk Speed",
     Min = 10,
     Max = 100,
@@ -828,7 +839,8 @@ WalkSection:AddSlider({
     end
 })
 
-WalkSection:AddButton({
+
+AutoWalking:AddButton({
     Title = "Rescan Rute",
     Callback = function()
         local total = ScanMountain()
