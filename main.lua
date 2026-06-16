@@ -826,10 +826,7 @@ WalkSection:AddToggle({
     end
 })
 
-
-local AutoWSection = AutoWalking:AddSection("🗻 Speed Auto Walk Mountain")
-
-AutoWSection:AddSlider({
+WalkSection:AddInput({
     Title = "WalkSpeed Hack",
     Description = "Semakin tinggi angkanya, semakin cepat larinya.",
     Min = 16,          -- 16 adalah kecepatan asli Roblox
@@ -845,7 +842,7 @@ AutoWSection:AddSlider({
 })
 
 -- 4. Memasang Slider untuk Tinggi Lompatan (JumpPower)
-AutoWSection:AddSlider({
+WalkSection:AddInput({
     Title = "JumpPower Hack",
     Description = "Semakin tinggi angkanya, semakin tinggi lompatannya.",
     Min = 50,          -- 50 adalah tinggi lompatan asli Roblox
@@ -860,7 +857,7 @@ AutoWSection:AddSlider({
     end
 })
 
-AutoWSection:AddButton({
+WalkSection:AddButton({
     Title = "Rescan Rute",
     Callback = function()
         local total = ScanMountain()
