@@ -1157,25 +1157,33 @@ end
 
 FarmSection:AddToggle({
     Title = "Master Auto CP (Altitude Logic)",
-    Description = "Bekerja di semua map gunung berdasarkan ketinggian",
+    Description = "Bekerja berdasarkan ketinggian (Semua Map)",
     Default = false,
     Callback = function(v)
         _G.AutoCP = v
         if v then
             task.spawn(function()
-                Library:MakeNotify({ Title = "MDW HUB", Content = "Menganalisa rute gunung... Mohon tunggu." })
-                local found = ScanMountain()
-                Library:MakeNotify({ Title = "Success", Content = "Ditemukan " .. found .. " titik pendakian. Memulai..." })
+                Library:MakeNotify({ Title = "MDW HUB", Content = "Menganalisa rute... Mohon tunggu." })
+                
+                -- PERBAIKAN: Nama fungsi harus sesuai (ScanMountain)
+                local found = ScanMountain() 
+                
+                if found == 0 then
+                    Library:MakeNotify({ Title = "Error", Content = "Tidak ada CP terdeteksi!" })
+                    _G.AutoCP = false
+                    return
+                end
+                
+                Library:MakeNotify({ Title = "Success", Content = "Ditemukan " .. found .. " titik. Memulai..." })
 
                 while _G.AutoCP do
                     local char = game.Players.LocalPlayer.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
                     if not root then task.wait(1) continue end
 
-                    -- Mencari Checkpoint yang tingginya sedikit di atas kita sekarang
                     local target = nil
                     for _, cp in pairs(MountainRoute) do
-                        -- Cari CP yang posisinya lebih tinggi dari kita (+ 5 studs)
+                        -- Cari yang lebih tinggi dari posisi sekarang
                         if cp.Y > root.Position.Y + 5 then
                             target = cp.Part
                             break
@@ -1183,19 +1191,18 @@ FarmSection:AddToggle({
                     end
 
                     if target then
-                        -- Teleportasi 2 tahap (Atas lalu Pas) agar trigger sensor Touch
+                        -- Teleportasi 2 tahap
                         root.CFrame = target.CFrame * CFrame.new(0, 5, 0)
                         task.wait(0.3)
                         root.CFrame = target.CFrame
                         
-                        -- Force Touch Interest
+                        -- Simulasi sentuhan (FireTouchInterest)
                         if firetouchinterest then
                             firetouchinterest(root, target, 0)
                             task.wait(0.1)
                             firetouchinterest(root, target, 1)
                         end
 
-                        -- Delay per stage (Penting agar tidak di-kick anti-cheat)
                         task.wait(_G.CPDelay or 2.0)
                     else
                         Library:MakeNotify({ Title = "Puncak", Content = "Sudah mencapai titik tertinggi!" })
@@ -1218,10 +1225,10 @@ FarmSection:AddInput({
 
 FarmSection:AddButton({
     Title = "Rescan Map",
-    Description = "Klik jika CP tidak terdeteksi",
+    Description = "Klik jika CP baru tidak muncul",
     Callback = function()
-        ScanMountain()
-        Library:MakeNotify({ Title = "MDW", Content = "Map telah dipindai ulang!" })
+        local total = ScanMountain()
+        Library:MakeNotify({ Title = "MDW", Content = "Scan ulang berhasil: " .. total .. " titik." })
     end
 })
 
