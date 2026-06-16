@@ -735,7 +735,7 @@ local function ScanMountain()
 end
 
 
-AutoWalking:AddToggle({
+WalkSection:AddToggle({
     Title = "Start Auto Walk (Matcha/Universal)",
     Description = "Berjalan halus otomatis ke puncak gunung",
     Default = false,
@@ -832,7 +832,7 @@ AutoWalking:AddToggle({
     end
 })
 
-AutoWalking:AddSlider({
+WalkSection:AddSlider({
     Title = "Auto Walk Speed",
     Min = 10,
     Max = 100,
@@ -843,7 +843,7 @@ AutoWalking:AddSlider({
 })
 
 
-AutoWalking:AddButton({
+WalkSection:AddButton({
     Title = "Rescan Rute",
     Callback = function()
         local total = ScanMountain()
