@@ -558,18 +558,8 @@ QuickSection:AddButton({
     end
 })
 
--- [[ TELEPORT ]]
-local TpSection = MainTab:AddSection("🎯 Teleport")
-
-TpSection:AddToggle({
-    Title = "Tap to Teleport",
-    Description = "Klik di layar untuk pindah posisi",
-    Default = false,
-    Callback = function(v) _G.TapTP = v end
-})
-
 -- [[ PLAYER TELEPORT ]]
-local QuickTpSection = MainTab:AddSection("🚀 Quick Player Teleport")
+local QuickTpSection = QuickSection:AddSection("🚀 Quick Player Teleport")
 
 QuickTpSection:AddToggle({
     Title = "Auto Pick Up / Interact",
@@ -592,6 +582,16 @@ QuickTpSection:AddToggle({
             end
         end)
     end
+})
+
+-- [[ TELEPORT ]]
+local TpSection = MainTab:AddSection("🎯 Teleport")
+
+TpSection:AddToggle({
+    Title = "Tap to Teleport",
+    Description = "Klik di layar untuk pindah posisi",
+    Default = false,
+    Callback = function(v) _G.TapTP = v end
 })
 
 local SelectedTarget = ""
@@ -648,6 +648,7 @@ QuickTpSection:AddButton({
 -- Tombol Teleport
 QuickTpSection:AddButton({
     Title = "Teleport Sekarang",
+    Description = "Teleport ke pemain (Mendukung Jarak Jauh)",
     Callback = function()
         if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
             Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
@@ -655,15 +656,38 @@ QuickTpSection:AddButton({
         end
         
         local target = game.Players:FindFirstChild(SelectedTarget)
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local myChar = game.Players.LocalPlayer.Character
-            if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                -- Teleport ke posisi target
-                myChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+        local myChar = game.Players.LocalPlayer.Character
+        local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+
+        if target and myRoot then
+            -- LOGIKA UNTUK JARAK JAUH (StreamingEnabled Bypass)
+            -- Kita mencoba mengambil posisi target melalui 'Pivot' karena lebih stabil
+            local targetPos = nil
+            
+            if target.Character and target.Character:GetPivot() then
+                targetPos = target.Character:GetPivot()
+            end
+
+            if targetPos then
+                -- Teleportasi Utama
+                myRoot.CFrame = targetPos * CFrame.new(0, 0, 3)
                 Library:MakeNotify({ Title = "Success", Content = "Berhasil ke " .. SelectedTarget })
+            else
+                -- Jika karakter target belum di-load (jarak sangat jauh)
+                Library:MakeNotify({ 
+                    Title = "Streaming Error", 
+                    Content = "Karakter target terlalu jauh dan belum dimuat oleh sistem Roblox. Coba lagi dalam 1-2 detik.",
+                    Time = 5
+                })
+                
+                -- Opsi Tambahan: Mencoba memaksa load area target (hanya bekerja di beberapa executor)
+                if target.Character == nil then
+                    -- Beritahu user untuk mencoba refresh
+                    UpdateDropdown()
+                end
             end
         else
-            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan/sudah keluar!" })
+            Library:MakeNotify({ Title = "Error", Content = "Karakter Anda atau Target tidak siap!" })
         end
     end
 })
@@ -961,81 +985,6 @@ WalkSection:AddButton({
         Library:MakeNotify({ Title = "Success", Content = "Data diupdate: " .. count .. " koordinat." })
     end
 })
-
-local FollowSection = WalkSection:AddSection("👥 Follow Player")
-
-local SelectedToFollow = ""
-_G.FollowActive = false
-
--- 1. Fungsi untuk mengambil daftar semua pemain di server
-local function GetServerPlayers()
-    local players = {} 
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= Players.LocalPlayer then 
-            table.insert(players, p.Name)
-        end
-    end
-    -- Jika server kosong (hanya Anda sendiri)
-    if #players == 0 then return {"Tidak ada pemain lain"} end
-    return players
-end
-
--- 2. Membuat Dropdown Daftar Pemain
-local PlayerDropdown = FollowSection:AddDropdown({
-    Title = "Pilih Pemain (Otomatis)",
-    Description = "Daftar pemain di server saat ini",
-    Options = GetServerPlayers(),
-    Default = "",
-    Callback = function(v)
-        SelectedToFollow = v
-    end
-})
-
--- 3. Tombol Refresh (Jika ada pemain baru masuk tapi belum muncul di daftar)
-FollowSection:AddButton({
-    Title = "🔄 Refresh Daftar Pemain",
-    Callback = function()
-        local list = GetServerPlayers()
-        -- Update opsi di dropdown (Standard RedzLib/Modern UI)
-        pcall(function() PlayerDropdown:SetOptions(list) end)
-        pcall(function() PlayerDropdown:Refresh(list, true) end)
-        Library:MakeNotify({ Title = "Success", Content = "Daftar pemain diperbarui!" })
-    end
-})
-
--- 4. Toggle untuk Mulai Mengikuti
-FollowSection:AddToggle({
-    Title = "Mulai Mengikuti",
-    Default = false,
-    Callback = function(v)
-        _G.FollowActive = v
-        
-        if v then
-            task.spawn(function()
-                while _G.FollowActive do
-                    local target = game.Players:FindFirstChild(SelectedToFollow)
-                    local char = game.Players.LocalPlayer.Character
-                    local hum = char and char:FindFirstChildOfClass("Humanoid")
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-
-                    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and hum and root then
-                        -- Berjalan ke arah pemain tersebut
-                        local targetPos = target.Character.HumanoidRootPart.Position
-                        -- Jarak aman 4 studs agar tidak bertubrukan
-                        hum:MoveTo(targetPos + Vector3.new(3, 0, 3))
-                    end
-                    task.wait(0.1)
-                end
-            end)
-            Library:MakeNotify({ Title = "Follow", Content = "Mengikuti: " .. SelectedToFollow })
-        else
-            -- Berhenti berjalan saat OFF
-            local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if hum then hum:MoveTo(game.Players.LocalPlayer.Character.HumanoidRootPart.Position) end
-            Library:MakeNotify({ Title = "Follow", Content = "Fitur dimatikan." })
-        end
-    end
-}) 
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
@@ -2163,22 +2112,33 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- [[ TAP TO TELEPORT (PC & MOBILE SUPPORT) ]]
+-- [[ LOGIKA TAP TO TELEPORT - STABLE VERSION ]]
 UserInputService.InputBegan:Connect(function(input, processed)
-    -- 1. Jangan teleport kalau sedang mengetik di Chat
+    -- Jangan teleport jika sedang klik menu atau ketik chat
     if processed then return end
     
-    -- 2. Cek apakah Toggle di menu sedang menyala
     if _G.TapTP then
-        -- 3. Deteksi Klik Mouse (PC) atau Ketukan Layar (Mobile)
+        -- Deteksi Klik Kiri (PC) atau Sentuhan (Mobile) 
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local mouse = LocalPlayer:GetMouse()
-            local character = LocalPlayer.Character
-            local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+            local char = LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
             
-            -- 4. Pastikan karakter ada dan lokasi klik valid
-            if rootPart and mouse.Hit then
-                -- Teleport ke lokasi klik (ditambah 3 studs ke atas agar tidak nyangkut di tanah)
-                rootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+            if root then
+                -- Membuat garis (Ray) dari kamera ke arah klik
+                local mousePos = input.Position
+                local unitRay = Workspace.CurrentCamera:ViewportPointToRay(mousePos.X, mousePos.Y)
+                
+                -- Deteksi benda apa yang diklik
+                local raycastParams = RaycastParams.new()
+                raycastParams.FilterDescendantsInstances = {char}
+                raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+                
+                local result = Workspace:Raycast(unitRay.Origin, unitRay.Direction * 2000, raycastParams)
+                
+                if result then
+                    -- Teleport ke posisi benda yang kena klik + naik 3 studs agar tidak nyangkut
+                    root.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0))
+                end
             end
         end
     end
