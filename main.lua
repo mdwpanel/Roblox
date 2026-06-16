@@ -10,9 +10,6 @@
     Version: 1.0.6 | Library: LynxGUI (Custom)
 --]]
 
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/4LynxX/Libb/refs/heads/main/Lib2.lua"))()
-
--- Services
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
@@ -22,13 +19,16 @@ local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
--- Global Variables & Trackers
-
+-- Global Variables (Didefinisikan di awal agar tidak error)
 local LocalPlayer = Players.LocalPlayer
 local ESP_Objects = {}
 local ManualHighlights = {}
 local ESPHighlights = {}
 local ESPLabels = {}
+local ToggleKey = Enum.KeyCode.RightControl
+local msg = "FCAL HUB ON TOP!"
+local SpecTarget = ""
+local hbSize = 2
 
 _G.AutoCP = false
 _G.InfJump = false
@@ -42,7 +42,7 @@ _G.AntiRagdoll = false
 _G.AntiVoid = false
 _G.AntiKick = false
 _G.AdminDetect = false
-
+_G.Hitbox = false
 
 local Config = {
     WalkSpeedDefault = 16,
@@ -50,7 +50,6 @@ local Config = {
     GravityDefault = 196,
     Theme = "Midnight",
     FlySpeed = 100,
-    FlySpeedDefault = 100,
 }
 
 -- ==========================================
@@ -175,18 +174,16 @@ end)
 
 Players.PlayerRemoving:Connect(ClearESP)
 
-function Notify(title, desc, typ)
-    Window:Notify({Title = title, Description = desc, Duration = 3, Type = typ or "Info"})
+local function Notify(title, desc, typ)
+    Library:MakeNotify({Title = title, Content = desc, Duration = 3})
 end
 
-function GetHumanoid()
-    local char = LocalPlayer.Character
-    return char and char:FindFirstChildOfClass("Humanoid")
+local function GetHumanoid()
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
 end
 
-function GetRootPart()
-    local char = LocalPlayer.Character
-    return char and char:FindFirstChild("HumanoidRootPart")
+local function GetRootPart()
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 end
 
 function GetPlayerByName(name)
@@ -258,11 +255,9 @@ function GetPlayerRole(player)
     return "Survivor"
 end
 
-function GetESPColor(player)
+local function GetESPColor(player)
     local role = GetPlayerRole(player)
-    if role == "Killer" then return Color3.fromRGB(255, 0, 0)
-    elseif role == "Survivor" then return Color3.fromRGB(0, 255, 0)
-    else return Color3.fromRGB(255, 255, 255) end
+    return role == "Killer" and Color3.fromRGB(255, 0, 0) or Color3.fromRGB(0, 255, 0)
 end
 
 function IsGenerator(obj)
@@ -443,6 +438,14 @@ function FindAllGenerators()
     return generators
 end
 
+local function SafeRefreshDropdown(dropdown, list)
+    if dropdown and dropdown.Clear then
+        dropdown:Clear()
+        for _, item in pairs(list) do
+            dropdown:Add(item)
+        end
+    end
+end
 -- ==========================================
 -- USER INTERFACE TABS SETUP
 -- ==========================================
@@ -916,10 +919,9 @@ FarmSection:AddButton({
     end
 })
 
-local VisualSection = GameTab:AddSection("🎭 Visual ESP & Tracking")
-
-VisualSection:AddToggle({ Title = "ESP Box (2D)", Default = false, Callback = function(v) _G.BoxESP = v end })
-VisualSection:AddToggle({ Title = "ESP Tracers (Line)", Default = false, Callback = function(v) _G.LineESP = v end })
+local VisualSection = GameTab:AddSection("🎭 Visual ESP")
+VisualSection:AddToggle({ Title = "ESP Box (Kotak Putih)", Default = false, Callback = function(v) _G.BoxESP = v end })
+VisualSection:AddToggle({ Title = "ESP Tracers (Garis)", Default = false, Callback = function(v) _G.LineESP = v end })
 
 VisualSection:AddToggle({
     Title = "ESP Health Bar",
@@ -1132,41 +1134,6 @@ UtilSection:AddToggle({
                     game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.D, false, game)
                     task.wait(0.05)
                     game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.D, false, game)
-                end
-            end)
-        end
-    end
-})
-
-local hbSize = 2
--- FIX: Menyediakan properti Min, Max, Minimum, dan Maximum sekaligus untuk jaminan kompatibilitas penuh agar tab selanjutnya tidak kosong/crash!
-UtilSection:AddSlider({
-    Title = "Hitbox Expander",
-    Default = 2,
-    Min = 2,
-    Max = 20,
-    Minimum = 2,
-    Maximum = 20,
-    Callback = function(v) hbSize = v end
-})
-
-UtilSection:AddToggle({
-    Title = "Enable Hitbox",
-    Default = false,
-    Callback = function(v)
-        _G.Hitbox = v
-        if v then
-            task.spawn(function()
-                while _G.Hitbox do
-                    task.wait(1)
-                    for _, p in pairs(Players:GetPlayers()) do
-                        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                            p.Character.HumanoidRootPart.Size = Vector3.new(hbSize, hbSize, hbSize)
-                            p.Character.HumanoidRootPart.Transparency = 0.7
-                            p.Character.HumanoidRootPart.Color = Color3.new(1, 0, 0)
-                            p.Character.HumanoidRootPart.CanCollide = false
-                        end
-                    end
                 end
             end)
         end
