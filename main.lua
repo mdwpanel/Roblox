@@ -37,7 +37,6 @@ _G.AutoCP = false
 _G.InfJump = false
 _G.NC = false
 _G.TapTP = false
-_G.AutoInteract = false
 _G.BoxESP = false
 _G.LineESP = false
 _G.ESP = false
@@ -1824,22 +1823,16 @@ end)
 
 -- [[ TAP TO TELEPORT (PC & MOBILE SUPPORT) ]]
 UserInputService.InputBegan:Connect(function(input, processed)
-    if _G.TapTP and not processed then
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if root then
-                local mousePos = UserInputService:GetMouseLocation()
-                local ray = Workspace.CurrentCamera:ViewportPointToRay(mousePos.X, mousePos.Y)
-                local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 1000)
-                
-                if raycastResult then
-                    root.CFrame = CFrame.new(raycastResult.Position + Vector3.new(0, 3, 0))
-                end
-            end
+    if processed then return end -- Jangan aktif jika sedang mengetik di chat
+    
+    if _G.TapTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+        local mouse = LocalPlayer:GetMouse()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            -- Teleport ke posisi klik
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.p + Vector3.new(0, 3, 0))
         end
     end
 end)
-
 
 -- [[ 2D ESP DRAWING LOOP OPTIMIZED ]]
 RunService.RenderStepped:Connect(function()
