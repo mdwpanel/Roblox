@@ -826,7 +826,9 @@ WalkSection:AddToggle({
     end
 })
 
-WalkSection:AddSlider({
+local AutoWSection = AutoWalking:AddSection({"🗻 Speed Auto Walk Mountain"})
+
+AutoWSection:AddSlider({
     Title = "Auto Walk Speed",
     Min = 10,
     Max = 100,
@@ -2008,7 +2010,7 @@ RunService.RenderStepped:Connect(function()
                 local obj = ESP_Objects[player]
                 local color = GetESPColor(player)
                 
-                if _G.BoxESP then 
+                if _G.BoxESP then
                     -- Ukuran kotak berdasarkan jarak (Z)
                     local sizeX = math.clamp(2000 / pos.Z, 10, 500)
                     local sizeY = math.clamp(3000 / pos.Z, 10, 700)
