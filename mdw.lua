@@ -456,37 +456,6 @@ local function SafeRefreshDropdown(dropdown, list)
     end
 end
 
-local MountainPaths = {}
-
-local function ScanUniversalCPs()
-    MountainPaths = {}
-    local count = 0
-    
-    -- Ambil semua objek yang berpotensi jadi Checkpoint
-    for _, obj in pairs(workspace:GetDescendants()) do
-        -- Kriteria 1: Semua SpawnLocation (Standar Roblox untuk Checkpoint)
-        -- Kriteria 2: Part yang punya nama mengandung kata kunci umum
-        if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
-            obj.Name:lower():find("checkpoint") or 
-            obj.Name:lower():find("stage") or 
-            obj.Name:lower():find("camp") or 
-            obj.Name:lower():find("flag") or
-            obj.Name:lower():find("point")
-        )) then
-            table.insert(MountainPaths, obj)
-            count = count + 1
-        end
-    end
-
-    -- LOGIKA UTAMA: Urutkan berdasarkan Ketinggian (Y Axis)
-    -- Ini yang membuat script bisa jalan di semua map gunung
-    table.sort(MountainPaths, function(a, b)
-        return a.Position.Y < b.Position.Y
-    end)
-    
-    return count
-end
-
 -- ==========================================
 -- USER INTERFACE TABS SETUP
 -- ==========================================
@@ -1119,116 +1088,101 @@ FlySection:AddToggle({
 -- ==========================================
 -- GAME TAB
 -- ==========================================
-local FarmSection = GameTab:AddSection({"🏔️ Master Universal CP v5"})
+local FarmSection = GameTab:AddSection("🏔️ Auto Farming CP")
+local MountainPaths = {}
 
--- Tabel untuk menyimpan data rute gunung
-local MountainRoute = {}
-
--- [[ FUNGSI SCANNING ANTI-FREEZE ]]
-local function ScanMountain()
-    MountainRoute = {}
-    local allParts = workspace:GetDescendants()
-    local totalFound = 0
-    
-    for i, obj in pairs(allParts) do
-        -- Anti-freeze: istirahat setiap 500 objek
-        if i % 500 == 0 then task.wait() end
-        
-        -- Kriteria Universal
+local function ScanUniversalCPs()
+    MountainPaths = {}
+    local count = 0
+    for _, obj in pairs(workspace:GetDescendants()) do
+        -- Mencari semua SpawnLocation atau part yang mengandung kata kunci Checkpoint/Stage
         if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
             obj.Name:lower():find("checkpoint") or 
             obj.Name:lower():find("stage") or 
-            obj.Name:lower():find("camp") or 
-            obj.Name:lower():find("point") or
-            obj.Name:match("^%d+$")
+            obj.Name:lower():find("point")
         )) then
-            table.insert(MountainRoute, {Part = obj, Y = obj.Position.Y})
-            totalFound = totalFound + 1
+            table.insert(MountainPaths, obj)
+            count = count + 1
         end
     end
-
-    -- Urutkan berdasarkan ketinggian (Y)
-    table.sort(MountainRoute, function(a, b)
-        return a.Y < b.Y
+    -- Urutkan berdasarkan ketinggian (Y) agar universal di semua map gunung
+    table.sort(MountainPaths, function(a, b)
+        return a.Position.Y < b.Position.Y
     end)
-    
-    return totalFound
-end
+    return count
+end 
 
 FarmSection:AddToggle({
-    Title = "Master Auto CP (Altitude Logic)",
-    Description = "Bekerja berdasarkan ketinggian (Semua Map)",
+    Title = "Master Auto CP (Universal)",
+    Description = "Bekerja berdasarkan ketinggian gunung (Semua Map)",
     Default = false,
     Callback = function(v)
         _G.AutoCP = v
         if v then
             task.spawn(function()
-                Library:MakeNotify({ Title = "MDW HUB", Content = "Menganalisa rute... Mohon tunggu." })
-                
-                -- PERBAIKAN: Nama fungsi harus sesuai (ScanMountain)
-                local found = ScanMountain() 
-                
-                if found == 0 then
-                    Library:MakeNotify({ Title = "Error", Content = "Tidak ada CP terdeteksi!" })
-                    _G.AutoCP = false
-                    return
-                end
-                
-                Library:MakeNotify({ Title = "Success", Content = "Ditemukan " .. found .. " titik. Memulai..." })
+                -- Jalankan scan saat diaktifkan
+                local total = ScanUniversalCPs()
+                Library:MakeNotify({ Title = "MDW HUB", Content = "Ditemukan " .. total .. " Jalur. Memulai...", Time = 3 })
 
                 while _G.AutoCP do
                     local char = game.Players.LocalPlayer.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
-                    if not root then task.wait(1) continue end
+                    
+                    if root then
+                        -- Cari target berdasarkan stage saat ini di leaderstats
+                        local currentIdx = 0
+                        local ls = game.Players.LocalPlayer:FindFirstChild("leaderstats")
+                        if ls then
+                            local st = ls:FindFirstChild("Checkpoint") or ls:FindFirstChild("Stage") or ls:FindFirstChild("Level")
+                            currentIdx = st and st.Value or 0
+                        end
 
-                    local target = nil
-                    for _, cp in pairs(MountainRoute) do
-                        -- Cari yang lebih tinggi dari posisi sekarang
-                        if cp.Y > root.Position.Y + 5 then
-                            target = cp.Part
+                        -- Pilih target CP berikutnya
+                        local targetPart = MountainPaths[currentIdx + 1]
+                        
+                        -- Jika tidak ada leaderstats, cari yang lebih tinggi dari posisi sekarang
+                        if not targetPart then
+                            for _, part in pairs(MountainPaths) do
+                                if part.Position.Y > root.Position.Y + 5 then
+                                    targetPart = part
+                                    break
+                                end
+                            end
+                        end
+
+                        if targetPart then
+                            -- Teleportasi 2 tahap agar sensor Touch game aktif
+                            root.CFrame = targetPart.CFrame * CFrame.new(0, 3, 0)
+                            task.wait(0.2)
+                            root.CFrame = targetPart.CFrame
+                            
+                            -- Simulasi Sentuhan (FireTouchInterest)
+                            if firetouchinterest then
+                                firetouchinterest(root, targetPart, 0)
+                                task.wait(0.1)
+                                firetouchinterest(root, targetPart, 1)
+                            end
+                            
+                            task.wait(_G.CPDelay or 2.0)
+                        else
+                            Library:MakeNotify({ Title = "Selesai", Content = "Sudah mencapai puncak." })
+                            _G.AutoCP = false
                             break
                         end
                     end
-
-                    if target then
-                        -- Teleportasi 2 tahap
-                        root.CFrame = target.CFrame * CFrame.new(0, 5, 0)
-                        task.wait(0.3)
-                        root.CFrame = target.CFrame
-                        
-                        -- Simulasi sentuhan (FireTouchInterest)
-                        if firetouchinterest then
-                            firetouchinterest(root, target, 0)
-                            task.wait(0.1)
-                            firetouchinterest(root, target, 1)
-                        end
-
-                        task.wait(_G.CPDelay or 2.0)
-                    else
-                        Library:MakeNotify({ Title = "Puncak", Content = "Sudah mencapai titik tertinggi!" })
-                        _G.AutoCP = false
-                        break
-                    end
+                    task.wait(0.5)
                 end
             end)
         end
     end
 })
 
-FarmSection:AddInput({ 
-    Title = "Delay Pendakian", 
+-- Tambahan input delay agar user bisa mengatur kecepatan
+FarmSection:AddInput({
+    Title = "Delay Pendakian",
     Default = "2.0", 
-    Callback = function(v) 
-        _G.CPDelay = tonumber(v) or 2.0 
-    end 
-})
-
-FarmSection:AddButton({
-    Title = "Rescan Map",
-    Description = "Klik jika CP baru tidak muncul",
-    Callback = function()
-        local total = ScanMountain()
-        Library:MakeNotify({ Title = "MDW", Content = "Scan ulang berhasil: " .. total .. " titik." })
+    Callback = function(v)
+        _G.CPDelay = tonumber(v) or 2.0
     end
 })
 
