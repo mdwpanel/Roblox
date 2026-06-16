@@ -703,12 +703,10 @@ _G.AutoWalk = false
 local function GetHum() return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") end
 local function GetRoot() return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") end
 
--- Fungsi Scan Jalur Gunung (Universal)
+-- Fungsi Scan Jalur (Hanya ambil yang lebih tinggi dari posisi sekarang)
 local function ScanMountain()
     MountainRoute = {}
     local allParts = workspace:GetDescendants()
-    local count = 0
-    
     for i, obj in pairs(allParts) do
         if i % 500 == 0 then task.wait() end -- Anti-lag
         
@@ -716,111 +714,103 @@ local function ScanMountain()
             obj.Name:lower():find("cp") or 
             obj.Name:lower():find("stage") or 
             obj.Name:lower():find("camp") or 
-            obj.Name:lower():find("matcha") or
             obj.Name:lower():find("point")
         )) then
             table.insert(MountainRoute, {Part = obj, Y = obj.Position.Y})
-            count = count + 1
         end
     end
-
-    table.sort(MountainRoute, function(a, b)
-        return a.Y < b.Y
-    end)
-    return count
+    -- Urutkan berdasarkan ketinggian
+    table.sort(MountainRoute, function(a, b) return a.Y < b.Y end)
+    return #MountainRoute
 end
 
 WalkSection:AddToggle({
-    Title = "Start Auto Walk (Improved)",
-    Description = "Berjalan halus dengan sistem Anti-Stuck",
+    Title = "Start Auto Walk (Smooth Mode)",
+    Description = "Jalan halus menembus rintangan ke puncak",
     Default = false,
     Callback = function(v)
         _G.AutoWalk = v
         if v then
             task.spawn(function()
-                Library:MakeNotify({ Title = "Scanning...", Content = "Menganalisa rute pendakian..." })
                 local total = ScanMountain()
-                
-                if total == 0 then
-                    Library:MakeNotify({ Title = "Error", Content = "Checkpoint tidak ditemukan!" })
-                    _G.AutoWalk = false
-                    return
-                end
-                
-                Library:MakeNotify({ Title = "Success", Content = "Ditemukan " .. total .. " titik. Memulai..." })
-
-                -- Koneksi NoClip agar tidak tersangkut batu saat jalan
-                local ncConn
-                ncConn = RunService.Stepped:Connect(function()
-                    if _G.AutoWalk and LocalPlayer.Character then
-                        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
-                            if part:IsA("BasePart") then part.CanCollide = false end
-                        end
-                    else
-                        ncConn:Disconnect()
-                    end
-                end)
+                Library:MakeNotify({ Title = "MDW HUB", Content = "Mulai mendaki! Menghindari rintangan..." })
 
                 while _G.AutoWalk do
                     local root = GetRoot()
                     local hum = GetHum()
                     if not root or not hum then task.wait(1) continue end
 
-                    -- Cari target titik berikutnya
+                    -- CARI TARGET: Cari CP yang lebih tinggi dari posisi kita sekarang (Min +5 studs)
                     local targetData = nil
                     for _, data in pairs(MountainRoute) do
-                        if data.Y > root.Position.Y + 3 then 
+                        if data.Y > root.Position.Y + 5 then 
                             targetData = data
                             break
                         end
                     end
 
-                    if targetData and targetData.Part then
-                        local target = targetData.Part
-                        local distance = (root.Position - target.Position).Magnitude
+                    if targetData then
+                        local targetPart = targetData.Part
+                        local distance = (root.Position - targetPart.Position).Magnitude
                         local duration = distance / (_G.AutoWalkSpeed or 25)
 
-                        -- Set PlatformStand agar karakter tidak 'berontak' saat ditarik tween
-                        hum.PlatformStand = true
+                        -- 1. AKTIFKAN STATE ANTI-LOMPAT & NOCLIP
+                        hum.PlatformStand = true -- Mematikan animasi kaki agar tidak lompat-lompat
+                        
+                        -- Loop NoClip selama berjalan
+                        local ncLoop = RunService.Stepped:Connect(function()
+                            if LocalPlayer.Character then
+                                for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
+                                    if p:IsA("BasePart") then p.CanCollide = false end
+                                end
+                            end
+                        end)
+
+                        -- 2. GERAKAN TWEEN (Halus)
+                        -- Kita buat karakter menghadap ke arah target (lookAt)
+                        local targetCFrame = CFrame.new(targetPart.Position + Vector3.new(0, 3, 0)) 
+                        local lookAtCFrame = CFrame.lookAt(root.Position, targetPart.Position)
 
                         local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-                            CFrame = target.CFrame * CFrame.new(0, 3, 0)
+                            CFrame = targetCFrame * CFrame.Angles(0, math.rad(root.Orientation.Y), 0)
                         })
                         
                         tween:Play()
-                        
+
                         local reached = false
-                        local connection = tween.Completed:Connect(function() reached = true end)
-                        
+                        local finished = tween.Completed:Connect(function() reached = true end)
+
                         repeat 
                             task.wait(0.1)
+                            -- Batalkan jika toggle dimatikan atau mati
                             if not _G.AutoWalk or hum.Health <= 0 then 
-                                tween:Cancel() 
+                                tween:Cancel()
                                 reached = true 
                             end
                         until reached
-                        
-                        if connection then connection:Disconnect() end
-                        hum.PlatformStand = false -- Kembalikan ke normal setelah sampai
 
-                        -- Simulasi Checkpoint
-                        if firetouchinterest and _G.AutoWalk and GetRoot() then
-                            firetouchinterest(root, target, 0)
+                        -- 3. CLEANUP SETELAH SAMPAI DI SATU TITIK
+                        finished:Disconnect()
+                        ncLoop:Disconnect()
+                        hum.PlatformStand = false
+
+                        -- Paksa sentuh checkpoint
+                        if firetouchinterest and _G.AutoWalk then
+                            firetouchinterest(root, targetPart, 0)
                             task.wait(0.1)
-                            firetouchinterest(root, target, 1)
+                            firetouchinterest(root, targetPart, 1)
                         end
                     else
-                        Library:MakeNotify({ Title = "Selesai", Content = "Anda sudah di puncak!" })
+                        Library:MakeNotify({ Title = "Selesai", Content = "Sudah sampai di puncak!" })
                         _G.AutoWalk = false
                         break
                     end
-                    task.wait(0.3)
+                    task.wait(0.1)
                 end
                 
-                -- Cleanup jika mati/off
-                local hum = GetHum()
-                if hum then hum.PlatformStand = false end
-                if ncConn then ncConn:Disconnect() end
+                -- Final Cleanup
+                local h = GetHum()
+                if h then h.PlatformStand = false end
             end)
         end
     end
