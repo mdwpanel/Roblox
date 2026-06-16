@@ -558,32 +558,6 @@ QuickSection:AddButton({
     end
 })
 
--- [[ PLAYER TELEPORT ]]
-local QuickTpSection = QuickSection:AddSection("🚀 Quick Player Teleport")
-
-QuickTpSection:AddToggle({
-    Title = "Auto Pick Up / Interact",
-    Description = "Otomatis ambil item/oksigen terdekat",
-    Default = false,
-    Callback = function(v)
-        _G.AutoInteract = v
-        task.spawn(function()
-            while _G.AutoInteract do
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then
-                        -- Cek jarak agar tidak mengambil barang yang terlalu jauh
-                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - obj.Parent:GetModelCFrame().p).Magnitude
-                        if dist < 15 then
-                            fireproximityprompt(obj)
-                        end
-                    end
-                end
-                task.wait(0.5)
-            end
-        end)
-    end
-})
-
 -- [[ TELEPORT ]]
 local TpSection = MainTab:AddSection("🎯 Teleport")
 
