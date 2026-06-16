@@ -10,6 +10,9 @@
     Version: 1.0.6 | Library: LynxGUI (Custom)
 --]]
 
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/4LynxX/Libb/refs/heads/main/Lib2.lua"))()
+
+-- Services
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
