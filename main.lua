@@ -570,991 +570,1097 @@ QuickTpSection:AddButton({
 -- ==========================================
 -- TROLL MOUNTAIN SECTION (FITUR JAHIL)
 -- ==========================================
+-- ==========================================
+-- TROLL MOUNTAIN SECTION (FITUR JAHIL) - FIXED
+-- ==========================================
 local TrollSection = MainTab:AddSection("👿 Troll Mountain")
 
--- 1. DORONG DARI TEBING
+-- === FUNGSI PEMBANTU UNTUK TROLL ===
+local function GetTargetCharacter()
+    if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+        Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+        return nil
+    end
+    
+    local target = Players:FindFirstChild(SelectedTarget)
+    if not target then
+        Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan!" })
+        return nil
+    end
+    
+    if not target.Character then
+        Library:MakeNotify({ Title = "Error", Content = "Pemain tidak memiliki karakter!" })
+        return nil
+    end
+    
+    return target
+end
+
+local function GetTargetRoot(target)
+    if not target or not  then return nil end
+    return target.Character:FindFirstChild("HumanoidRootPart")
+end
+
+local function GetTargetHumanoid(target)
+    if not target or not target.Character then return nil end
+    return target.Character:FindFirstChildOfClass("Humanoid")
+end
+ 
+-- 1. DORONG DARI TEBING (FIXED)
 TrollSection:AddButton({
     Title = "💨 Dorong dari Tebing",
     Description = "Dorong player target jatuh dari gunung (TERLIHAT SEMUA)",
     Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
             return 
         end
         
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local pushDirection = hrp.CFrame.LookVector * -80
-                hrp.AssemblyLinearVelocity = Vector3.new(
-                    pushDirection.X,
-                    20,
-                    pushDirection.Z
-                )
-                
-                local explosion = Instance.new("Explosion")
-                explosion.Position = hrp.Position
-                explosion.BlastRadius = 5
-                explosion.BlastPressure = 0
-                explosion.Parent = workspace
-                
-                Library:MakeNotify({ 
-                    Title = "💨 Pushed!", 
-                    Content = SelectedTarget .. " didorong dari gunung! (Semua player lihat)" 
-                })
-            end
-        end
+        -- Dorong ke arah luar gunung dengan kekuatan
+        local pushDirection = hrp.CFrame.LookVector * -100
+        hrp.AssemblyLinearVelocity = Vector3.new(
+            pushDirection.X,
+            30,
+            pushDirection.Z
+        )
+        
+        -- Buat efek ledakan (terlihat semua player)
+        local explosion = Instance.new("Explosion")
+        explosion.Position = hrp.Position
+        explosion.BlastRadius = 8
+        explosion.BlastPressure = 0
+        explosion.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "💨 Pushed!", 
+            Content = SelectedTarget .. " didorong dari gunung!" 
+        })
     end
 })
 
--- 2. LONGSOR BATU
+-- 2. LONGSOR BATU (FIXED)
 TrollSection:AddButton({
     Title = "🪨 Longsor Batu",
     Description = "Jatuhkan banyak batu ke target (TERLIHAT SEMUA)",
     Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
             return 
         end
         
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local pos = hrp.Position
-                local rocks = {}
+        local pos = hrp.Position
+        local rocks = {}
+        
+        for i = 1, 30 do
+            local rock = Instance.new("Part")
+            rock.Size = Vector3.new(
+                math.random(2, 6),
+                math.random(2, 6),
+                math.random(2, 6)
+            )
+            rock.Position = pos + Vector3.new(
+                math.random(-50, 50),
+                70 + math.random(0, 40),
+                math.random(-50, 50)
+            )
+            rock.BrickColor = BrickColor.new("Medium stone grey")
+            rock.Material = Enum.Material.Rock
+            rock.Anchored = false
+            rock.CanCollide = true
+            rock.Parent = workspace
+            
+            -- Efek jatuh cepat dengan BodyVelocity
+            local bodyVel = Instance.new("BodyVelocity")
+            bodyVel.Velocity = Vector3.new(0, -120, 0)
+            bodyVel.MaxForce = Vector3.new(0, math.huge, 0)
+            bodyVel.Parent = rock
+            
+            table.insert(rocks, rock)
+        end
+        
+        -- Efek debu
+        local smoke = Instance.new("Part")
+        smoke.Size = Vector3.new(40, 15, 40)
+        smoke.Position = pos + Vector3.new(0, -5, 0)
+        smoke.BrickColor = BrickColor.new("Medium stone grey")
+        smoke.Transparency = 0.7
+        smoke.Anchored = true
+        smoke.CanCollide = false
+        smoke.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "🪨 Rockslide!", 
+            Content = "Longsor menimpa " .. SelectedTarget .. "!" 
+        })
+        
+        -- Hapus setelah 8 detik
+        task.wait(8)
+        for _, rock in pairs(rocks) do
+            pcall(function() rock:Destroy() end)
+        end
+        pcall(function() smoke:Destroy() end)
+    end
+})
+
+-- 3. Lantai Licin (FIXED)
+TrollSection:AddButton({
+    Title = "🧊 Lantai Licin",
+    Description = "Buat lantai es di sekitar target (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        local pos = hrp.Position
+        local iceParts = {}
+        
+        for x = -5, 5 do
+            for z = -5, 5 do
+                local ice = Instance.new("Part")
+                ice.Size = Vector3.new(4, 0.5, 4)
+                ice.Position = pos + Vector3.new(x * 4, -3.5, z * 4)
+                ice.BrickColor = BrickColor.new("Bright blue")
+                ice.Material = Enum.Material.Ice
+                ice.Transparency = 0.2
+                ice.Anchored = true
+                ice.CanCollide = true
+                ice.Parent = workspace
                 
-                for i = 1, 25 do
-                    local rock = Instance.new("Part")
-                    rock.Size = Vector3.new(
-                        math.random(2, 6),
-                        math.random(2, 6),
-                        math.random(2, 6)
+                -- Buat slippery (licin)
+                ice.CustomPhysicalProperties = PhysicalProperties.new(
+                    0, -- Density
+                    0, -- Friction (0 = licin total)
+                    0.3, -- Elasticity
+                    0, -- FrictionWeight
+                    0 -- ElasticityWeight
+                )
+                
+                table.insert(iceParts, ice)
+            end
+        end
+        
+        Library:MakeNotify({ 
+            Title = "🧊 Ice Floor!", 
+            Content = "Lantai es di sekitar " .. SelectedTarget .. "!" 
+        })
+        
+        -- Hapus setelah 6 detik
+        task.wait(6)
+        for _, ice in pairs(iceParts) do
+            pcall(function() ice:Destroy() end)
+        end
+    end
+})
+
+-- 4. Jebakan Lubang (FIXED)
+TrollSection:AddButton({
+    Title = "🕳️ Jebakan Lubang",
+    Description = "Buat lubang di bawah target (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        local pos = hrp.Position
+        
+        -- Buat lubang (part hitam)
+        local hole = Instance.new("Part")
+        hole.Size = Vector3.new(12, 1, 12)
+        hole.Position = pos + Vector3.new(0, -4, 0)
+        hole.BrickColor = BrickColor.new("Black")
+        hole.Transparency = 0.3
+        hole.Anchored = true
+        hole.CanCollide = false
+        hole.Parent = workspace
+        
+        -- Buat efek kilat
+        for i = 1, 6 do
+            local lightning = Instance.new("Part")
+            lightning.Size = Vector3.new(0.5, 20, 0.5)
+            lightning.Position = pos + Vector3.new(
+                math.random(-6, 6),
+                10 + math.random(0, 20),
+                math.random(-6, 6)
+            )
+            lightning.BrickColor = BrickColor.new("Bright yellow")
+            lightning.Anchored = true
+            lightning.CanCollide = false
+            lightning.Parent = workspace
+            
+            task.wait(0.1)
+            pcall(function() lightning:Destroy() end)
+        end
+        
+        -- Tarik target ke bawah dengan kekuatan
+        hrp.AssemblyLinearVelocity = Vector3.new(0, -200, 0)
+        
+        Library:MakeNotify({ 
+            Title = "🕳️ Trap!", 
+            Content = SelectedTarget .. " jatuh ke dalam lubang!" 
+        })
+        
+        -- Hapus lubang setelah 4 detik
+        task.wait(4)
+        pcall(function() hole:Destroy() end)
+    end
+})
+
+-- 5. Tembok Tak Terlihat (FIXED)
+TrollSection:AddButton({
+    Title = "🧱 Tembok Tak Terlihat",
+    Description = "Pasang tembok di depan target (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        local pos = hrp.Position
+        local lookVector = hrp.CFrame.LookVector
+        
+        -- Buat tembok lebih besar
+        local wall = Instance.new("Part")
+        wall.Size = Vector3.new(30, 15, 2)
+        wall.Position = pos + (lookVector * 15) + Vector3.new(0, 4, 0)
+        wall.BrickColor = BrickColor.new("Bright red")
+        wall.Transparency = 0.4
+        wall.Anchored = true
+        wall.CanCollide = true
+        wall.Parent = workspace
+        
+        -- Efek ledakan saat muncul
+        local explosion = Instance.new("Explosion")
+        explosion.Position = wall.Position
+        explosion.BlastRadius = 5
+        explosion.BlastPressure = 0
+        explosion.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "🧱 Wall!", 
+            Content = "Tembok di depan " .. SelectedTarget .. "!" 
+        })
+        
+        -- Hapus setelah 5 detik
+        task.wait(5)
+        pcall(function() wall:Destroy() end)
+    end
+})
+
+-- 6. Zona Gravitasi (FIXED)
+TrollSection:AddButton({
+    Title = "🌍 Zona Gravitasi",
+    Description = "Tarik target ke bawah dengan kuat (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        local pos = hrp.Position
+        
+        -- Buat zona gravitasi (bola ungu)
+        local zone = Instance.new("Part")
+        zone.Shape = Enum.PartType.Ball
+        zone.Size = Vector3.new(40, 40, 40)
+        zone.Position = pos
+        zone.BrickColor = BrickColor.new("Bright purple")
+        zone.Transparency = 0.5
+        zone.Anchored = true
+        zone.CanCollide = false
+        zone.Parent = workspace
+        
+        -- Tarik target ke bawah
+        local gravityField = Instance.new("BodyForce")
+        gravityField.Force = Vector3.new(0, -10000, 0)
+        gravityField.Parent = hrp
+        
+        -- Efek ledakan
+        local explosion = Instance.new("Explosion")
+        explosion.Position = pos
+        explosion.BlastRadius = 6
+        explosion.BlastPressure = 0
+        explosion.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "🌍 Gravity!", 
+            Content = "Zona gravitasi di sekitar " .. SelectedTarget .. "!" 
+        })
+        
+        -- Hapus setelah 4 detik
+        task.wait(4)
+        pcall(function() 
+            zone:Destroy() 
+            gravityField:Destroy() 
+        end)
+    end
+})
+
+-- 7. Fling Target (FIXED)
+TrollSection:AddButton({
+    Title = "🚀 Fling Target",
+    Description = "Lempar target terbang tinggi (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        -- Lempar dengan kekuatan besar
+        hrp.AssemblyLinearVelocity = Vector3.new(
+            math.random(-150, 150),
+            math.random(250, 500),
+            math.random(-150, 150)
+        )
+        hrp.AssemblyAngularVelocity = Vector3.new(
+            math.random(-30, 30),
+            math.random(-30, 30),
+            math.random(-30, 30)
+        )
+        
+        -- Efek ledakan
+        local explosion = Instance.new("Explosion")
+        explosion.Position = hrp.Position
+        explosion.BlastRadius = 6
+        explosion.BlastPressure = 0
+        explosion.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "🚀 Flinged!", 
+            Content = SelectedTarget .. " terbang!" 
+        })
+    end
+})
+
+-- 8. Guncangan Gunung (FIXED)
+TrollSection:AddButton({
+    Title = "🌋 Guncangan Gunung",
+    Description = "Buat seluruh gunung berguncang (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        local pos = hrp.Position
+        
+        -- Guncang semua part besar di workspace
+        for i = 1, 20 do
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("BasePart") and obj.Anchored and obj.Size.X > 3 and obj.Size.Y > 3 then
+                    local randomShake = Vector3.new(
+                        math.random(-10, 10)/10,
+                        math.random(-10, 10)/10,
+                        math.random(-10, 10)/10
                     )
-                    rock.Position = pos + Vector3.new(
-                        math.random(-40, 40),
-                        60 + math.random(0, 30),
-                        math.random(-40, 40)
-                    )
-                    rock.BrickColor = BrickColor.new("Medium stone grey")
-                    rock.Material = Enum.Material.Rock 
-                    rock.Anchored = false
-                    rock.Parent = workspace
-                    
-                    local bodyVel = Instance.new("BodyVelocity")
-                    bodyVel.Velocity = Vector3.new(0, -100, 0)
-                    bodyVel.MaxForce = Vector3.new(0, math.huge, 0)
-                    bodyVel.Parent = rock
-                    
-                    table.insert(rocks, rock)
+                    pcall(function()
+                        obj.CFrame = obj.CFrame + randomShake
+                        task.wait(0.02)
+                        obj.CFrame = obj.CFrame - randomShake
+                    end)
                 end
-                
+            end
+            
+            -- Buat asap/debu
+            if i % 2 == 0 then
                 local smoke = Instance.new("Part")
-                smoke.Size = Vector3.new(30, 10, 30)
-                smoke.Position = pos + Vector3.new(0, -5, 0)
+                smoke.Size = Vector3.new(40, 20, 40)
+                smoke.Position = pos + Vector3.new(
+                    math.random(-30, 30),
+                    -5,
+                    math.random(-30, 30)
+                )
+                smoke.BrickColor = BrickColor.new("Medium stone grey")
+                smoke.Transparency = 0.8
+                smoke.Anchored = true
+                smoke.CanCollide = false
+                smoke.Parent = workspace
+                
+                task.wait(0.2)
+                pcall(function() smoke:Destroy() end)
+            end
+        end
+        
+        -- Ledakan besar di akhir
+        local explosion = Instance.new("Explosion")
+        explosion.Position = pos
+        explosion.BlastRadius = 25
+        explosion.BlastPressure = 0
+        explosion.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "🌋 Shake!", 
+            Content = "Gunung berguncang!" 
+        })
+    end
+})
+
+-- 9. Kandang Target (FIXED)
+TrollSection:AddButton({
+    Title = "🧱 Kandang Target",
+    Description = "Kurung target di dalam kandang (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        local pos = hrp.Position
+        local cageParts = {}
+        
+        -- Buat 4 dinding
+        local sizes = {
+            {Vector3.new(14, 8, 0.5), Vector3.new(0, 0, 7)},
+            {Vector3.new(14, 8, 0.5), Vector3.new(0, 0, -7)},
+            {Vector3.new(0.5, 8, 14), Vector3.new(7, 0, 0)},
+            {Vector3.new(0.5, 8, 14), Vector3.new(-7, 0, 0)}
+        }
+        
+        for _, data in pairs(sizes) do
+            local part = Instance.new("Part")
+            part.Size = data[1]
+            part.Position = pos + data[2]
+            part.Anchored = true
+            part.BrickColor = BrickColor.new("Bright blue")
+            part.Transparency = 0.3
+            part.Material = Enum.Material.Glass
+            part.CanCollide = true
+            part.Parent = workspace
+            table.insert(cageParts, part)
+        end
+        
+        -- Atap
+        local roof = Instance.new("Part")
+        roof.Size = Vector3.new(15, 0.5, 15)
+        roof.Position = pos + Vector3.new(0, 8, 0)
+        roof.Anchored = true
+        roof.BrickColor = BrickColor.new("Bright blue")
+        roof.Transparency = 0.3
+        roof.Material = Enum.Material.Glass
+        roof.CanCollide = true
+        roof.Parent = workspace
+        table.insert(cageParts, roof)
+        
+        Library:MakeNotify({ 
+            Title = "🧱 Caged!", 
+            Content = SelectedTarget .. " dikurung!" 
+        })
+        
+        -- Hapus setelah 8 detik
+        task.wait(8)
+        for _, part in pairs(cageParts) do
+            pcall(function() part:Destroy() end)
+        end
+    end
+})
+
+-- 10. Clone Target (FIXED)
+TrollSection:AddButton({
+    Title = "👥 Clone Target",
+    Description = "Buat clone dari target (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        -- Clone karakter target
+        local clone = target.Character:Clone()
+        clone.Parent = workspace
+        clone:SetPrimaryPartCFrame(hrp.CFrame + Vector3.new(10, 0, 10))
+        
+        clone.Name = "Clone_of_" .. target.Name
+        
+        -- Beri humanoid agar bisa bergerak
+        local hum = clone:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.DisplayName = "Clone " .. target.Name
+            hum.WalkSpeed = 16
+        end
+        
+        -- Efek ledakan
+        local explosion = Instance.new("Explosion")
+        explosion.Position = clone:GetPivot().Position
+        explosion.BlastRadius = 4
+        explosion.BlastPressure = 0
+        explosion.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "👥 Cloned!", 
+            Content = "Clone " .. target.Name .. " muncul!" 
+        })
+        
+        -- Hapus setelah 10 detik
+        task.wait(10)
+        pcall(function() clone:Destroy() end)
+    end
+})
+
+-- 11. Teleport Balik (FIXED)
+TrollSection:AddButton({
+    Title = "🔄 Teleport Balik",
+    Description = "Kembalikan target ke checkpoint awal (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        -- Cari checkpoint pertama (paling rendah)
+        local lowestCP = nil
+        local lowestY = math.huge
+        
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and 
+                (obj.Name:lower():find("cp") or obj.Name:lower():find("checkpoint") or 
+                 obj.Name:lower():find("stage") or obj.Name:lower():find("start"))) then
+                if obj.Position.Y < lowestY then
+                    lowestY = obj.Position.Y
+                    lowestCP = obj
+                end
+            end
+        end
+        
+        if lowestCP then
+            -- Teleport target ke checkpoint pertama
+            hrp.CFrame = lowestCP.CFrame * CFrame.new(0, 5, 0)
+            
+            -- Efek ledakan
+            local explosion = Instance.new("Explosion")
+            explosion.Position = hrp.Position
+            explosion.BlastRadius = 6
+            explosion.BlastPressure = 0
+            explosion.Parent = workspace
+            
+            Library:MakeNotify({ 
+                Title = "🔄 Sent Back!", 
+                Content = SelectedTarget .. " dikembalikan ke awal!" 
+            })
+        else
+            Library:MakeNotify({ 
+                Title = "Error", 
+                Content = "Tidak ditemukan checkpoint!" 
+            })
+        end
+    end
+})
+
+-- 12. Lompat Paksa (FIXED)
+TrollSection:AddButton({
+    Title = "🦘 Lompat Paksa",
+    Description = "Buat target melompat terus menerus (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hum = GetTargetHumanoid(target)
+        if not hum then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki Humanoid!" })
+            return 
+        end
+        
+        task.spawn(function()
+            for i = 1, 15 do
+                if not hum or hum.Health <= 0 then break end
+                pcall(function()
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                end)
+                task.wait(0.2)
+            end
+        end)
+        
+        -- Efek visual
+        for i = 1, 5 do
+            local hrp = GetTargetRoot(target)
+            if hrp then
+                local explosion = Instance.new("Explosion")
+                explosion.Position = hrp.Position + Vector3.new(0, -2, 0)
+                explosion.BlastRadius = 4
+                explosion.BlastPressure = 0
+                explosion.Parent = workspace
+            end
+            task.wait(0.15)
+        end
+        
+        Library:MakeNotify({ 
+            Title = "🦘 Forced Jump!", 
+            Content = SelectedTarget .. " dipaksa melompat!" 
+        })
+    end
+})
+
+-- 13. Blind Target (FIXED)
+TrollSection:AddButton({
+    Title = "👁️ Blind Target",
+    Description = "Buat layar target gelap (TERLIHAT DI CLIENT MEREKA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        -- Buat GUI di layar target
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "BlindEffect"
+        screenGui.Parent = target.PlayerGui
+        
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.BackgroundColor3 = Color3.new(0, 0, 0)
+        frame.BackgroundTransparency = 0
+        frame.Parent = screenGui
+        
+        -- Animasi muncul perlahan
+        for i = 1, 10 do
+            frame.BackgroundTransparency = 1 - (i / 10)
+            task.wait(0.05)
+        end
+        
+        Library:MakeNotify({ 
+            Title = "👁️ Blinded!", 
+            Content = SelectedTarget .. " dibutakan!" 
+        })
+        
+        -- Hapus setelah 5 detik
+        task.wait(5)
+        
+        -- Animasi menghilang
+        for i = 1, 10 do
+            frame.BackgroundTransparency = i / 10
+            task.wait(0.05)
+        end
+        
+        pcall(function() screenGui:Destroy() end)
+    end
+})
+
+-- 14. Swap Position (FIXED)
+TrollSection:AddButton({
+    Title = "🔄 Swap Position",
+    Description = "Tukar posisi Anda dengan target (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local myRoot = GetRootPart()
+        local targetRoot = GetTargetRoot(target)
+        
+        if not myRoot then 
+            Library:MakeNotify({ Title = "Error", Content = "Anda tidak memiliki karakter!" })
+            return 
+        end
+        
+        if not targetRoot then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        local myPos = myRoot.CFrame
+        local targetPos = targetRoot.CFrame
+        
+        -- Tukar posisi
+        myRoot.CFrame = targetPos
+        targetRoot.CFrame = myPos
+        
+        -- Efek ledakan di kedua posisi
+        local explosion1 = Instance.new("Explosion")
+        explosion1.Position = myPos.Position
+        explosion1.BlastRadius = 6
+        explosion1.BlastPressure = 0
+        explosion1.Parent = workspace
+        
+        local explosion2 = Instance.new("Explosion")
+        explosion2.Position = targetPos.Position
+        explosion2.BlastRadius = 6
+        explosion2.BlastPressure = 0
+        explosion2.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "🔄 Swapped!", 
+            Content = "Posisi ditukar dengan " .. SelectedTarget .. "!" 
+        })
+    end
+})
+
+-- 15. Slow Motion (FIXED)
+TrollSection:AddButton({
+    Title = "🐢 Slow Motion",
+    Description = "Buat target bergerak sangat lambat (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hum = GetTargetHumanoid(target)
+        if not hum then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki Humanoid!" })
+            return 
+        end
+        
+        local originalSpeed = hum.WalkSpeed
+        hum.WalkSpeed = 2 -- Sangat lambat
+        
+        -- Efek visual (lingkaran biru)
+        local hrp = GetTargetRoot(target)
+        if hrp then
+            local slowZone = Instance.new("Part")
+            slowZone.Shape = Enum.PartType.Cylinder
+            slowZone.Size = Vector3.new(20, 0.5, 20)
+            slowZone.Position = hrp.Position
+            slowZone.BrickColor = BrickColor.new("Bright blue")
+            slowZone.Transparency = 0.5
+            slowZone.Anchored = true
+            slowZone.CanCollide = false
+            slowZone.Parent = workspace
+            
+            -- Animasi berkedip
+            task.spawn(function()
+                for i = 1, 8 do
+                    if not slowZone or not slowZone.Parent then break end
+                    slowZone.Transparency = slowZone.Transparency == 0.3 and 0.6 or 0.3
+                    task.wait(0.4)
+                end
+            end)
+            
+            Library:MakeNotify({ 
+                Title = "🐢 Slow!", 
+                Content = SelectedTarget .. " melambat!" 
+            })
+            
+            -- Reset setelah 4 detik
+            task.wait(4)
+            hum.WalkSpeed = originalSpeed
+            pcall(function() slowZone:Destroy() end)
+        end
+    end
+})
+
+-- 16. Reverse Controls (FIXED)
+TrollSection:AddButton({
+    Title = "🔄 Reverse Controls",
+    Description = "Buat kontrol target terbalik (TERLIHAT CLIENT MEREKA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        -- Kirim notifikasi ke target
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Name = "ReverseEffect"
+        screenGui.Parent = target.PlayerGui
+        
+        local frame = Instance.new("Frame")
+        frame.Size = UDim2.new(0.6, 0, 0.25, 0)
+        frame.Position = UDim2.new(0.2, 0, 0.35, 0)
+        frame.BackgroundColor3 = Color3.new(1, 0, 0)
+        frame.BackgroundTransparency = 0.4
+        frame.Parent = screenGui
+        
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.BackgroundTransparency = 1
+        label.Text = "⚠️ KONTROL TERBALIK! ⚠️"
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.TextScaled = true
+        label.Font = Enum.Font.GothamBold
+        label.Parent = frame
+        
+        -- Efek berkedip
+        task.spawn(function()
+            for i = 1, 8 do
+                if not frame or not frame.Parent then break end
+                frame.BackgroundTransparency = frame.BackgroundTransparency == 0.4 and 0.8 or 0.4
+                task.wait(0.3)
+            end
+        end)
+        
+        Library:MakeNotify({ 
+            Title = "🔄 Reversed!", 
+            Content = "Kontrol " .. SelectedTarget .. " terbalik!" 
+        })
+        
+        -- Hapus setelah 4 detik
+        task.wait(4)
+        pcall(function() screenGui:Destroy() end)
+    end
+})
+
+-- 17. Gempa Bumi (FIXED)
+TrollSection:AddButton({
+    Title = "🌍 Gempa Bumi",
+    Description = "Buat gempa yang mengguncang semua player (TERLIHAT SEMUA)",
+    Callback = function()
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
+            return 
+        end
+        
+        local pos = hrp.Position
+        
+        -- Guncang semua player
+        for i = 1, 25 do
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local pRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                    if pRoot then
+                        local shake = Vector3.new(
+                            math.random(-5, 5),
+                            math.random(1, 8),
+                            math.random(-5, 5)
+                        )
+                        pcall(function()
+                            pRoot.CFrame = pRoot.CFrame + shake
+                            task.wait(0.02)
+                            pRoot.CFrame = pRoot.CFrame - shake
+                        end)
+                    end
+                end
+            end
+            
+            -- Efek debu
+            if i % 2 == 0 then
+                local smoke = Instance.new("Part")
+                smoke.Size = Vector3.new(50, 8, 50)
+                smoke.Position = pos + Vector3.new(math.random(-30, 30), -5, math.random(-30, 30))
                 smoke.BrickColor = BrickColor.new("Medium stone grey")
                 smoke.Transparency = 0.7
                 smoke.Anchored = true
                 smoke.CanCollide = false
                 smoke.Parent = workspace
-                
-                Library:MakeNotify({ 
-                    Title = "🪨 Rockslide!", 
-                    Content = "Longsor menimpa " .. SelectedTarget .. "! (Semua player lihat)" 
-                })
-                
-                task.wait(8)
-                for _, rock in pairs(rocks) do
-                    rock:Destroy()
-                end
-                smoke:Destroy()
+                task.wait(0.1)
+                pcall(function() smoke:Destroy() end)
             end
         end
+        
+        -- Ledakan besar di akhir
+        local explosion = Instance.new("Explosion")
+        explosion.Position = pos
+        explosion.BlastRadius = 30
+        explosion.BlastPressure = 0
+        explosion.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "🌍 Earthquake!", 
+            Content = "Gempa bumi terjadi!" 
+        })
     end
 })
 
--- 3. Lantai Licin
-TrollSection:AddButton({
-    Title = "🧊 Lantai Licin",
-    Description = "Buat lantai es di sekitar target (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local pos = hrp.Position
-                local iceParts = {}
-                
-                for x = -4, 4 do
-                    for z = -4, 4 do
-                        local ice = Instance.new("Part")
-                        ice.Size = Vector3.new(4, 0.5, 4)
-                        ice.Position = pos + Vector3.new(x * 4, -3.5, z * 4)
-                        ice.BrickColor = BrickColor.new("Bright blue")
-                        ice.Material = Enum.Material.Ice
-                        ice.Transparency = 0.3
-                        ice.Anchored = true
-                        ice.Parent = workspace
-                        
-                        ice.CustomPhysicalProperties = PhysicalProperties.new(
-                            0, 0, 0.3, 0, 0
-                        )
-                        
-                        table.insert(iceParts, ice)
-                    end
-                end
-                
-                Library:MakeNotify({ 
-                    Title = "🧊 Ice Floor!", 
-                    Content = "Lantai es di sekitar " .. SelectedTarget .. "! (Semua player lihat)" 
-                })
-                
-                task.wait(6)
-                for _, ice in pairs(iceParts) do
-                    ice:Destroy()
-                end
-            end
-        end
-    end
-})
-
--- 4. Jebakan Lubang
-TrollSection:AddButton({
-    Title = "🕳️ Jebakan Lubang",
-    Description = "Buat lubang di bawah target (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local pos = hrp.Position
-                
-                local hole = Instance.new("Part")
-                hole.Size = Vector3.new(10, 1, 10)
-                hole.Position = pos + Vector3.new(0, -4, 0)
-                hole.BrickColor = BrickColor.new("Black")
-                hole.Transparency = 0.5
-                hole.Anchored = true
-                hole.CanCollide = false
-                hole.Parent = workspace
-                
-                for i = 1, 5 do
-                    local lightning = Instance.new("Part")
-                    lightning.Size = Vector3.new(0.5, 15, 0.5)
-                    lightning.Position = pos + Vector3.new(
-                        math.random(-5, 5),
-                        8 + math.random(0, 15),
-                        math.random(-5, 5)
-                    )
-                    lightning.BrickColor = BrickColor.new("Bright yellow")
-                    lightning.Anchored = true
-                    lightning.CanCollide = false
-                    lightning.Parent = workspace
-                    
-                    task.wait(0.1)
-                    lightning:Destroy()
-                end
-                
-                hrp.AssemblyLinearVelocity = Vector3.new(0, -150, 0)
-                
-                Library:MakeNotify({ 
-                    Title = "🕳️ Trap!", 
-                    Content = SelectedTarget .. " jatuh ke dalam lubang! (Semua player lihat)" 
-                })
-                
-                task.wait(4)
-                hole:Destroy()
-            end
-        end
-    end
-})
-
--- 5. Tembok Tak Terlihat
-TrollSection:AddButton({
-    Title = "🧱 Tembok Tak Terlihat",
-    Description = "Pasang tembok di depan target (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local pos = hrp.Position
-                
-                local wall = Instance.new("Part")
-                wall.Size = Vector3.new(25, 12, 1.5)
-                wall.Position = pos + (hrp.CFrame.LookVector * 12) + Vector3.new(0, 3, 0)
-                wall.BrickColor = BrickColor.new("Bright red")
-                wall.Transparency = 0.5
-                wall.Anchored = true
-                wall.CanCollide = true
-                wall.Parent = workspace
-                
-                local explosion = Instance.new("Explosion")
-                explosion.Position = wall.Position
-                explosion.BlastRadius = 3
-                explosion.BlastPressure = 0
-                explosion.Parent = workspace
-                
-                Library:MakeNotify({ 
-                    Title = "🧱 Wall!", 
-                    Content = "Tembok di depan " .. SelectedTarget .. "! (Semua player lihat)" 
-                })
-                
-                task.wait(5)
-                wall:Destroy()
-            end
-        end
-    end
-})
-
--- 6. Zona Gravitasi
-TrollSection:AddButton({
-    Title = "🌍 Zona Gravitasi",
-    Description = "Tarik target ke bawah dengan kuat (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local pos = hrp.Position
-                
-                local zone = Instance.new("Part")
-                zone.Shape = Enum.PartType.Ball
-                zone.Size = Vector3.new(35, 35, 35)
-                zone.Position = pos
-                zone.BrickColor = BrickColor.new("Bright purple")
-                zone.Transparency = 0.6
-                zone.Anchored = true
-                zone.CanCollide = false
-                zone.Parent = workspace
-                
-                local gravityField = Instance.new("BodyForce")
-                gravityField.Force = Vector3.new(0, -8000, 0)
-                gravityField.Parent = hrp
-                
-                local explosion = Instance.new("Explosion")
-                explosion.Position = pos
-                explosion.BlastRadius = 5
-                explosion.BlastPressure = 0
-                explosion.Parent = workspace
-                
-                Library:MakeNotify({ 
-                    Title = "🌍 Gravity!", 
-                    Content = "Zona gravitasi di sekitar " .. SelectedTarget .. "! (Semua player lihat)" 
-                })
-                
-                task.wait(4)
-                zone:Destroy()
-                gravityField:Destroy()
-            end
-        end
-    end
-})
-
--- 7. Fling Target
-TrollSection:AddButton({
-    Title = "🚀 Fling Target",
-    Description = "Lempar target terbang tinggi (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                hrp.AssemblyLinearVelocity = Vector3.new(
-                    math.random(-100, 100),
-                    math.random(200, 400),
-                    math.random(-100, 100)
-                )
-                hrp.AssemblyAngularVelocity = Vector3.new(
-                    math.random(-20, 20),
-                    math.random(-20, 20),
-                    math.random(-20, 20)
-                )
-                
-                local explosion = Instance.new("Explosion")
-                explosion.Position = hrp.Position
-                explosion.BlastRadius = 5
-                explosion.BlastPressure = 0
-                explosion.Parent = workspace
-                
-                Library:MakeNotify({ 
-                    Title = "🚀 Flinged!", 
-                    Content = SelectedTarget .. " terbang! (Semua player lihat)" 
-                })
-            end
-        end
-    end
-})
-
--- 8. Guncangan Gunung
-TrollSection:AddButton({
-    Title = "🌋 Guncangan Gunung",
-    Description = "Buat seluruh gunung berguncang (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                for i = 1, 15 do
-                    for _, obj in pairs(workspace:GetDescendants()) do
-                        if obj:IsA("BasePart") and obj.Anchored and obj.Size.X > 5 and obj.Size.Y > 5 then
-                            local randomShake = Vector3.new(
-                                math.random(-8, 8)/10,
-                                math.random(-8, 8)/10,
-                                math.random(-8, 8)/10
-                            )
-                            obj.CFrame = obj.CFrame + randomShake
-                            task.wait(0.03)
-                            obj.CFrame = obj.CFrame - randomShake
-                        end
-                    end
-                    
-                    if i % 3 == 0 then
-                        local smoke = Instance.new("Part")
-                        smoke.Size = Vector3.new(30, 15, 30)
-                        smoke.Position = hrp.Position + Vector3.new(
-                            math.random(-20, 20),
-                            -10,
-                            math.random(-20, 20)
-                        )
-                        smoke.BrickColor = BrickColor.new("Medium stone grey")
-                        smoke.Transparency = 0.8
-                        smoke.Anchored = true
-                        smoke.CanCollide = false
-                        smoke.Parent = workspace
-                        
-                        task.wait(0.2)
-                        smoke:Destroy()
-                    end
-                end
-                
-                Library:MakeNotify({ 
-                    Title = "🌋 Shake!", 
-                    Content = "Gunung berguncang! (Semua player lihat)" 
-                })
-            end
-        end
-    end
-})
-
--- 9. Kandang Target
-TrollSection:AddButton({
-    Title = "🧱 Kandang Target",
-    Description = "Kurung target di dalam kandang (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local pos = hrp.Position
-                local cageParts = {}
-                
-                local sizes = {
-                    {Vector3.new(12, 6, 0.5), Vector3.new(0, 0, 6)},
-                    {Vector3.new(12, 6, 0.5), Vector3.new(0, 0, -6)},
-                    {Vector3.new(0.5, 6, 12), Vector3.new(6, 0, 0)},
-                    {Vector3.new(0.5, 6, 12), Vector3.new(-6, 0, 0)}
-                }
-                
-                for _, data in pairs(sizes) do
-                    local part = Instance.new("Part")
-                    part.Size = data[1]
-                    part.Position = pos + data[2]
-                    part.Anchored = true
-                    part.BrickColor = BrickColor.new("Bright blue")
-                    part.Transparency = 0.4
-                    part.Material = Enum.Material.Glass
-                    part.Parent = workspace
-                    table.insert(cageParts, part)
-                end
-                
-                local roof = Instance.new("Part")
-                roof.Size = Vector3.new(13, 0.5, 13)
-                roof.Position = pos + Vector3.new(0, 6, 0)
-                roof.Anchored = true
-                roof.BrickColor = BrickColor.new("Bright blue")
-                roof.Transparency = 0.4
-                roof.Material = Enum.Material.Glass
-                roof.Parent = workspace
-                table.insert(cageParts, roof)
-                
-                Library:MakeNotify({ 
-                    Title = "🧱 Caged!", 
-                    Content = SelectedTarget .. " dikurung! (Semua player lihat)" 
-                })
-                
-                task.wait(8)
-                for _, part in pairs(cageParts) do
-                    part:Destroy()
-                end
-            end
-        end
-    end
-})
-
--- 10. Clone Target
-TrollSection:AddButton({
-    Title = "👥 Clone Target",
-    Description = "Buat clone dari target (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local clone = target.Character:Clone()
-                clone.Parent = workspace
-                clone:SetPrimaryPartCFrame(hrp.CFrame + Vector3.new(8, 0, 8))
-                
-                clone.Name = "Clone_of_" .. target.Name
-                
-                local hum = clone:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    hum.DisplayName = "Clone " .. target.Name
-                end
-                
-                local explosion = Instance.new("Explosion")
-                explosion.Position = clone:GetPivot().Position
-                explosion.BlastRadius = 3
-                explosion.BlastPressure = 0
-                explosion.Parent = workspace
-                
-                Library:MakeNotify({ 
-                    Title = "👥 Cloned!", 
-                    Content = "Clone " .. target.Name .. " muncul! (Semua player lihat)" 
-                })
-                
-                task.wait(10)
-                clone:Destroy()
-            end
-        end
-    end
-})
-
--- 11. Teleport Balik
-TrollSection:AddButton({
-    Title = "🔄 Teleport Balik",
-    Description = "Kembalikan target ke checkpoint awal (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local lowestCP = nil
-                local lowestY = math.huge
-                
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and 
-                        (obj.Name:lower():find("cp") or obj.Name:lower():find("checkpoint") or 
-                         obj.Name:lower():find("stage") or obj.Name:lower():find("start"))) then
-                        if obj.Position.Y < lowestY then
-                            lowestY = obj.Position.Y
-                            lowestCP = obj
-                        end
-                    end
-                end
-                
-                if lowestCP then
-                    hrp.CFrame = lowestCP.CFrame * CFrame.new(0, 3, 0)
-                    
-                    local explosion = Instance.new("Explosion")
-                    explosion.Position = hrp.Position
-                    explosion.BlastRadius = 5
-                    explosion.BlastPressure = 0
-                    explosion.Parent = workspace
-                    
-                    Library:MakeNotify({ 
-                        Title = "🔄 Sent Back!", 
-                        Content = SelectedTarget .. " dikembalikan ke awal! (Semua player lihat)" 
-                    })
-                end
-            end
-        end
-    end
-})
-
--- 12. Lompat Paksa
-TrollSection:AddButton({
-    Title = "🦘 Lompat Paksa",
-    Description = "Buat target melompat terus menerus (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hum = target.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                task.spawn(function()
-                    for i = 1, 10 do
-                        if not hum or hum.Health <= 0 then break end
-                        hum:ChangeState(Enum.HumanoidStateType.Jumping)
-                        task.wait(0.3)
-                    end
-                end)
-                
-                for i = 1, 3 do
-                    local explosion = Instance.new("Explosion")
-                    explosion.Position = target.Character.HumanoidRootPart.Position + Vector3.new(0, -2, 0)
-                    explosion.BlastRadius = 3
-                    explosion.BlastPressure = 0
-                    explosion.Parent = workspace
-                    task.wait(0.2)
-                end
-                
-                Library:MakeNotify({ 
-                    Title = "🦘 Forced Jump!", 
-                    Content = SelectedTarget .. " dipaksa melompat! (Semua player lihat)" 
-                })
-            end
-        end
-    end
-})
-
--- 13. Blind Target
-TrollSection:AddButton({
-    Title = "👁️ Blind Target",
-    Description = "Buat layar target gelap (TERLIHAT DI CLIENT MEREKA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target then
-            local screenGui = Instance.new("ScreenGui")
-            screenGui.Name = "BlindEffect"
-            screenGui.Parent = target.PlayerGui
-            
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(1, 0, 1, 0)
-            frame.BackgroundColor3 = Color3.new(0, 0, 0)
-            frame.BackgroundTransparency = 0
-            frame.Parent = screenGui
-            
-            for i = 1, 10 do
-                frame.BackgroundTransparency = 1 - (i / 10)
-                task.wait(0.05)
-            end
-            
-            Library:MakeNotify({ 
-                Title = "👁️ Blinded!", 
-                Content = SelectedTarget .. " dibutakan! (Hanya dia yang lihat)" 
-            })
-            
-            task.wait(5)
-            
-            for i = 1, 10 do
-                frame.BackgroundTransparency = i / 10
-                task.wait(0.05)
-            end
-            
-            screenGui:Destroy()
-        end
-    end
-})
-
--- 14. Swap Position
-TrollSection:AddButton({
-    Title = "🔄 Swap Position",
-    Description = "Tukar posisi Anda dengan target (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        local targetRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-        
-        if myRoot and targetRoot then
-            local myPos = myRoot.CFrame
-            local targetPos = targetRoot.CFrame
-            
-            myRoot.CFrame = targetPos
-            targetRoot.CFrame = myPos
-            
-            local explosion1 = Instance.new("Explosion")
-            explosion1.Position = myPos.Position
-            explosion1.BlastRadius = 5
-            explosion1.BlastPressure = 0
-            explosion1.Parent = workspace
-            
-            local explosion2 = Instance.new("Explosion")
-            explosion2.Position = targetPos.Position
-            explosion2.BlastRadius = 5
-            explosion2.BlastPressure = 0
-            explosion2.Parent = workspace
-            
-            Library:MakeNotify({ 
-                Title = "🔄 Swapped!", 
-                Content = "Posisi ditukar dengan " .. SelectedTarget .. "! (Semua player lihat)" 
-            })
-        end
-    end
-})
-
--- 15. Slow Motion
-TrollSection:AddButton({
-    Title = "🐢 Slow Motion",
-    Description = "Buat target bergerak sangat lambat (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hum = target.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                local originalSpeed = hum.WalkSpeed
-                hum.WalkSpeed = 2
-                
-                local slowZone = Instance.new("Part")
-                slowZone.Shape = Enum.PartType.Cylinder
-                slowZone.Size = Vector3.new(15, 0.5, 15)
-                slowZone.Position = target.Character.HumanoidRootPart.Position
-                slowZone.BrickColor = BrickColor.new("Bright blue")
-                slowZone.Transparency = 0.6
-                slowZone.Anchored = true
-                slowZone.CanCollide = false
-                slowZone.Parent = workspace
-                
-                task.spawn(function()
-                    for i = 1, 6 do
-                        slowZone.Transparency = slowZone.Transparency == 0.3 and 0.6 or 0.3
-                        task.wait(0.5)
-                    end
-                end)
-                
-                Library:MakeNotify({ 
-                    Title = "🐢 Slow!", 
-                    Content = SelectedTarget .. " melambat! (Semua player lihat)" 
-                })
-                
-                task.wait(4)
-                hum.WalkSpeed = originalSpeed
-                slowZone:Destroy()
-            end
-        end
-    end
-})
-
--- 16. Reverse Controls
-TrollSection:AddButton({
-    Title = "🔄 Reverse Controls",
-    Description = "Buat kontrol target terbalik (TERLIHAT CLIENT MEREKA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target then
-            local screenGui = Instance.new("ScreenGui")
-            screenGui.Name = "ReverseEffect"
-            screenGui.Parent = target.PlayerGui
-            
-            local frame = Instance.new("Frame")
-            frame.Size = UDim2.new(0.5, 0, 0.2, 0)
-            frame.Position = UDim2.new(0.25, 0, 0.4, 0)
-            frame.BackgroundColor3 = Color3.new(1, 0, 0)
-            frame.BackgroundTransparency = 0.5
-            frame.Parent = screenGui
-            
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, 0, 1, 0)
-            label.BackgroundTransparency = 1
-            label.Text = "⚠️ KONTROL TERBALIK! ⚠️"
-            label.TextColor3 = Color3.new(1, 1, 1)
-            label.TextScaled = true
-            label.Font = Enum.Font.GothamBold
-            label.Parent = frame
-            
-            task.spawn(function()
-                for i = 1, 6 do
-                    frame.BackgroundTransparency = frame.BackgroundTransparency == 0.5 and 0.8 or 0.5
-                    task.wait(0.3)
-                end
-            end)
-            
-            Library:MakeNotify({ 
-                Title = "🔄 Reversed!", 
-                Content = "Kontrol " .. SelectedTarget .. " terbalik! (Hanya dia yang lihat)" 
-            })
-            
-            task.wait(4)
-            screenGui:Destroy()
-        end
-    end
-})
-
--- 17. Gempa Bumi
-TrollSection:AddButton({
-    Title = "🌍 Gempa Bumi",
-    Description = "Buat gempa yang mengguncang semua player (TERLIHAT SEMUA)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local pos = hrp.Position
-                
-                for i = 1, 20 do
-                    for _, player in pairs(Players:GetPlayers()) do
-                        if player ~= LocalPlayer and player.Character then
-                            local pRoot = player.Character:FindFirstChild("HumanoidRootPart")
-                            if pRoot then
-                                local shake = Vector3.new(
-                                    math.random(-3, 3),
-                                    math.random(1, 5),
-                                    math.random(-3, 3)
-                                )
-                                pRoot.CFrame = pRoot.CFrame + shake
-                                task.wait(0.02)
-                                pRoot.CFrame = pRoot.CFrame - shake
-                            end
-                        end
-                    end
-                    
-                    if i % 3 == 0 then
-                        local smoke = Instance.new("Part")
-                        smoke.Size = Vector3.new(40, 5, 40)
-                        smoke.Position = pos + Vector3.new(math.random(-20, 20), -5, math.random(-20, 20))
-                        smoke.BrickColor = BrickColor.new("Medium stone grey")
-                        smoke.Transparency = 0.7
-                        smoke.Anchored = true
-                        smoke.CanCollide = false
-                        smoke.Parent = workspace
-                        task.wait(0.1)
-                        smoke:Destroy()
-                    end
-                end
-                
-                local explosion = Instance.new("Explosion")
-                explosion.Position = pos
-                explosion.BlastRadius = 20
-                explosion.BlastPressure = 0
-                explosion.Parent = workspace
-                
-                Library:MakeNotify({ 
-                    Title = "🌍 Earthquake!", 
-                    Content = "Gempa bumi terjadi! (Semua player lihat)" 
-                })
-            end
-        end
-    end
-})
-
--- 18. Invisible Target
+-- 18. Invisible Target (FIXED)
 TrollSection:AddButton({
     Title = "👻 Invisible Target",
     Description = "Buat target menjadi tidak terlihat (TERLIHAT SEMUA)",
     Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return 
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        if not target.Character then return end
+        
+        -- Simpan transparency asli
+        local originalTrans = {}
+        
+        -- Buat semua part transparan
+        for _, part in pairs(target.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                originalTrans[part] = part.Transparency
+                part.Transparency = 1
+            end
         end
         
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local originalTrans = {}
-            
-            for _, part in pairs(target.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    originalTrans[part] = part.Transparency
-                    part.Transparency = 1
-                end
-            end
-            
-            local highlight = Instance.new("Highlight")
-            highlight.FillColor = Color3.fromRGB(255, 0, 0)
-            highlight.FillTransparency = 0.8
-            highlight.OutlineColor = Color3.new(1, 1, 1)
-            highlight.Adornee = target.Character
-            highlight.Parent = target.Character
-            
-            Library:MakeNotify({ 
-                Title = "👻 Invisible!", 
-                Content = SelectedTarget .. " menghilang! (Semua player lihat)" 
-            })
-            
-            task.wait(5)
-            
-            for part, trans in pairs(originalTrans) do
+        -- Highlight tetap terlihat (opsional)
+        local highlight = Instance.new("Highlight")
+        highlight.FillColor = Color3.fromRGB(255, 0, 0)
+        highlight.FillTransparency = 0.7
+        highlight.OutlineColor = Color3.new(1, 1, 1)
+        highlight.Adornee = target.Character
+        highlight.Parent = target.Character
+        
+        Library:MakeNotify({ 
+            Title = "👻 Invisible!", 
+            Content = SelectedTarget .. " menghilang!" 
+        })
+        
+        -- Kembalikan setelah 5 detik
+        task.wait(5)
+        
+        for part, trans in pairs(originalTrans) do
+            pcall(function()
                 if part and part.Parent then
                     part.Transparency = trans
                 end
-            end
-            
-            highlight:Destroy()
+            end)
         end
+        
+        pcall(function() highlight:Destroy() end)
     end
 })
 
--- 19. Gravity Flip
+-- 19. Gravity Flip (FIXED)
 TrollSection:AddButton({
     Title = "🔄 Gravity Flip",
     Description = "Balik gravitasi target ke atas (TERLIHAT SEMUA)",
     Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
             return 
         end
         
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local antiGravity = Instance.new("BodyForce")
-                antiGravity.Force = Vector3.new(0, 5000, 0)
-                antiGravity.Parent = hrp
-                
-                local zone = Instance.new("Part")
-                zone.Shape = Enum.PartType.Ball
-                zone.Size = Vector3.new(20, 20, 20)
-                zone.Position = hrp.Position
-                zone.BrickColor = BrickColor.new("Bright yellow")
-                zone.Transparency = 0.5
-                zone.Anchored = true
-                zone.CanCollide = false
-                zone.Parent = workspace
-                
-                Library:MakeNotify({ 
-                    Title = "🔄 Gravity Flip!", 
-                    Content = "Gravitasi " .. SelectedTarget .. " terbalik! (Semua player lihat)" 
-                })
-                
-                task.wait(4)
-                antiGravity:Destroy()
-                zone:Destroy()
-            end
-        end
+        -- Balik gravitasi (tarik ke atas)
+        local antiGravity = Instance.new("BodyForce")
+        antiGravity.Force = Vector3.new(0, 6000, 0)
+        antiGravity.Parent = hrp
+        
+        -- Efek visual (lingkaran kuning)
+        local zone = Instance.new("Part")
+        zone.Shape = Enum.PartType.Ball
+        zone.Size = Vector3.new(25, 25, 25)
+        zone.Position = hrp.Position
+        zone.BrickColor = BrickColor.new("Bright yellow")
+        zone.Transparency = 0.5
+        zone.Anchored = true
+        zone.CanCollide = false
+        zone.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "🔄 Gravity Flip!", 
+            Content = "Gravitasi " .. SelectedTarget .. " terbalik!" 
+        })
+        
+        -- Hapus setelah 4 detik
+        task.wait(4)
+        pcall(function() 
+            antiGravity:Destroy() 
+            zone:Destroy() 
+        end)
     end
 })
 
--- 20. Spawn Monster
+-- 20. Spawn Monster (FIXED)
 TrollSection:AddButton({
     Title = "👾 Spawn Monster",
     Description = "Munculkan monster di dekat target (TERLIHAT SEMUA)",
     Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+        local target = GetTargetCharacter()
+        if not target then return end
+        
+        local hrp = GetTargetRoot(target)
+        if not hrp then 
+            Library:MakeNotify({ Title = "Error", Content = "Target tidak memiliki HumanoidRootPart!" })
             return 
         end
         
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target and target.Character then
-            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local monster = Instance.new("Model")
-                monster.Name = "Spawned_Monster"
-                monster.Parent = workspace
-                
-                local body = Instance.new("Part")
-                body.Size = Vector3.new(8, 10, 8)
-                body.Position = hrp.Position + Vector3.new(10, 0, 10)
-                body.BrickColor = BrickColor.new("Bright red")
-                body.Material = Enum.Material.Neon
-                body.Anchored = false
-                body.CanCollide = true
-                body.Parent = monster
-                
-                local head = Instance.new("Part")
-                head.Size = Vector3.new(4, 4, 4)
-                head.Position = body.Position + Vector3.new(0, 7, 0)
-                head.BrickColor = BrickColor.new("Bright yellow")
-                head.Material = Enum.Material.Neon
-                head.Anchored = false
-                head.CanCollide = true
-                head.Parent = monster
-                
-                local hum = Instance.new("Humanoid")
-                hum.Name = "Humanoid"
-                hum.WalkSpeed = 30
-                hum.Parent = monster
-                
-                task.spawn(function()
-                    for i = 1, 20 do
-                        if not monster or not monster.Parent then break end
-                        local mRoot = monster:FindFirstChild("HumanoidRootPart") or body
-                        if mRoot and hrp then
-                            local direction = (hrp.Position - mRoot.Position).Unit
-                            mRoot.CFrame = mRoot.CFrame + (direction * 5)
-                            task.wait(0.1)
-                        end
-                    end
-                    monster:Destroy()
-                end)
-                
-                Library:MakeNotify({ 
-                    Title = "👾 Monster!", 
-                    Content = "Monster muncul di dekat " .. SelectedTarget .. "! (Semua player lihat)" 
-                })
-                
-                task.wait(10)
-                monster:Destroy()
+        -- Buat monster
+        local monster = Instance.new("Model")
+        monster.Name = "Spawned_Monster"
+        monster.Parent = workspace
+        
+        local body = Instance.new("Part")
+        body.Size = Vector3.new(8, 10, 8)
+        body.Position = hrp.Position + Vector3.new(12, 0, 12)
+        body.BrickColor = BrickColor.new("Bright red")
+        body.Material = Enum.Material.Neon
+        body.Anchored = false
+        body.CanCollide = true
+        body.Parent = monster
+        
+        local head = Instance.new("Part")
+        head.Size = Vector3.new(4, 4, 4)
+        head.Position = body.Position + Vector3.new(0, 7, 0)
+        head.BrickColor = BrickColor.new("Bright yellow")
+        head.Material = Enum.Material.Neon
+        head.Anchored = false
+        head.CanCollide = true
+        head.Parent = monster
+        
+        -- Humanoid agar monster bisa bergerak
+        local hum = Instance.new("Humanoid")
+        hum.Name = "Humanoid"
+        hum.WalkSpeed = 35
+        hum.Health = 100
+        hum.Parent = monster
+        
+        -- Buat monster mengejar target
+        task.spawn(function()
+            for i = 1, 30 do
+                if not monster or not monster.Parent then break end
+                local mRoot = monster:FindFirstChild("HumanoidRootPart") or body
+                local targetHrp = GetTargetRoot(target)
+                if mRoot and targetHrp then
+                    -- Bergerak ke arah target
+                    local direction = (targetHrp.Position - mRoot.Position).Unit
+                    mRoot.CFrame = mRoot.CFrame + (direction * 4)
+                    task.wait(0.15)
+                end
             end
-        end
+            pcall(function() monster:Destroy() end)
+        end)
+        
+        -- Efek ledakan
+        local explosion = Instance.new("Explosion")
+        explosion.Position = body.Position
+        explosion.BlastRadius = 5
+        explosion.BlastPressure = 0
+        explosion.Parent = workspace
+        
+        Library:MakeNotify({ 
+            Title = "👾 Monster!", 
+            Content = "Monster muncul di dekat " .. SelectedTarget .. "!" 
+        })
+        
+        -- Hapus monster setelah 10 detik
+        task.wait(10)
+        pcall(function() monster:Destroy() end)
     end
 })
-
 -- ==========================================
 -- AUTOWALK TAB
 -- ==========================================
