@@ -962,7 +962,7 @@ WalkSection:AddButton({
     end
 })
 
-local FollowSection = WalkSection:AddSection({"👥 Follow Player"})
+local FollowSection = WalkSection:AddSection("👥 Follow Player")
 
 local SelectedToFollow = ""
 _G.FollowActive = false
