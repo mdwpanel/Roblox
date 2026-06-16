@@ -1,1341 +1,2229 @@
---[[
-Modal - UI Library for Roblox
-github.com/BloxCrypto/Modal > for the full source
---]]
-local a,b={{1,'ModuleScript',{'MainModule'},{{2,'Folder',{'Components'},{{14,'Folder',{'Popups'},{{15,'ModuleScript',{'ColorPicker'}},{16,'ModuleScript',{'Dropdown'}},{17,'ModuleScript',{'Notification'}}}},{3,'Folder',{'Buttons'},{{11,'ModuleScript',{'Slider'}},{4,'ModuleScript',{'Button'}},{5,'ModuleScript',{'ColorPicker'}},{12,'ModuleScript',{'Title'}},{13,'ModuleScript',{'Toggle'}},{7,'ModuleScript',{'Holder'}},{9,'ModuleScript',{'Keybind'}},{10,'ModuleScript',{'MultiDropdown'}},{6,'ModuleScript',{'Dropdown'}},{8,'ModuleScript',{'Input'}}}},{18,'ModuleScript',{'Window'},{{19,'ModuleScript',{'Tab'}}}}}},{20,'Folder',{'Packages'},{{99,'ModuleScript',{'Fusion'}},{21,'Folder',{'.pesde'},{{22,'Folder',{'elttob_fusion@0.3.0'},{{23,'Folder',{'fusion'},{{24,'ModuleScript',{'src'},{{39,'ModuleScript',{'External'}},{76,'ModuleScript',{'RobloxExternal'}},{64,'Folder',{'Memory'},{{70,'ModuleScript',{'legacyCleanup'}},{65,'ModuleScript',{'checkLifetime'}},{69,'ModuleScript',{'innerScope'}},{75,'ModuleScript',{'whichLivesLonger'}},{66,'ModuleScript',{'deriveScope'}},{67,'ModuleScript',{'deriveScopeImpl'}},{71,'ModuleScript',{'needsDestruction'}},{72,'ModuleScript',{'poisonScope'}},{74,'ModuleScript',{'scoped'}},{68,'ModuleScript',{'doCleanup'}},{73,'ModuleScript',{'scopePool'}}}},{47,'Folder',{'Instances'},{{55,'ModuleScript',{'OnChange'}},{52,'ModuleScript',{'Children'}},{59,'ModuleScript',{'defaultProps'}},{49,'ModuleScript',{'AttributeChange'}},{51,'ModuleScript',{'Child'}},{48,'ModuleScript',{'Attribute'}},{54,'ModuleScript',{'New'}},{58,'ModuleScript',{'applyInstanceProps'}},{57,'ModuleScript',{'Out'}},{50,'ModuleScript',{'AttributeOut'}},{56,'ModuleScript',{'OnEvent'}},{53,'ModuleScript',{'Hydrate'}}}},{89,'ModuleScript',{'Types'}},{36,'Folder',{'Colour'},{{37,'ModuleScript',{'Oklab'}},{38,'ModuleScript',{'sRGB'}}}},{40,'ModuleScript',{'ExternalDebug'}},{90,'Folder',{'Utility'},{{98,'ModuleScript',{'xtypeof'}},{97,'ModuleScript',{'nicknames'}},{96,'ModuleScript',{'never'}},{94,'ModuleScript',{'merge'}},{95,'ModuleScript',{'nameOf'}},{92,'ModuleScript',{'Safe'}},{91,'ModuleScript',{'Contextual'}},{93,'ModuleScript',{'isSimilar'}}}},{41,'Folder',{'Graph'},{{42,'ModuleScript',{'Observer'}},{46,'ModuleScript',{'evaluate'}},{43,'ModuleScript',{'castToGraph'}},{44,'ModuleScript',{'change'}},{45,'ModuleScript',{'depend'}}}},{77,'Folder',{'State'},{{84,'ModuleScript',{'ForValues'}},{83,'ModuleScript',{'ForPairs'}},{85,'ModuleScript',{'Value'}},{79,'ModuleScript',{'For'},{{80,'ModuleScript',{'Disassembly'}},{81,'ModuleScript',{'ForTypes'}}}},{82,'ModuleScript',{'ForKeys'}},{86,'ModuleScript',{'castToState'}},{78,'ModuleScript',{'Computed'}},{88,'ModuleScript',{'updateAll'}},{87,'ModuleScript',{'peek'}}}},{60,'Folder',{'Logging'},{{62,'ModuleScript',{'messages'}},{63,'ModuleScript',{'parseError'}},{61,'ModuleScript',{'formatError'}}}},{25,'Folder',{'Animation'},{{27,'ModuleScript',{'Spring'}},{29,'ModuleScript',{'Tween'}},{35,'ModuleScript',{'unpackType'}},{26,'ModuleScript',{'ExternalTime'}},{28,'ModuleScript',{'Stopwatch'}},{34,'ModuleScript',{'springCoefficients'}},{33,'ModuleScript',{'packType'}},{30,'ModuleScript',{'getTweenDuration'}},{32,'ModuleScript',{'lerpType'}},{31,'ModuleScript',{'getTweenRatio'}}}}}}}}}}}}}},{100,'Folder',{'Storage'},{{104,'Folder',{'Themes'},{{108,'ModuleScript',{'Midnight'}},{105,'ModuleScript',{'Dark'}},{109,'ModuleScript',{'Rose'}},{106,'ModuleScript',{'Emerald'}},{107,'ModuleScript',{'Light'}}}},{102,'Folder',{'Stories'},{{103,'ModuleScript',{'App.story'}}}},{101,'ModuleScript',{'Information'}}}},{110,'Folder',{'Utilities'},{{114,'ModuleScript',{'Transparency'}},{111,'ModuleScript',{'Animate'}},{113,'ModuleScript',{'Scoper'}},{112,'ModuleScript',{'Colors'}}}}}}}local aa={function()local c,d,e,f,g=b(1)local h=(d)local i,j=e(h.Components.Window),({})j.__index=j j.CreateWindow=function(k,l)return i(l)end
-j.IsCorrectInput=function(k,l:InputObject,m:Enum.KeyCode|Enum.UserInputType)if(l and m)then
-    local n,o,p=m.Name,l.KeyCode.Name,l.UserInputType.Name if(o==n)or(p==n)then
-        return true else return false end
-    else error'Missing input or target (Modal:IsCorrectInput())'end
-end
-return j end
-,[4]=function()local c,d,e,f,g=b(4)local h=(d.Parent.Parent.Parent)local i=(h.Components.Buttons)local j,k,l,m,n,o=e(i.Holder),e(h.Packages.Fusion),e(h.Storage.Information),e(h.Utilities.Scoper),e(h.Utilities.Animate),e(h.Utilities.Colors)local p,q,r=l.Scope,k.Children,k.OnEvent type Configuration={Title:string,Description:string,Callback:()->()}local s=function(s:Configuration,t)local u=j({Title=s.Title,Description=s.Description,Interactable=true,Callback=function()s.Callback()end
-},t)return u end
-return s end
-,[5]=function()local c,d,e,f,g=b(5)local h=(d.Parent.Parent.Parent)local i=(h.Components.Buttons)local k,l,m,n,o,p=e(i.Holder),e(h.Packages.Fusion),e(h.Storage.Information),e(h.Utilities.Scoper),e(h.Utilities.Animate),e(h.Components.Popups.ColorPicker)local q,r,s=m.Scope,l.Children,l.OnEvent type Configuration={Title:string,Description:string,Default:Color3,Callback:(string)->()}local t=function(t:Configuration,u)local v=q:Value(t.Default or Color3.fromRGB(255,255,255))local w=k({Title=t.Title,Description=t.Description,Interactable=true,Padding=35,Callback=function()p.new({Title=t.Title,Options=t.Options,Callback=function(w)v:set(w)t.Callback(w)end
-},u,n.Unwrap(v):ToHSV())end
-,Children={q:New'Frame'{Name='Info',AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.fromOffset(25,25),BackgroundTransparency=0,BackgroundColor3=o(function(w)return w(v)end
-,30,1),[r]={q:New'UICorner'{CornerRadius=UDim.new(0,8)},q:New'UIStroke'{BorderStrokePosition=Enum.BorderStrokePosition.Inner,Color=Color3.fromRGB(255,255,255),Transparency=0.8,Thickness=1.5}}}}},u)return w end
-return t end
-,[6]=function()local c,d,e,f,g=b(6)local h=(d.Parent.Parent.Parent)local i=(h.Components.Buttons)local l,m,n,o,p,q=e(i.Holder),e(h.Packages.Fusion),e(h.Storage.Information),e(h.Utilities.Scoper),e(h.Utilities.Animate),e(h.Components.Popups.Dropdown)local r,s,t=n.Scope,m.Children,m.OnEvent type Configuration={Title:string,Description:string,Options:{string},Default:string,Callback:(string)->()}local u=function(u:Configuration,v)local w=r:Value(u.Default or'None')local x=l({Title=u.Title,Description=u.Description,Interactable=true,Padding=60,Callback=function()q.new({Title=u.Title,Options=u.Options,Callback=function(x)w:set(x)u.Callback(x)end
-},v)end
-,Children={r:New'Frame'{Name='Info',AnchorPoint=Vector2.new(1,0),BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,Position=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.X,Size=UDim2.new(0,0,1,0),[s]={r:New'ImageLabel'{Name='Icon',LayoutOrder=1,ScaleType=Enum.ScaleType.Crop,BackgroundColor3=Color3.fromRGB(255,255,255),ImageRectOffset=Vector2.new(0,514),Image='rbxassetid://16898617509',BackgroundTransparency=1,ImageRectSize=Vector2.new(256,256),ImageColor3=v.Themes.Text.Description.Color,Size=UDim2.new(0,15,0,15)},r:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Right,Padding=UDim.new(0,10),FillDirection=Enum.FillDirection.Horizontal},r:New'TextLabel'{Name='Selected',FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.SemiBold,Enum.FontStyle.Normal),TextColor3=v.Themes.Text.Description.Color,Text=w,BackgroundColor3=Color3.fromRGB(255,255,255),TextTransparency=0,BackgroundTransparency=1,RichText=true,TextSize=12,AutomaticSize=Enum.AutomaticSize.X,Size=UDim2.new(0,0,0,20),[s]={r:New'UIPadding'{Name='UIPadding',PaddingBottom=UDim.new(0,1)}}}}}}},v)return x end
-return u end
-,[7]=function()local c,d,e,f,g=b(7)local h=(d.Parent.Parent.Parent)local i,m,n,o,p=e(h.Packages.Fusion),e(h.Storage.Information),e(h.Utilities.Scoper),e(h.Utilities.Colors),e(h.Utilities.Animate)local q,r,s=m.Scope,i.Children,i.OnEvent type Configuration={Title:string,Description:string,Interactable:boolean,Padding:number?,Children:{GuiObject},Callback:()->()}local t=function(t:Configuration,u)local v,w,x,y,z=q:Value(false),q:Value(false),(u.Themes.Component),q:Value(t.Title),q:Value(t.Description)local A=q:New'TextButton'{Name='Holder',BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(1,-15,0,45),AutomaticSize=Enum.AutomaticSize.Y,[s'MouseEnter']=function()v:set(true)end
-,[s'MouseLeave']=function()v:set(false)w:set(false)end
-,[s'MouseButton1Down']=function()if(n.Unwrap(v))then
-    w:set(true)end
-end
-,[s'MouseButton1Up']=function()w:set(false)end
-,[s'MouseButton1Click']=function()if(t.Interactable and t.Callback)then
-    t.Callback()end
-end
-,[r]={q:New'UIGradient'{Name='UIGradient',Rotation=x.Rotation,Color=o.SetupTheme(x.Color)},q:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,10)},q:New'Frame'{Name='Highlight',Size=UDim2.fromScale(1,1)+UDim2.fromOffset(20,0),Position=UDim2.fromOffset(-10,0),BackgroundColor3=p(function(A)local B=A(u.Themes.Mode)return(B=='Light'and Color3.fromRGB(100,100,100))or Color3.fromRGB(255,255,255)end
-,30,1),BackgroundTransparency=p(function(A)if(t.Interactable)then
-    local B,C=A(w),A(v)return(B and 0.95)or(C and 0.975)or 1 else return 1 end
-end
-,30,1),[r]={q:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,10)}}},q:New'UIStroke'{Name='UIStroke',Thickness=0.7,Transparency=0.95},q:New'Frame'{Name='Text',Size=UDim2.fromScale(1,1),BackgroundTransparency=1,AutomaticSize=Enum.AutomaticSize.Y,[r]={q:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder},q:New'UIPadding'{PaddingTop=UDim.new(0,10),PaddingBottom=UDim.new(0,10)},q:New'TextLabel'{Name='Title',FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Bold,Enum.FontStyle.Normal),TextColor3=u.Themes.Text.Title.Color,BackgroundTransparency=1,Size=UDim2.new(1,-(t.Padding or 0),0,0),TextSize=13,TextWrapped=true,TextXAlignment=Enum.TextXAlignment.Left,AutomaticSize=Enum.AutomaticSize.Y,BackgroundColor3=Color3.fromRGB(255,255,255),Text=q:Computed(function(A)return(A(y)or'')end
-),Visible=q:Computed(function(A)local B=A(y)return(B and true)or false end
-)},q:New'TextLabel'{Name='Description',LayoutOrder=1,FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Medium,Enum.FontStyle.Normal),TextColor3=u.Themes.Text.Description.Color,BackgroundTransparency=1,Size=UDim2.new(1,-(t.Padding or 0),0,0),TextSize=12,TextWrapped=true,TextXAlignment=Enum.TextXAlignment.Left,AutomaticSize=Enum.AutomaticSize.Y,BackgroundColor3=Color3.fromRGB(255,255,255),Text=q:Computed(function(A)return(A(z)or'')end
-),Visible=q:Computed(function(A)local B=A(z)return(B and true)or false end
-)}}},q:New'UIStroke'{Name='UIStroke',Thickness=2,Transparency=0.7,Color=Color3.fromRGB(255,255,255),BorderStrokePosition=Enum.BorderStrokePosition.Inner},q:New'UIPadding'{Name='UIPadding',PaddingLeft=UDim.new(0,10),PaddingRight=UDim.new(0,10)},t.Children}}local B=({Object=A})B.SetTitle=function(C,D:string)y:set(D)end
-B.SetDescription=function(C,D:string)z:set(D)end
-return B end
-return t end
-,[8]=function()local c,d,e,f,g=b(8)local h=(d.Parent.Parent.Parent)local i=(h.Components.Buttons)local m,n,o,p,q=e(i.Holder),e(h.Packages.Fusion),e(h.Storage.Information),e(h.Utilities.Scoper),e(h.Utilities.Animate)local r,s,t=o.Scope,n.Children,n.OnEvent type Configuration={Title:string,Description:string,DefaultText:string,Placeholder:string,Callback:(string)->()}local u=function(u:Configuration,v)local w=r:Value()local x=m({Title=u.Title,Description=u.Description,Interactable=true,Padding=100,Callback=function()p.Unwrap(w):CaptureFocus()end
-,Children={w:set(r:New'TextBox'{Name='Toggle',BackgroundColor3=v.Themes.Controls.Color,FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Bold,Enum.FontStyle.Normal),Active=false,Text=(u.DefaultText or''),AutomaticSize=Enum.AutomaticSize.X,Selectable=false,AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,0,0.5,0),PlaceholderColor3=v.Themes.Text.Description.Color,TextColor3=v.Themes.Text.Title.Color,PlaceholderText=(u.Placeholder or''),TextSize=12,Size=UDim2.new(0,22,0,22),[t'FocusLost']=function()u.Callback(p.Unwrap(w).Text)end
-,[s]={r:New'UIPadding'{Name='UIPadding',PaddingLeft=UDim.new(0,5),PaddingRight=UDim.new(0,5)},r:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,6)},r:New'UIStroke'{Name='UIStroke',ApplyStrokeMode=Enum.ApplyStrokeMode.Border,Color=v.Themes.Controls.Outline,Transparency=0}}})}},v)return x end
-return u end
-,[9]=function()local c,d,e,f,g=b(9)local h,i=game:GetService'UserInputService',(d.Parent.Parent.Parent)local n=(i.Components.Buttons)local o,p,q,r,s,t=e(n.Holder),e(i.Packages.Fusion),e(i.Storage.Information),e(i.Utilities.Scoper),e(i.Utilities.Animate),e(i.Utilities.Colors)local u,v,w=q.Scope,p.Children,p.OnEvent type Configuration={Title:string,Description:string,DefaultKeybind:string,Callback:(Enum.KeyCode|Enum.UserInputType)->()}local x=function(x:Configuration,y)local z=(x.DefaultKeybind or'None')local A=u:Value(z)local B=o({Title=x.Title,Description=x.Description,Interactable=true,Padding=90,Callback=function()A:set'press a key'h.InputBegan:Once(function(B,C)if(not C)then
-    local D,E=B.UserInputType,B.KeyCode if(D==Enum.UserInputType.Keyboard)then
-        A:set(E.Name)x.Callback(E)else A:set(D.Name)x.Callback(D)end
-    end
-end
-)end
-,Children={u:New'Frame'{Name='Info',AnchorPoint=Vector2.new(1,0),BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,Position=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.X,Size=UDim2.new(0,0,1,0),[v]={u:New'ImageLabel'{Name='Icon',LayoutOrder=1,ScaleType=Enum.ScaleType.Crop,BackgroundColor3=Color3.fromRGB(255,255,255),ImageRectOffset=Vector2.new(257,0),Image='rbxassetid://16898673794',BackgroundTransparency=1,ImageRectSize=Vector2.new(256,256),ImageColor3=y.Themes.Text.Description.Color,Size=UDim2.new(0,15,0,15)},u:New'TextLabel'{Name='Selected',FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.ExtraBold,Enum.FontStyle.Normal),TextColor3=y.Themes.Text.Description.Color,Text=A,BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,TextSize=12,RichText=true,AutomaticSize=Enum.AutomaticSize.X,Size=UDim2.new(0,0,0,20),[v]={u:New'UIPadding'{Name='UIPadding',PaddingBottom=UDim.new(0,1)}}},u:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Right,Padding=UDim.new(0,10),FillDirection=Enum.FillDirection.Horizontal}}}}},y)return B end
-return x end
-,[10]=function()local c,d,e,f,g=b(10)local h=(d.Parent.Parent.Parent)local i=(h.Components.Buttons)local n,p,q,r,s,t=e(i.Holder),e(h.Packages.Fusion),e(h.Storage.Information),e(h.Utilities.Scoper),e(h.Utilities.Animate),e(h.Components.Popups.Dropdown)local u,v,w=q.Scope,p.Children,p.OnEvent type Configuration={Title:string,Description:string,Options:{string},Default:string,Callback:(string)->()}local x=function(x:Configuration,y)local z=u:Value(x.Default or{'None'})local A=n({Title=x.Title,Description=x.Description,Interactable=true,Padding=80,Callback=function()t.new({Title=x.Title,Options=x.Options,MultiDropdown=true,CurrentOptions=r.Unwrap(z),Callback=function(A)z:set(A)x.Callback(A)end
-},y)end
-,Children={u:New'Frame'{Name='Info',AnchorPoint=Vector2.new(1,0),BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,Position=UDim2.new(1,0,0,0),AutomaticSize=Enum.AutomaticSize.X,Size=UDim2.new(0,0,1,0),[v]={u:New'ImageLabel'{Name='Icon',LayoutOrder=1,ScaleType=Enum.ScaleType.Crop,BackgroundColor3=Color3.fromRGB(255,255,255),ImageRectOffset=Vector2.new(0,514),Image='rbxassetid://16898617509',BackgroundTransparency=1,ImageRectSize=Vector2.new(256,256),ImageColor3=y.Themes.Text.Description.Color,Size=UDim2.new(0,15,0,15)},u:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Right,Padding=UDim.new(0,10),FillDirection=Enum.FillDirection.Horizontal},u:New'TextLabel'{Name='Selected',FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.SemiBold,Enum.FontStyle.Normal),TextColor3=y.Themes.Text.Description.Color,Text=u:Computed(function(A)local B=A(z)or({'None'})return table.concat(B,', ')end
-),BackgroundColor3=Color3.fromRGB(255,255,255),TextTransparency=0,BackgroundTransparency=1,RichText=true,TextSize=12,AutomaticSize=Enum.AutomaticSize.X,Size=UDim2.new(0,0,0,20),[v]={u:New'UIPadding'{Name='UIPadding',PaddingBottom=UDim.new(0,1)}}}}}}},y)return A end
-return x end
-,[11]=function()local c,d,e,f,g=b(11)local h,i,p=game:GetService'RunService',game:GetService'Players',(d.Parent.Parent.Parent)local q,r=(p.Components.Buttons),(i.LocalPlayer:GetMouse())local s,t,u,v,w=e(q.Holder),e(p.Packages.Fusion),e(p.Storage.Information),e(p.Utilities.Scoper),e(p.Utilities.Animate)local x,y,z=u.Scope,t.Children,t.OnEvent type Configuration={Title:string,Description:string,Default:string,Maximum:number,Minimum:number,DecimalCount:number?,Callback:(number)->()}local A=function(A:Configuration,B)local C,D,E,F,G,H,I=x:Value(),x:Value(),x:Value(false),x:Value(0),x:Value(0),(A.DecimalCount or 0)local J=s({Title=A.Title,Description=A.Description,Padding=150,Children={x:New'Frame'{Name='Slider',AnchorPoint=Vector2.new(1,0),BackgroundTransparency=1,Position=UDim2.new(1,0,0,0),BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(0.5,0,1,0),[y]={D:set(x:New'TextBox'{Name='Selected',FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Heavy,Enum.FontStyle.Normal),TextColor3=B.Themes.Text.Title.Color,TextSize=12,BackgroundTransparency=1,RichText=true,TextTransparency=0.25,Size=UDim2.new(0,0,0,20),AutomaticSize=Enum.AutomaticSize.X,Text=x:Computed(function(J)return tostring(J(G))end
-),[z'FocusLost']=function()local J=tonumber(v.Unwrap(D).Text)I(J)A.Callback(J)end
-,[y]={x:New'UIPadding'{Name='UIPadding',PaddingBottom=UDim.new(0,1)}}}),x:New'Frame'{Name='Slide',AnchorPoint=Vector2.new(1,0.5),BackgroundColor3=B.Themes.Controls.Color,Position=UDim2.new(1,0,0.5,0),LayoutOrder=1,Size=UDim2.new(0,100,0,7),[y]={C:set(x:New'TextButton'{Size=UDim2.new(1,0,0,25),Position=UDim2.fromScale(0.5,0.5),AnchorPoint=Vector2.new(0.5,0.5),ZIndex=5,BackgroundTransparency=1,[z'MouseButton1Down']=function()E:set(true)end
-,[z'MouseButton1Up']=function()E:set(false)A.Callback(v.Unwrap(G))end
-,[z'MouseLeave']=function()E:set(false)A.Callback(v.Unwrap(G))end
-}),x:New'UIStroke'{Name='UIStroke',Thickness=0.5,Color=B.Themes.Controls.Outline,Transparency=0},x:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(1,0)},x:New'Frame'{Name='Highlight',BackgroundColor3=B.Themes.Accent,Size=w(function(J)return UDim2.fromScale(J(F)or 0,1)end
-,100,1),[y]={x:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(1,0)},x:New'UIStroke'{Name='UIStroke',ApplyStrokeMode=Enum.ApplyStrokeMode.Border,Transparency=0.8,Color=Color3.fromRGB(255,255,255),BorderStrokePosition=Enum.BorderStrokePosition.Inner},x:New'Frame'{Name='Circle',AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=Color3.fromRGB(245,245,245),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,20,0,15),BackgroundTransparency=0.1,[y]={x:New'UIStroke'{Name='UIStroke',ApplyStrokeMode=Enum.ApplyStrokeMode.Border,Transparency=0.8,Color=Color3.fromRGB(255,255,255),BorderStrokePosition=Enum.BorderStrokePosition.Inner},x:New'UIStroke'{Name='UIStroke',ApplyStrokeMode=Enum.ApplyStrokeMode.Border,Transparency=0.95},x:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(1,0)}}}}}}},x:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,FillDirection=Enum.FillDirection.Horizontal,HorizontalAlignment=Enum.HorizontalAlignment.Right,Padding=UDim.new(0,15),SortOrder=Enum.SortOrder.LayoutOrder}}}}},B)table.insert(x,task.spawn(function()local K I=function(L)local M=v.Unwrap(C)if(M)then
-    local N=math.clamp((r.X-M.AbsolutePosition.X)/M.AbsoluteSize.X,0,1)local O=tostring(math.clamp(L or(N*A.Maximum),A.Minimum,A.Maximum))G:set(tonumber(string.format(`%.{H}f`,O)))F:set(math.clamp((L and L/A.Maximum)or N,0,1))end
-end
-if A.Default then
-    I(A.Default)end
-    x:Observer(E):onChange(function()local L=v.Unwrap(E)if(L)then
-        K=h.RenderStepped:Connect(function()I()end
-        )elseif(K)then
-            K:Disconnect()end
+local Library = {}
+Library.flags = {}
+Library.pages = {}
+Library._navButtons = {}
+Library._currentPage = nil
+Library._gui = nil
+Library._win = nil
+Library._sidebar = nil
+Library._contentBg = nil
+Library._pageTitle = nil
+Library._navContainer = nil
+Library._connections = {}
+Library._spawns = {}
+
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+
+local localPlayer = Players.LocalPlayer
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- THEME UPDATED TO LIGHT BLUE (BIRU MUDA)
+local colors = {
+    primary = Color3.fromRGB(0, 170, 255),    -- Biru Muda Utama
+    secondary = Color3.fromRGB(70, 130, 180), -- Steel Blue
+    accent = Color3.fromRGB(135, 206, 250),   -- Light Sky Blue
+    success = Color3.fromRGB(34, 197, 94),
+    bg1 = Color3.fromRGB(15, 15, 15),
+    bg2 = Color3.fromRGB(25, 25, 25),
+    bg3 = Color3.fromRGB(35, 35, 35),
+    bg4 = Color3.fromRGB(45, 45, 45),
+    text = Color3.fromRGB(255, 255, 255),
+    textDim = Color3.fromRGB(200, 200, 200),
+    textDimmer = Color3.fromRGB(150, 150, 150),
+    border = Color3.fromRGB(0, 170, 255),     -- Border ikut biru muda
+}
+
+local windowSize = UDim2.new(0, 420, 0, 280)
+local minWindowSize = Vector2.new(380, 250)
+local maxWindowSize = Vector2.new(800, 600)
+local sidebarWidth = 120
+
+local fontSize = {
+    title = 16,
+    subtitle = 12,
+    header = 13,
+    normal = 11,
+    small = 10,
+}
+
+local function new(class, props)
+    local inst = Instance.new(class)
+    if props then
+        for k, v in pairs(props) do
+            inst[k] = v
         end
-    )end
-    ))return J end
-    return A end
-    ,[12]=function()local c,d,e,f,g=b(12)local h=(d.Parent.Parent.Parent)local i,p=e(h.Packages.Fusion),e(h.Storage.Information)local q,r=p.Scope,i.Children type Configuration={Title:string}local t=function(t:Configuration,u)local v=q:New'TextLabel'{Name='Title',FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Bold,Enum.FontStyle.Normal),TextColor3=u.Themes.Text.Title.Color,Text=t.Title,BackgroundTransparency=1,TextXAlignment=Enum.TextXAlignment.Left,BackgroundColor3=Color3.fromRGB(255,255,255),TextSize=14,Size=UDim2.new(1,-30,0,25),[r]={q:New'Frame'{Name='Seperator',AnchorPoint=Vector2.new(0.5,0),BackgroundColor3=u.Themes.Text.Title.Color,BackgroundTransparency=0.9,Position=UDim2.new(0.5,0,1,0),Size=UDim2.new(1,10,0.05,0)}}}return{Object=v}end
-    return t end
-    ,[13]=function()local c,d,e,f,g=b(13)local h=(d.Parent.Parent.Parent)local i=(h.Components.Buttons)local p,q,r,t,u,v=e(i.Holder),e(h.Packages.Fusion),e(h.Storage.Information),e(h.Utilities.Scoper),e(h.Utilities.Animate),e(h.Utilities.Colors)local w,x,y=r.Scope,q.Children,q.OnEvent type Configuration={Title:string,Description:string,DefaultValue:boolean,Callback:(boolean)->()}local z=function(z:Configuration,A)local B=w:Value(z.DefaultValue)local C=p({Title=z.Title,Description=z.Description,Interactable=true,Padding=45,Callback=function()local C=(not t.Unwrap(B))B:set(C)z.Callback(C)end
-    ,Children={w:New'Frame'{Name='Toggle',AnchorPoint=Vector2.new(1,0.5),Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,42,0,22),BackgroundColor3=u(function(C)local D,E,F=C(B),C(A.Themes.Accent),C(A.Themes.Controls.Color)return(D and E)or F end
-    ,30,1),[x]={w:New'UIStroke'{Name='UIStroke',ApplyStrokeMode=Enum.ApplyStrokeMode.Border,Color=Color3.fromRGB(255,255,255),BorderStrokePosition=Enum.BorderStrokePosition.Inner,Transparency=u(function(C)local D=C(B)return(D and 0.8)or 1 end
-    ,30,1)},w:New'UIStroke'{Name='UIStroke',ApplyStrokeMode=Enum.ApplyStrokeMode.Border,Color=A.Themes.Controls.Outline,Transparency=0},w:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(1,0)},w:New'Frame'{Name='Circle',BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(0.5,0,1,-6),BackgroundTransparency=0.15,Position=u(function(C)local D=C(B)return(D and UDim2.new(1,-3,0.5,0))or UDim2.new(0,3,0.5,0)end
-    ,30,0.95),AnchorPoint=u(function(C)local D=C(B)return(D and Vector2.new(1,0.5))or Vector2.new(0,0.5)end
-    ,30,1),[x]={w:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(1,0)}}}}}}},A)return C end
-    return z end
-    ,[15]=function()local c,d,e,f,g=b(15)local h,i=game:GetService'UserInputService',(d.Parent.Parent.Parent)local q=(i.Components.Buttons)local r,t,u,v,w,x=e(q.Holder),e(i.Packages.Fusion),e(i.Storage.Information),e(i.Utilities.Scoper),e(i.Utilities.Animate),e(i.Utilities.Transparency)local y,z,A=u.Scope,t.Children,t.OnEvent type Configuration={Callback:(Color3)->()}local B=({})B.new=function(C:Configuration,D,E,F,G)local H=y:innerScope{}local I,J,K,L,M,N,O=H:Value(false),e(i.Utilities.Colors)(H),(E or 1),(F or 1),(G or 1)O=H:New'Frame'{Name='ColorPicker',AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.new(0.5,0,0.5,0),BackgroundColor3=Color3.fromRGB(255,255,255),ZIndex=11,Parent=D.Object,Size=w(function(P)local Q=P(I)local R=(Q and 0.75)or 0.7 return UDim2.fromScale(R,R)end
-    ,25,0.7,H),[z]={H:New'UIPadding'{Name='UIPadding',PaddingTop=UDim.new(0,10),PaddingBottom=UDim.new(0,10),PaddingLeft=UDim.new(0,10),PaddingRight=UDim.new(0,10)},H:New'UIListLayout'{Name='UIListLayout',SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center,Padding=UDim.new(0,8)},H:New'UIAspectRatioConstraint'{Name='UIAspectRatioConstraint',AspectRatio=0.9},H:New'ImageLabel'{Name='HueSaturationFrame',LayoutOrder=0,AnchorPoint=Vector2.new(0.5,0),Image='http://www.roblox.com/asset/?id=181615068',BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(1,0,0.43,-8),[z]={H:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,14)},H:New'Frame'{Name='Pointer',AnchorPoint=Vector2.new(0,0.5),BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,Position=UDim2.new(1,0,0.5,0),Size=UDim2.new(0,10,0,10),[z]={H:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(1,0)},H:New'UIStroke'{Name='Ignore',Thickness=3,Color=Color3.fromRGB(255,255,255)}}}}},H:New'ImageLabel'{Name='ValueFrame',LayoutOrder=1,AnchorPoint=Vector2.new(0.5,0),Image='http://www.roblox.com/asset/?id=181615071',BackgroundColor3=Color3.fromRGB(255,66,66),Size=UDim2.new(1,0,0.1,-8),[z]={H:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0.5,0)},H:New'Frame'{Name='Pointer',AnchorPoint=Vector2.new(0,0.5),BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,Position=UDim2.new(0.8,0,0.5,0),Size=UDim2.new(0,10,0,10),[z]={H:New'UIStroke'{Name='Ignore',Thickness=3,Color=Color3.fromRGB(255,255,255)},H:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(1,0)}}}}},H:New'Frame'{Name='ColorPreviews',LayoutOrder=2,BackgroundTransparency=1,BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(1,0,0.3,-8),[z]={H:New'UIListLayout'{Name='UIListLayout',FillDirection=Enum.FillDirection.Horizontal,SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center,Padding=UDim.new(0,6)},H:New'Frame'{Name='Hex',LayoutOrder=0,BackgroundTransparency=1,BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(0.45,0,1,0),[z]={H:New'UIListLayout'{Name='UIListLayout',SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,6)},H:New'Frame'{Name='ColorDisplay',LayoutOrder=0,BackgroundColor3=Color3.fromRGB(255,73,73),Size=UDim2.new(1,0,0.5,-3),[z]={H:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,14)},H:New'UIStroke'{BorderStrokePosition=Enum.BorderStrokePosition.Inner,Color=Color3.fromRGB(255,255,255),Transparency=0.8,Thickness=1.5}}},H:New'Frame'{Name='Hex',LayoutOrder=1,BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(1,0,0.5,-3),[z]={H:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,14)},H:New'TextBox'{BackgroundTransparency=1,Size=UDim2.new(1,0,1,0),Text='#ffffff',FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Bold,Enum.FontStyle.Normal),TextWrapped=true,TextXAlignment=Enum.TextXAlignment.Left,TextColor3=v.Unwrap(D.Themes.Text.Description.Color),TextScaled=true,[z]={H:New'UIPadding'{Name='UIPadding',PaddingTop=UDim.new(0.25,0),PaddingBottom=UDim.new(0.25,0),PaddingLeft=UDim.new(0.1,0),PaddingRight=UDim.new(0.1,0)}}},H:New'UIGradient'{Name='UIGradient',Rotation=v.Unwrap(D.Themes.Component.Rotation),Color=J.Get(D.Themes.Component.Color)}}}}},H:New'Frame'{Name='RGB',LayoutOrder=1,AnchorPoint=Vector2.new(1,0),BackgroundTransparency=1,BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(0.525,0,1,0),[z]={H:New'UIListLayout'{Name='UIListLayout',FillDirection=Enum.FillDirection.Horizontal,SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center,Padding=UDim.new(0,6)},H:New'Frame'{Name='R',LayoutOrder=0,BackgroundTransparency=1,BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(0.33,-4,1,0),[z]={H:New'UIListLayout'{Name='UIListLayout',SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center},H:New'TextLabel'{Name='Title',LayoutOrder=0,FontFace=Font.new('rbxasset://fonts/families/SourceSansPro.json',Enum.FontWeight.Bold,Enum.FontStyle.Normal),BackgroundColor3=Color3.fromRGB(255,255,255),TextColor3=v.Unwrap(D.Themes.Text.Title.Color),Text='R',TextScaled=false,TextSize=16,AnchorPoint=Vector2.new(0.5,0),TextWrapped=true,BackgroundTransparency=1,TextTransparency=0.2,Size=UDim2.new(1,0,0.5,0)},H:New'TextBox'{Name='Input',LayoutOrder=1,BackgroundColor3=Color3.fromRGB(255,255,255),FontFace=Font.new'rbxassetid://12187365364',TextScaled=false,TextSize=16,TextColor3=v.Unwrap(D.Themes.Text.Description.Color),Text='255',CursorPosition=-1,TextWrapped=true,AnchorPoint=Vector2.new(0,1),BackgroundTransparency=1,PlaceholderColor3=Color3.fromRGB(178,178,178),Size=UDim2.new(1,0,0.55,0),[z]={H:New'UIPadding'{Name='UIPadding',PaddingTop=UDim.new(0.1,0),PaddingBottom=UDim.new(0.1,0)}}}}},H:New'Frame'{Name='G',LayoutOrder=1,BackgroundTransparency=1,BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(0.33,-4,1,0),[z]={H:New'UIListLayout'{Name='UIListLayout',SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center},H:New'TextBox'{Name='Input',LayoutOrder=1,TextWrapped=true,BackgroundColor3=Color3.fromRGB(255,255,255),TextColor3=v.Unwrap(D.Themes.Text.Description.Color),Text='255',TextScaled=false,TextSize=16,AnchorPoint=Vector2.new(0,1),FontFace=Font.new'rbxassetid://12187365364',BackgroundTransparency=1,PlaceholderColor3=Color3.fromRGB(178,178,178),Size=UDim2.new(1,0,0.55,0),[z]={H:New'UIPadding'{Name='UIPadding',PaddingTop=UDim.new(0.1,0),PaddingBottom=UDim.new(0.1,0)}}},H:New'TextLabel'{Name='Title',LayoutOrder=0,FontFace=Font.new('rbxasset://fonts/families/SourceSansPro.json',Enum.FontWeight.Bold,Enum.FontStyle.Normal),BackgroundColor3=Color3.fromRGB(255,255,255),TextColor3=v.Unwrap(D.Themes.Text.Title.Color),Text='G',TextScaled=false,TextSize=16,AnchorPoint=Vector2.new(0.5,0),TextWrapped=true,BackgroundTransparency=1,TextTransparency=0.2,Size=UDim2.new(1,0,0.5,0)}}},H:New'Frame'{Name='B',LayoutOrder=2,BackgroundTransparency=1,BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(0.33,-4,1,0),[z]={H:New'UIListLayout'{Name='UIListLayout',SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center},H:New'TextLabel'{Name='Title',LayoutOrder=0,FontFace=Font.new('rbxasset://fonts/families/SourceSansPro.json',Enum.FontWeight.Bold,Enum.FontStyle.Normal),BackgroundColor3=Color3.fromRGB(255,255,255),TextColor3=v.Unwrap(D.Themes.Text.Title.Color),Text='B',TextScaled=false,TextSize=16,AnchorPoint=Vector2.new(0.5,0),TextWrapped=true,BackgroundTransparency=1,TextTransparency=0.2,Size=UDim2.new(1,0,0.5,0)},H:New'TextBox'{Name='Input',LayoutOrder=1,BackgroundColor3=Color3.fromRGB(255,255,255),FontFace=Font.new'rbxassetid://12187365364',TextScaled=false,TextSize=16,TextColor3=v.Unwrap(D.Themes.Text.Description.Color),Text='255',CursorPosition=-1,TextWrapped=true,AnchorPoint=Vector2.new(0,1),BackgroundTransparency=1,PlaceholderColor3=Color3.fromRGB(178,178,178),Size=UDim2.new(1,0,0.55,0),[z]={H:New'UIPadding'{Name='UIPadding',PaddingTop=UDim.new(0.1,0),PaddingBottom=UDim.new(0.1,0)}}}}}}}}},H:New'Frame'{Name='Padding',Size=UDim2.new(1,0,0.04,-8),LayoutOrder=3,BackgroundTransparency=1},H:New'Frame'{Name='Buttons',LayoutOrder=4,AnchorPoint=Vector2.new(0,1),BackgroundTransparency=1,BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(1,0,0.15,-8),[z]={H:New'UIListLayout'{Name='UIListLayout',SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center,Padding=UDim.new(0,6),FillDirection=Enum.FillDirection.Horizontal},H:New'TextButton'{Name='Close',LayoutOrder=0,TextTransparency=1,AutoButtonColor=false,BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(0.5,-3,1,0),[A'MouseButton1Click']=function()D.PopupActive:set(false)I:set(false)x.ControlTransparency(O,0.3,1)task.delay(0.3,function()H:doCleanup()end
-    )end
-    ,[z]={H:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,14)},H:New'UIGradient'{Name='UIGradient',Rotation=v.Unwrap(D.Themes.Component.Rotation),Color=J.Get(D.Themes.Component.Color)},H:New'TextLabel'{Size=UDim2.fromScale(1,1),BackgroundTransparency=1,TextSize=14,Text='Close',TextColor3=v.Unwrap(D.Themes.Text.Description.Color),FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Bold,Enum.FontStyle.Normal)}}},H:New'TextButton'{Name='Done',LayoutOrder=1,FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Heavy,Enum.FontStyle.Normal),TextColor3=Color3.fromRGB(255,255,255),Text='Done',AutoButtonColor=false,BackgroundColor3=v.Unwrap(D.Themes.Accent),TextSize=14,Size=UDim2.new(0.5,-3,1,0),[A'MouseButton1Click']=function()C.Callback(N)D.PopupActive:set(false)I:set(false)x.ControlTransparency(O,0.3,1)task.delay(0.3,function()H:doCleanup()end
-    )end
-    ,[z]={H:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,14)}}}}},H:New'UIGradient'{Name='UIGradient',Color=J.Get(D.Themes.Background.Color),Rotation=v.Unwrap(D.Themes.Background.Rotation)},H:New'UIStroke'{Name='UIStroke',Thickness=2,Color=Color3.fromRGB(255,255,255),BorderStrokePosition=Enum.BorderStrokePosition.Inner,[z]={H:New'UIGradient'{Name='UIGradient',Color=J.Get(D.Themes.Background.InnerOutline.Color),Transparency=J.Get(D.Themes.Background.InnerOutline.Transparency,true),Rotation=v.Unwrap(D.Themes.Background.InnerOutline.Rotation)}}},H:New'UIStroke'{Name='UIStroke',Thickness=0.5,Color=Color3.fromRGB(255,255,255),[z]={H:New'UIGradient'{Name='UIGradient',Color=J.Get(D.Themes.Background.OuterOutline.Color),Transparency=J.Get(D.Themes.Background.OuterOutline.Transparency,true),Rotation=v.Unwrap(D.Themes.Background.OuterOutline.Rotation)}}},H:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,20)}}}local P,Q,R,S=O.HueSaturationFrame,O.ValueFrame,O.ColorPreviews.Hex.ColorDisplay,O.ColorPreviews.Hex.Hex.TextBox local T,U,V=P.Pointer,Q.Pointer,{R=O.ColorPreviews.RGB.R.Input,G=O.ColorPreviews.RGB.G.Input,B=O.ColorPreviews.RGB.B.Input}local aa,W=function()local W,X=Color3.fromHSV(K,L,M),Color3.fromHSV(K,L,1)N=W R.BackgroundColor3=W Q.BackgroundColor3=X local Y,Z,_=W.R*255,W.G*255,W.B*255 S.Text=string.format('#%02X%02X%02X',Y,Z,_)V.R.Text=math.floor(Y)V.G.Text=math.floor(Z)V.B.Text=math.floor(_)T.Position=UDim2.new(K,0,1-L,0)-UDim2.fromOffset(T.AbsoluteSize.X/2,0)U.Position=UDim2.new(M,0,0.5,0)-UDim2.fromOffset(U.AbsoluteSize.X/2,0)end
-    ,function(W,X)W.InputBegan:Connect(function(Y)if(Y.UserInputType==Enum.UserInputType.MouseButton1)then
-        local Z,_ X(Y.Position)Z=h.InputChanged:Connect(function(aa)if(aa.UserInputType==Enum.UserInputType.MouseMovement)then
-            X(aa.Position)end
+    end
+    return inst
+end
+
+function Library:AddConnection(name, connection)
+    if self._connections[name] then
+        pcall(function() self._connections[name]:Disconnect() end)
+    end
+    self._connections[name] = connection
+    return connection
+end
+
+function Library:AddSpawn(name, thread)
+    if self._spawns[name] then
+        pcall(function() task.cancel(self._spawns[name]) end)
+    end
+    self._spawns[name] = thread
+    return thread
+end
+
+function Library:Cleanup()
+    for name, conn in pairs(self._connections) do
+        pcall(function() conn:Disconnect() end)
+    end
+    for name, thread in pairs(self._spawns) do
+        pcall(function() task.cancel(thread) end)
+    end
+    table.clear(self._connections)
+    table.clear(self._spawns)
+end
+
+local CONFIG_FOLDER = "LynxGUI_Configs"
+local CONFIG_FILE = CONFIG_FOLDER .. "/lynx_config.json"
+local CurrentConfig = {}
+local DefaultConfig = {}
+local isDirty = false
+local saveScheduled = false
+local CallbackRegistry = {}
+
+local function DeepCopy(original)
+    local copy = {}
+    for k, v in pairs(original) do
+        copy[k] = type(v) == "table" and DeepCopy(v) or v
+    end
+    return copy
+end
+
+local function MergeTables(target, source)
+    for k, v in pairs(source) do
+        if type(v) == "table" and type(target[k]) == "table" then
+            MergeTables(target[k], v)
+        else
+            target[k] = v
         end
-    )_=h.InputEnded:Connect(function(aa)if(aa.UserInputType==Enum.UserInputType.MouseButton1)then
-        Z:Disconnect()_:Disconnect()end
-    end
-)end
-end
-)end
-W(P,function(X)local Y,Z=math.clamp((X.X-P.AbsolutePosition.X)/P.AbsoluteSize.X,0,1),math.clamp((X.Y-P.AbsolutePosition.Y)/P.AbsoluteSize.Y,0,1)K=Y L=1-Z aa()end
-)W(Q,function(X)local Y=math.clamp((X.X-Q.AbsolutePosition.X)/Q.AbsoluteSize.X,0,1)M=Y aa()end
-)S.FocusLost:Connect(function()local X=S.Text:gsub('#','')if(#X==6)then
-    local Y,Z,_=tonumber(X:sub(1,2),16),tonumber(X:sub(3,4),16),tonumber(X:sub(5,6),16)if(Y and Z and _)then
-        local ab,ac,ad=Color3.fromRGB(Y,Z,_):ToHSV()K,L,M=ab,ac,ad aa()end
     end
 end
-)for ab,ac in next,V do
-    ac.FocusLost:Connect(function()local ad,X,Y=tonumber(V.R.Text)or 0,tonumber(V.G.Text)or 0,tonumber(V.B.Text)or 0 ad=math.clamp(ad,0,255)X=math.clamp(X,0,255)Y=math.clamp(Y,0,255)local Z,_,ae=Color3.fromRGB(ad,X,Y):ToHSV()K,L,M=Z,_,ae aa()end
-    )end
-    x.Add(O)x.ControlTransparency(O,0,1)D.PopupActive:set(true)I:set(true)x.ControlTransparency(O,0.3,0)aa()end
-    return B end
-    ,[16]=function()local aa,ab,ac,ad,ae=b(16)local c=(ab.Parent.Parent.Parent)local d=(c.Components.Buttons)local e,f,g,h,i,q=ac(d.Holder),ac(c.Packages.Fusion),ac(c.Storage.Information),ac(c.Utilities.Scoper),ac(c.Utilities.Transparency),ac(c.Utilities.Animate)local r,t,u=g.Scope,f.Children,f.OnEvent type Configuration={Title:string,Options:{string},MultiDropdown:boolean,CurrentOptions:{string},Callback:(string|{string})->()}local v=({})v.new=function(w:Configuration,x)local y=r:innerScope{}local z,A,B,C=y:Value(false),y:Value{},y:Value'',ac(c.Utilities.Colors)(y)local D,E,F=y:Computed(function(D)local E=D(B):lower()if E==''then
-        return w.Options end
-        local F={}for G,H in w.Options do
-            if H:lower():find(E,1,true)then
-                table.insert(F,H)end
+
+local function EnsureFolderExists()
+    if not isfolder(CONFIG_FOLDER) then makefolder(CONFIG_FOLDER) end
+end
+
+Library.ConfigSystem = {}
+
+function Library.ConfigSystem.SetDefaults(defaults)
+    DefaultConfig = DeepCopy(defaults)
+end
+
+function Library.ConfigSystem.Save()
+    local success = pcall(function()
+        EnsureFolderExists()
+        writefile(CONFIG_FILE, HttpService:JSONEncode(CurrentConfig))
+    end)
+    return success
+end
+
+function Library.ConfigSystem.Load()
+    EnsureFolderExists()
+    CurrentConfig = DeepCopy(DefaultConfig)
+    if isfile(CONFIG_FILE) then
+        pcall(function()
+            local loaded = HttpService:JSONDecode(readfile(CONFIG_FILE))
+            MergeTables(CurrentConfig, loaded)
+        end)
+    end
+    return CurrentConfig
+end
+
+function Library.ConfigSystem.Get(path, default)
+    if not path then return default end
+    local value = CurrentConfig
+    for key in string.gmatch(path, "[^.]+") do
+        if type(value) ~= "table" then return default end
+        value = value[key]
+    end
+    return value ~= nil and value or default
+end
+
+function Library.ConfigSystem.Set(path, value)
+    if not path then return end
+    local keys = {}
+    for key in string.gmatch(path, "[^.]+") do table.insert(keys, key) end
+    local target = CurrentConfig
+    for i = 1, #keys - 1 do
+        if type(target[keys[i]]) ~= "table" then target[keys[i]] = {} end
+        target = target[keys[i]]
+    end
+    target[keys[#keys]] = value
+end
+
+function Library.ConfigSystem.Reset()
+    CurrentConfig = DeepCopy(DefaultConfig)
+    Library.ConfigSystem.Save()
+end
+
+function Library.ConfigSystem.Delete()
+    if isfile(CONFIG_FILE) then
+        delfile(CONFIG_FILE)
+    end
+end
+
+local function MarkDirty()
+    if _G.AutoSaveEnabled == false then return end
+    isDirty = true
+    if saveScheduled then return end
+    saveScheduled = true
+    task.delay(2, function()
+        if isDirty and _G.AutoSaveEnabled ~= false then 
+            local success = Library.ConfigSystem.Save() 
+            isDirty = false
+        end
+        saveScheduled = false
+    end)
+end
+
+local function RegisterCallback(configPath, callback, componentType, defaultValue)
+    if configPath then
+        table.insert(CallbackRegistry, {path = configPath, callback = callback, type = componentType, default = defaultValue})
+    end
+end
+
+local function ExecuteConfigCallbacks()
+    for _, entry in ipairs(CallbackRegistry) do
+        local value = Library.ConfigSystem.Get(entry.path, entry.default)
+        if entry.callback then entry.callback(value) end
+    end
+end
+
+-- AUTO SAVE SET TO FALSE BY DEFAULT
+_G.AutoSaveEnabled = false
+
+function _G.GetConfigValue(key, default)
+    return Library.ConfigSystem.Get(key, default)
+end
+
+function _G.SaveConfigValue(key, value)
+    Library.ConfigSystem.Set(key, value)
+    if _G.AutoSaveEnabled then
+        MarkDirty()
+    end
+end
+
+function _G.GetFullConfig()
+    return CurrentConfig
+end
+
+function Library:CreateWindow(config)
+    config = config or {}
+    local name = config.Name or "LynxGUI"
+    local title = config.Title or "LynX"
+    local subtitle = config.Subtitle or ""
+    
+    local existingGUI = CoreGui:FindFirstChild(name)
+    if existingGUI then
+        existingGUI:Destroy()
+        task.wait(0.1)
+    end
+    
+    self._gui = new("ScreenGui", {
+        Name = name,
+        Parent = CoreGui,
+        IgnoreGuiInset = true,
+        ResetOnSpawn = false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+        DisplayOrder = 2147483647
+    })
+    
+    local function bringToFront()
+        self._gui.DisplayOrder = 2147483647
+    end
+    
+    self._win = new("Frame", {
+        Parent = self._gui,
+        Size = windowSize,
+        Position = UDim2.new(0.5, -windowSize.X.Offset/2, 0.5, -windowSize.Y.Offset/2),
+        BackgroundColor3 = colors.bg1,
+        BackgroundTransparency = 0.05,
+        BorderSizePixel = 0,
+        ClipsDescendants = false,
+        ZIndex = 3
+    })
+    new("UICorner", {Parent = self._win, CornerRadius = UDim.new(0, 10)})
+    
+    -- Added subtle blue glow/outline
+    new("UIStroke", {
+        Parent = self._win,
+        Color = colors.primary,
+        Thickness = 1.5,
+        Transparency = 0.6
+    })
+    
+    self._sidebar = new("Frame", {
+        Parent = self._win,
+        Size = UDim2.new(0, sidebarWidth, 1, -42),
+        Position = UDim2.new(0, 0, 0, 42),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        ZIndex = 4
+    })
+    
+    local sidebarLine = new("Frame", {
+        Parent = self._sidebar,
+        Size = UDim2.new(0, 1, 1, 0),
+        Position = UDim2.new(1, 0, 0, 0),
+        BackgroundColor3 = colors.primary,
+        BackgroundTransparency = 0.7,
+        BorderSizePixel = 0,
+        ZIndex = 4
+    })
+    
+    local scriptHeader = new("TextButton", {
+        Parent = self._win,
+        Size = UDim2.new(1, 0, 0, 42),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = 5
+    })
+    
+    local headerLine = new("Frame", {
+        Parent = scriptHeader,
+        Size = UDim2.new(1, 0, 0, 1),
+        Position = UDim2.new(0, 0, 1, 0),
+        BackgroundColor3 = colors.primary,
+        BackgroundTransparency = 0.7,
+        BorderSizePixel = 0,
+        ZIndex = 5
+    })
+    
+    local headerDragHandle = new("Frame", {
+        Parent = scriptHeader,
+        Size = UDim2.new(0, 35, 0, 3),
+        Position = UDim2.new(0.5, -17, 0, 6),
+        BackgroundColor3 = colors.primary,
+        BackgroundTransparency = 0.2,
+        BorderSizePixel = 0,
+        ZIndex = 6
+    })
+    new("UICorner", {Parent = headerDragHandle, CornerRadius = UDim.new(1, 0)})
+    
+    new("TextLabel", {
+        Parent = scriptHeader,
+        Text = title,
+        Size = UDim2.new(0, 80, 1, 0),
+        Position = UDim2.new(0, 12, 0, 0),
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.title,
+        TextColor3 = colors.primary,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 6
+    })
+    
+    new("ImageLabel", {
+        Parent = scriptHeader,
+        Image = "rbxassetid://104332967321169",
+        Size = UDim2.new(0, 18, 0, 18),
+        Position = UDim2.new(0, 60, 0.5, -9),
+        BackgroundTransparency = 1,
+        ImageColor3 = colors.primary,
+        ZIndex = 6
+    })
+    
+    local separator = new("Frame", {
+        Parent = scriptHeader,
+        Size = UDim2.new(0, 2, 0, 22),
+        Position = UDim2.new(0, 100, 0.5, -11),
+        BackgroundColor3 = colors.primary,
+        BackgroundTransparency = 0.2,
+        BorderSizePixel = 0,
+        ZIndex = 6
+    })
+    new("UICorner", {Parent = separator, CornerRadius = UDim.new(1, 0)})
+    
+    new("TextLabel", {
+        Parent = scriptHeader,
+        Text = subtitle,
+        Size = UDim2.new(0, 200, 1, 0),
+        Position = UDim2.new(0, 125, 0, 0),
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.small,
+        TextColor3 = colors.textDim,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 6
+    })
+    
+    local btnMinHeader = new("TextButton", {
+        Parent = scriptHeader,
+        Size = UDim2.new(0, 28, 0, 28),
+        Position = UDim2.new(1, -35, 0.5, -14),
+        BackgroundColor3 = colors.bg3,
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        Text = "─",
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.subtitle,
+        TextColor3 = colors.textDim,
+        AutoButtonColor = false,
+        ZIndex = 7
+    })
+    new("UICorner", {Parent = btnMinHeader, CornerRadius = UDim.new(0, 7)})
+    
+    self._navContainer = new("ScrollingFrame", {
+        Parent = self._sidebar,
+        Size = UDim2.new(1, -10, 1, -10),
+        Position = UDim2.new(0, 5, 0, 5),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 0,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        ClipsDescendants = true,
+        ZIndex = 5
+    })
+    new("UIListLayout", {Parent = self._navContainer, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder})
+    
+    self._contentBg = new("Frame", {
+        Parent = self._win,
+        Size = UDim2.new(1, -(sidebarWidth + 8), 1, -48),
+        Position = UDim2.new(0, sidebarWidth + 4, 0, 44),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        ZIndex = 4
+    })
+    
+    local topBar = new("Frame", {
+        Parent = self._contentBg,
+        Size = UDim2.new(1, -6, 0, 30),
+        Position = UDim2.new(0, 3, 0, 3),
+        BackgroundColor3 = colors.bg2,
+        BackgroundTransparency = 0.4,
+        BorderSizePixel = 0,
+        ZIndex = 5
+    })
+    new("UICorner", {Parent = topBar, CornerRadius = UDim.new(0, 7)})
+    
+    self._pageTitle = new("TextLabel", {
+        Parent = topBar,
+        Text = "Dashboard",
+        Size = UDim2.new(1, -16, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.header,
+        BackgroundTransparency = 1,
+        TextColor3 = colors.text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 6
+    })
+    
+    local resizeHandle = new("TextButton", {
+        Parent = self._win,
+        Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(1, -16, 1, -16),
+        BackgroundColor3 = colors.bg3,
+        BackgroundTransparency = 0,
+        BorderSizePixel = 0,
+        Text = "⋰",
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.small,
+        TextColor3 = colors.textDim,
+        AutoButtonColor = false,
+        ZIndex = 100
+    })
+    new("UICorner", {Parent = resizeHandle, CornerRadius = UDim.new(0, 5)})
+    
+    local minimized = false
+    local icon = nil
+    local savedIconPos = UDim2.new(0, 20, 0, 100)
+    local savedWinPos = self._win.Position
+    local savedWinSize = self._win.Size
+    
+    local function createMinimizedIcon()
+        if icon then return end
+        icon = new("ImageButton", {
+            Parent = self._gui,
+            Size = UDim2.new(0, 50, 0, 50),
+            Position = savedIconPos,
+            BackgroundColor3 = colors.bg2,
+            BackgroundTransparency = 0,
+            BorderSizePixel = 0,
+            Image = "rbxassetid://118176705805619",
+            ScaleType = Enum.ScaleType.Fit,
+            AutoButtonColor = false,
+            ZIndex = 50
+        })
+        new("UICorner", {Parent = icon, CornerRadius = UDim.new(0, 10)})
+        new("UIStroke", {Parent = icon, Color = colors.primary, Thickness = 2})
+        
+        local logoText = new("TextLabel", {
+            Parent = icon,
+            Text = "L",
+            Size = UDim2.new(1, 0, 1, 0),
+            Font = Enum.Font.GothamBold,
+            TextSize = 28,
+            BackgroundTransparency = 1,
+            TextColor3 = colors.primary,
+            Visible = icon.Image == "",
+            ZIndex = 51
+        })
+        
+        local dragging, dragStart, startPos, dragMoved = false, nil, nil, false
+        
+        icon.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging, dragMoved, dragStart, startPos = true, false, input.Position, icon.Position
             end
-        return F end
-        ),function(D,E)if(E)then
-            local F=h.Unwrap(E)E:set(not F)end
-            local F,G,H=h.Unwrap(A),{},false for I,J in F do
-                if J==D then
-                    H=true else table.insert(G,J)end
-                end
-            if not H then
-                table.insert(G,D)end
-                A:set(G)end
-                F=y:New'Frame'{Name='Popup',AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=Color3.fromRGB(255,255,255),Position=UDim2.new(0.5,0,0.5,0),ZIndex=11,Parent=x.Object,Size=q(function(G)local H=G(z)local I=(H and 0.85)or 0.8 return UDim2.fromScale(I,I)end
-                ,25,0.7,y),[t]={y:New'UIGradient'{Name='UIGradient',Color=C.Get(x.Themes.Background.Color),Rotation=h.Unwrap(x.Themes.Background.Rotation)},y:New'Frame'{Name='Holder',AnchorPoint=Vector2.new(0.5,0),BackgroundColor3=Color3.fromRGB(255,255,255),Position=UDim2.new(0.5,0,0,35),ZIndex=2,Size=UDim2.new(1,-10,1,-40),[t]={y:New'ScrollingFrame'{Name='Home',ScrollBarImageColor3=h.Unwrap(x.Themes.Content.ScrollBarColor),ScrollBarThickness=0,Size=UDim2.new(1,0,1,0),BackgroundTransparency=1,CanvasSize=UDim2.new(1,0,0,0),Position=UDim2.new(0,0,0,0),AutomaticCanvasSize=Enum.AutomaticSize.Y,BackgroundColor3=Color3.fromRGB(255,255,255),ScrollBarImageTransparency=0.6,[t]={y:New'UIListLayout'{Name='UIListLayout',SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center,Padding=UDim.new(0,4)},y:New'UIPadding'{Name='UIPadding',PaddingTop=UDim.new(0,5),PaddingBottom=UDim.new(0,5)},y:New'Frame'{Name='SearchContainer',BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=0.2,Size=UDim2.new(1,-10,0,35),Position=UDim2.new(0.5,0,0,5),AnchorPoint=Vector2.new(0.5,0),[t]={y:New'UICorner'{CornerRadius=UDim.new(1,0)},y:New'UIGradient'{Name='UIGradient',Rotation=x.Themes.Component.Rotation,Color=C.Get(x.Themes.Component.Color)},y:New'TextBox'{Name='SearchBox',BackgroundTransparency=1,Size=UDim2.new(1,-25,1,0),Position=UDim2.new(0,10,0,0),Text='',PlaceholderText='Search options...',PlaceholderColor3=h.Unwrap(x.Themes.Text.Title.Color),TextColor3=h.Unwrap(x.Themes.Text.Title.Color),TextTransparency=0.3,TextSize=12,TextXAlignment=Enum.TextXAlignment.Left,ClearTextOnFocus=false,FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Medium,Enum.FontStyle.Normal),[u'Changed']=function(G)if G=='Text'then
-                    B:set(F.Holder.Home.SearchContainer.SearchBox.Text)end
-                end
-            }}},(w.MultiDropdown)and(y:New'TextButton'{Size=UDim2.new(1,-10,0,30),BackgroundColor3=h.Unwrap(x.Themes.Accent),AutoButtonColor=false,Text='',LayoutOrder=-1,[u'MouseButton1Click']=function()local G=h.Unwrap(A)w.Callback(G)x.PopupActive:set(false)z:set(false)i.ControlTransparency(F,0.3,1)task.delay(0.3,function()y:doCleanup()end
-            )end
-            ,[t]={y:New'UICorner'{CornerRadius=UDim.new(0.4,0)},y:New'TextLabel'{Position=UDim2.fromScale(0.5,0.5),AnchorPoint=Vector2.new(0.5,0.5),Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Text='Submit',TextXAlignment=Enum.TextXAlignment.Center,TextColor3=Color3.fromRGB(255,255,255),TextTransparency=0.2,FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Bold,Enum.FontStyle.Normal),TextSize=12}}}),y:Computed(function(G)local H,I=G(D),({})for J,K in H do
-                local L=table.find(w.CurrentOptions or{},K)local M=y:Value(L)if(L)then
-                    E(K,nil)end
-                    local N N=y:New'TextButton'{Size=UDim2.new(1,-10,0,38),BackgroundColor3=Color3.fromRGB(255,255,255),AutoButtonColor=false,Text='',[u'MouseEnter']=function()N.BackgroundTransparency=0.5 end
-                    ,[u'MouseLeave']=function()N.BackgroundTransparency=0 end
-                    ,[u'MouseButton1Down']=function()if(not w.MultiDropdown)then
-                        w.Callback(K)x.PopupActive:set(false)z:set(false)i.ControlTransparency(F,0.3,1)task.delay(0.3,function()y:doCleanup()end
-                        )else E(K,M)end
+        end)
+        
+        icon.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                local delta = input.Position - dragStart
+                if math.sqrt(delta.X^2 + delta.Y^2) > 5 then dragMoved = true end
+                icon.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+        end)
+        
+        icon.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                if dragging then
+                    dragging = false
+                    savedIconPos = icon.Position
+                    if not dragMoved then
+                        bringToFront()
+                        self._win.Visible = true
+                        self._win.Size = savedWinSize
+                        self._win.Position = savedWinPos
+                        icon:Destroy()
+                        icon = nil
+                        minimized = false
                     end
-                ,[t]={y:New'UICorner'{CornerRadius=UDim.new(0,10)},y:New'UIGradient'{Name='UIGradient',Rotation=x.Themes.Component.Rotation,Color=C.Get(x.Themes.Component.Color)},y:New'Frame'{Name='SelectIndicator',AnchorPoint=Vector2.new(0.5,0.5),Size=UDim2.fromOffset(3,10),BackgroundColor3=h.Unwrap(x.Themes.Accent),BackgroundTransparency=q(function(O)local P,Q=O(M),O(z)return(not Q and 1)or(P and 0)or 1 end
-                ,18,0.8,y),Position=q(function(O)local P,Q=O(M),O(z)local R=(not Q and-5E-2)or(P and 0)or-5E-2 return UDim2.fromScale(R,0.5)end
-                ,18,0.8,y),[t]={y:New'UICorner'{CornerRadius=UDim.new(1,0)}}},y:New'TextLabel'{Position=UDim2.new(0,12,0.5,0),AnchorPoint=Vector2.new(0,0.5),Size=UDim2.fromScale(1,1),BackgroundTransparency=1,Text=K,TextXAlignment=Enum.TextXAlignment.Left,TextColor3=h.Unwrap(x.Themes.Text.Title.Color),TextTransparency=0.2,FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Bold,Enum.FontStyle.Normal),TextSize=12}}}table.insert(I,N)end
-                return I end
-                )}},y:New'UIStroke'{Name='UIStroke',Color=h.Unwrap(x.Themes.Content.InnerOutline.Color),Transparency=h.Unwrap(x.Themes.Content.InnerOutline.Transparency),BorderStrokePosition=Enum.BorderStrokePosition.Inner},y:New'UIGradient'{Name='UIGradient',Color=C.Get(x.Themes.Content.Color),Rotation=h.Unwrap(x.Themes.Content.Rotation)},y:New'UIStroke'{Name='UIStroke',Thickness=0.5,Color=Color3.fromRGB(255,255,255),[t]={y:New'UIGradient'{Name='UIGradient',Color=C.Get(x.Themes.Content.OuterOutline.Color),Transparency=C.Get(x.Themes.Content.OuterOutline.Transparency,true),Rotation=h.Unwrap(x.Themes.Content.OuterOutline.Rotation)}}},y:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,15)}}},y:New'UIStroke'{Name='UIStroke',Thickness=2,Color=Color3.fromRGB(255,255,255),BorderStrokePosition=Enum.BorderStrokePosition.Inner,[t]={y:New'UIGradient'{Name='UIGradient',Color=C.Get(x.Themes.Background.InnerOutline.Color),Transparency=C.Get(x.Themes.Background.InnerOutline.Transparency,true),Rotation=h.Unwrap(x.Themes.Background.InnerOutline.Rotation)}}},y:New'UIStroke'{Name='UIStroke',Thickness=0.5,Color=Color3.fromRGB(255,255,255),[t]={y:New'UIGradient'{Name='UIGradient',Color=C.Get(x.Themes.Background.OuterOutline.Color),Transparency=C.Get(x.Themes.Background.OuterOutline.Transparency,true),Rotation=h.Unwrap(x.Themes.Background.OuterOutline.Rotation)}}},y:New'UIAspectRatioConstraint'{Name='UIAspectRatioConstraint',AspectRatio=0.75},y:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,20)},y:New'Frame'{Name='Topbar',BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,ZIndex=2,Size=UDim2.new(1,0,0,35),[t]={y:New'Folder'{Name='Script',[t]={y:New'TextLabel'{Name='Title',LayoutOrder=1,FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Bold,Enum.FontStyle.Normal),TextColor3=h.Unwrap(x.Themes.Text.Title.Color),TextTransparency=0.2,Text=w.Title,BackgroundColor3=Color3.fromRGB(255,255,255),TextSize=13,BackgroundTransparency=1,RichText=true,AutomaticSize=Enum.AutomaticSize.X,Size=UDim2.new(0,0,0,20),[t]={y:New'UIPadding'{Name='UIPadding',PaddingBottom=UDim.new(0,1)}}},y:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,8),FillDirection=Enum.FillDirection.Horizontal}}},y:New'Folder'{Name='Buttons',[t]={y:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,FillDirection=Enum.FillDirection.Horizontal,HorizontalAlignment=Enum.HorizontalAlignment.Right,Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder},y:New'TextButton'{Name='Close',FontFace=Font.new'rbxasset://fonts/families/SourceSansPro.json',TextColor3=Color3.fromRGB(0,0,0),BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,TextTransparency=1,TextSize=14,Size=UDim2.new(0,20,0,20),[u'MouseButton1Click']=function()x.PopupActive:set(false)z:set(false)i.ControlTransparency(F,0.3,1)task.delay(0.3,function()y:doCleanup()end
-                )end
-                ,[t]={y:New'ImageLabel'{Name='Icon',ScaleType=Enum.ScaleType.Fit,ImageTransparency=h.Unwrap(x.Themes.Icons.ActionButtons.Transparency),BackgroundColor3=Color3.fromRGB(255,255,255),AnchorPoint=Vector2.new(0.5,0.5),Image='rbxassetid://103624613466093',BackgroundTransparency=1,Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0.45,0,0.45,0),ImageColor3=h.Unwrap(x.Themes.Icons.ActionButtons.Color)}}}}},y:New'UIPadding'{Name='UIPadding',PaddingLeft=UDim.new(0,12),PaddingRight=UDim.new(0,12)}}}}}i.Add(F)i.ControlTransparency(F,0,1)x.PopupActive:set(true)z:set(true)i.ControlTransparency(F,0.3,0)end
-                return v end
-                ,[17]=function()local aa,ab,ac,ad,ae=b(17)local c=(ab.Parent.Parent.Parent)local d=(c.Components.Buttons)local e,f,g,h,i,q=ac(d.Holder),ac(c.Packages.Fusion),ac(c.Storage.Information),ac(c.Utilities.Scoper),ac(c.Utilities.Transparency),ac(c.Utilities.Animate)local r,t,u=g.Scope,f.Children,f.OnEvent type Configuration={Title:string,Description:string,Duration:number,Type:'Success'|'Error'|'Info'}local v=({})v.new=function(w:Configuration,x)local y=r:innerScope{}local z,A,B,C=y:Value(UDim2.fromOffset(240,0)),ac(c.Utilities.Colors)(y),({Error=Color3.fromRGB(229,51,51),Info=Color3.fromRGB(77,163,255),Success=Color3.fromRGB(60,179,113)}),({Success=('rbxassetid://120659272678891'),Error=('rbxassetid://89180847534855'),Info=('rbxassetid://75441143875602')})local D,E=(B[w.Type or'Info']or B.Info)E=y:New'Frame'{Name='Notification',AnchorPoint=Vector2.new(1,1),Position=UDim2.fromScale(1,1),BackgroundTransparency=1,ClipsDescendants=true,Parent=g.ScreenGuis.Notification.Holder,Size=q(function(F)return F(z)+UDim2.fromOffset(2,2)end
-                ,20,1,y),[t]={y:New'Frame'{Name='Notification',BackgroundColor3=Color3.fromRGB(255,255,255),ClipsDescendants=true,AnchorPoint=Vector2.new(1,0.5),Position=UDim2.fromScale(1,0.5)-UDim2.fromOffset(2,0),Size=UDim2.fromOffset(210,0),AutomaticSize=Enum.AutomaticSize.Y,[t]={y:New'ImageLabel'{Name='Close',ImageColor3=x.Themes.Icons.ActionButtons.Color,ScaleType=Enum.ScaleType.Fit,ImageTransparency=x.Themes.Icons.ActionButtons.Transparency,BackgroundColor3=Color3.fromRGB(255,255,255),AnchorPoint=Vector2.new(1,0),Image='rbxassetid://103624613466093',BackgroundTransparency=1,Position=UDim2.new(1,-15,0,15),Size=UDim2.new(0,8,0,8)},y:New'UIStroke'{Name='UIStroke',Thickness=1,Color=Color3.fromRGB(255,255,255),BorderStrokePosition=Enum.BorderStrokePosition.Inner,[t]={y:New'UIGradient'{Name='UIGradient',Color=A.SetupTheme(x.Themes.Background.InnerOutline.Color),Transparency=A.SetupTheme(x.Themes.Background.InnerOutline.Transparency,true),Rotation=x.Themes.Background.InnerOutline.Rotation}}},y:New'TextButton'{Name='Interact',FontFace=Font.new'rbxasset://fonts/families/SourceSansPro.json',TextColor3=Color3.fromRGB(0,0,0),Text='',BackgroundTransparency=1,AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),ZIndex=5,TextSize=14,Size=UDim2.fromScale(1,1),[u'Activated']=function()if(not h.IsPoisoned(y))then
-                    i.ControlTransparency(E,0.25,1)z:set(UDim2.fromOffset(250,0))task.delay(0.25,function()if(not h.IsPoisoned(y))then
-                        y:doCleanup()end
-                    end
-                )end
-            end
-        },y:New'UIStroke'{Name='UIStroke',Thickness=0.5,Color=Color3.fromRGB(255,255,255),[t]={y:New'UIGradient'{Name='UIGradient',Color=A.SetupTheme(x.Themes.Background.OuterOutline.Color),Transparency=A.SetupTheme(x.Themes.Background.OuterOutline.Transparency,true),Rotation=x.Themes.Background.OuterOutline.Rotation}}},y:New'UIGradient'{Name='UIGradient',Color=A.SetupTheme(x.Themes.Background.Color),Rotation=x.Themes.Background.Rotation},y:New'Frame'{Name='Frame',BackgroundTransparency=1,Position=UDim2.new(0,35,0,0),ZIndex=2,AutomaticSize=Enum.AutomaticSize.Y,Size=UDim2.new(1,-65,1,0),[t]={y:New'TextLabel'{Name='Title',TextWrapped=true,AnchorPoint=Vector2.new(0.5,0),ZIndex=3,Size=UDim2.new(1,0,0,10),RichText=true,TextColor3=x.Themes.Text.Title.Color,Text=w.Title,TextSize=14,BackgroundTransparency=1,TextXAlignment=Enum.TextXAlignment.Left,Position=UDim2.new(0.5,0,0,15),FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Bold,Enum.FontStyle.Normal),AutomaticSize=Enum.AutomaticSize.Y,[t]={y:New'ImageLabel'{Name='Icon',ImageColor3=D,BackgroundColor3=Color3.fromRGB(255,255,255),AnchorPoint=Vector2.new(0.5,0.5),Image=(C[w.Type or'Info']or C.Info),BackgroundTransparency=1,ImageTransparency=0,Position=UDim2.new(0,-15,0.5,0),Size=UDim2.new(0,15,0,15)}}},y:New'TextLabel'{Name='Description',FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.SemiBold,Enum.FontStyle.Normal),TextTransparency=0.15,AnchorPoint=Vector2.new(0.5,0.5),ZIndex=2,Size=UDim2.new(1,0,0,5),RichText=true,TextColor3=x.Themes.Text.Description.Color,Text=w.Description,TextWrapped=true,TextSize=12,Position=UDim2.new(0.556,0,0.5,7),BackgroundTransparency=1,TextXAlignment=Enum.TextXAlignment.Left,AutomaticSize=Enum.AutomaticSize.Y,TextYAlignment=Enum.TextYAlignment.Top,[t]={y:New'Frame'{Name='Line',AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=D,BackgroundTransparency=0.7,Position=UDim2.new(0,-15,0.5,0),Size=UDim2.new(0,3,1,3)}}},y:New'UIPadding'{PaddingTop=UDim.new(0,14),PaddingBottom=UDim.new(0,16)},y:New'UIListLayout'{VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,0)}}},y:New'UICorner'{CornerRadius=UDim.new(0,20)}}}}}local F=E.Notification.AbsoluteSize i.Add(E)i.ControlTransparency(E,0,1)task.wait()z:set(UDim2.fromOffset(F.X+5,F.Y+5))i.ControlTransparency(E,0.3,math.clamp(h.Unwrap(x.Themes.WindowTransparency)/2,0.15,1))task.delay(w.Duration or 5,function()if(not h.IsPoisoned(y))then
-            i.ControlTransparency(E,0.25,1)z:set(UDim2.fromOffset(F.X,0))task.delay(0.25,function()if(not h.IsPoisoned(y))then
-                y:doCleanup()end
-            end
-        )end
-    end
-)end
-return v end
-,[18]=function()local aa,ab,ac,ad,ae=b(18)local c,d,e=game:GetService'Players',game:GetService'UserInputService',(ab.Parent.Parent)local f,g,h,i,q,r,t,u,v=(e.Components.Buttons),(c.LocalPlayer:GetMouse()),ac(e.Packages.Fusion),ac(e.Storage.Information),ac(e.Utilities.Scoper),ac(e.Utilities.Colors),ac(e.Utilities.Transparency),ac(e.Utilities.Animate),ac(e.Components.Popups.Notification)local w,x,y,z=(i.Scope),(h.Children),(h.OnChange),(h.OnEvent)type Configuration={Title:string,SubTitle:string,Size:UDim2?,Transparency:number,MinimumSize:Vector2?,MaximumSize:Vector2?,Icon:string,Parent:GuiObject}local af=function(A:Configuration)local B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R=w:Value(),w:Value(),w:Value(),w:Value(),w:Value(false),w:Value(false),w:Value(false),({Tabs=w:Value{},CurrentTab=w:Value'None',PopupActive=w:Value(false),Title=w:Value(A.Title),SubTitle=w:Value(A.SubTitle),Icon=w:Value(A.Icon),Themes={Mode=w:Value'Light',Accent=w:Value(Color3.fromRGB(97,155,199)),WindowTransparency=w:Value(A.Transparency or 0),Background={Rotation=w:Value(90),Color=w:Value(ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(239,237,255)),ColorSequenceKeypoint.new(1,Color3.fromRGB(255,255,255))}),Line={Color=w:Value(Color3.fromRGB()),Transparency=w:Value(0.9)},OuterOutline={Transparency=w:Value(0.4),Color=w:Value(Color3.fromRGB(0,0,0)),Rotation=w:Value(0)},InnerOutline={Transparency=w:Value(0.45),Color=w:Value(Color3.fromRGB(255,255,255)),Rotation=w:Value(0)}},Text={Title={Color=w:Value(Color3.fromRGB(0,0,0))},Description={Color=w:Value(Color3.fromRGB(110,110,110))}},Icons={ActionButtons={Color=w:Value(Color3.fromRGB(0,0,0)),Transparency=w:Value(0.7)}},Content={Color=w:Value(Color3.fromRGB(251,248,255)),Rotation=w:Value(0),ScrollBarColor=w:Value(Color3.fromRGB(200,200,200)),InnerOutline={Transparency=w:Value(0.9),Color=w:Value(Color3.fromRGB(0,0,0)),Rotation=w:Value(0)},OuterOutline={Transparency=w:Value(1),Color=w:Value(Color3.fromRGB(0,0,0)),Rotation=w:Value(0)}},Component={Color=w:Value(Color3.fromRGB(245,242,249)),Rotation=w:Value(0)},Controls={Color=w:Value(Color3.fromRGB(235,232,239)),Outline=w:Value(Color3.fromRGB(227,225,231))}}}),({BottomLeft=w:Value(false),BottomRight=w:Value(false),FocusedBottomLeft=w:Value(false),FocusedBottomRight=w:Value(false)})local S,T,U,V,W,X=(A.MinimumSize or Vector2.new(100,100)),(A.MaximumSize or Vector2.new(9e9,9e9)),w:Value(A.Size or UDim2.fromOffset(520,300)),w:Value(UDim2.fromScale(0.5,0.5)),(ac(ab.Tab)(I))X=w:New'Frame'{AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=Color3.fromRGB(250,250,250),ClipsDescendants=true,Parent=A.Parent or i.ScreenGuis.Window,Name='_Window',Visible=w:Computed(function(Y)return(not Y(H))end
-),Position=u(function(Y)local Z=Y(G)return(Z and UDim2.fromScale(0.5,0.5))or Y(V)end
-,30,1),Size=u(function(Y)local Z,_,af=Y(U),Y(F),Y(G)return(af and UDim2.fromScale(1,1))or(_ and UDim2.new(Z.X.Scale,Z.X.Offset,0,55))or Z end
-,30,1),[x]={w:New'UIGradient'{Name='UIGradient',Color=r.SetupTheme(I.Themes.Background.Color),Rotation=I.Themes.Background.Rotation},w:New'Frame'{Name='Holder',AnchorPoint=Vector2.new(0.5,0),BackgroundColor3=Color3.fromRGB(255,255,255),Position=UDim2.new(0.5,0,0,55),ZIndex=2,Size=UDim2.new(1,-10,1,-60),Visible=w:Computed(function(af)return(not af(F))end
-),[x]={w:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,15)},w:New'UIStroke'{Name='UIStroke',BorderStrokePosition=Enum.BorderStrokePosition.Inner,Color=Color3.fromRGB(255,255,255),[x]={w:New'UIGradient'{Name='UIGradient',Color=r.SetupTheme(I.Themes.Content.InnerOutline.Color),Transparency=r.SetupTheme(I.Themes.Content.InnerOutline.Transparency,true),Rotation=I.Themes.Content.InnerOutline.Rotation}}},w:New'UIGradient'{Name='UIGradient',Color=r.SetupTheme(I.Themes.Content.Color),Rotation=I.Themes.Content.Rotation},w:New'UIStroke'{Name='UIStroke',Thickness=0.5,Color=Color3.fromRGB(255,255,255),[x]={w:New'UIGradient'{Name='UIGradient',Color=r.SetupTheme(I.Themes.Content.OuterOutline.Color),Transparency=r.SetupTheme(I.Themes.Content.OuterOutline.Transparency,true),Rotation=I.Themes.Content.OuterOutline.Rotation}}},w:ForPairs(I.Tabs,function(af,Y,Z,_)return W.CreateScrollingFrame(af,Y,Z,_)end
-)}},w:New'UIStroke'{Name='UIStroke',Thickness=2,Color=Color3.fromRGB(255,255,255),BorderStrokePosition=Enum.BorderStrokePosition.Inner,[x]={w:New'UIGradient'{Name='UIGradient',Color=r.SetupTheme(I.Themes.Background.InnerOutline.Color),Transparency=r.SetupTheme(I.Themes.Background.InnerOutline.Transparency,true),Rotation=I.Themes.Background.InnerOutline.Rotation}}},w:New'Folder'{Name='Assets',[x]={w:New'ImageLabel'{Name='Mica',ImageColor3=Color3.fromRGB(0,0,0),ScaleType=Enum.ScaleType.Tile,ImageTransparency=0.95,BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,Image='rbxassetid://9968344105',TileSize=UDim2.new(0,100,0,100),ZIndex=1000,Size=UDim2.new(1,0,1,0),[x]={w:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,20)}}}}},w:New'Frame'{Name='Topbar',BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,ZIndex=2,Size=UDim2.new(1,0,0,40),[x]={w:New'Folder'{Name='Buttons',[x]={w:New'TextButton'{Name='Maximize',FontFace=Font.new'rbxasset://fonts/families/SourceSansPro.json',TextTransparency=1,BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,TextSize=14,Size=UDim2.new(0,20,0,20),LayoutOrder=1,[z'MouseButton1Click']=function()local af=q.Unwrap(G)G:set(not af)F:set(false)end
-,[x]={w:New'ImageLabel'{Name='Icon',ScaleType=Enum.ScaleType.Fit,ImageTransparency=I.Themes.Icons.ActionButtons.Transparency,BackgroundColor3=Color3.fromRGB(255,255,255),AnchorPoint=Vector2.new(0.5,0.5),Image='rbxassetid://87693340107218',BackgroundTransparency=1,Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0.45,0,0.45,0),ImageColor3=I.Themes.Icons.ActionButtons.Color}}},w:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,FillDirection=Enum.FillDirection.Horizontal,HorizontalAlignment=Enum.HorizontalAlignment.Right,Padding=UDim.new(0,10),SortOrder=Enum.SortOrder.LayoutOrder},w:New'TextButton'{Name='Minimize',FontFace=Font.new'rbxasset://fonts/families/SourceSansPro.json',TextTransparency=1,BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,TextSize=14,Size=UDim2.new(0,20,0,20),[z'MouseButton1Click']=function()local af=q.Unwrap(F)F:set(not af)G:set(false)end
-,[x]={w:New'ImageLabel'{Name='Icon',ScaleType=Enum.ScaleType.Fit,ImageTransparency=I.Themes.Icons.ActionButtons.Transparency,BackgroundColor3=Color3.fromRGB(255,255,255),AnchorPoint=Vector2.new(0.5,0.5),Image='rbxassetid://107591031930333',BackgroundTransparency=1,Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0.45,0,0.45,0),ImageColor3=I.Themes.Icons.ActionButtons.Color}}},w:New'TextButton'{Name='Close',FontFace=Font.new'rbxasset://fonts/families/SourceSansPro.json',TextTransparency=1,BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,TextSize=14,LayoutOrder=2,Size=UDim2.new(0,20,0,20),[z'MouseButton1Click']=function()H:set(true)end
-,[x]={w:New'ImageLabel'{Name='Icon',ScaleType=Enum.ScaleType.Fit,ImageTransparency=I.Themes.Icons.ActionButtons.Transparency,BackgroundColor3=Color3.fromRGB(255,255,255),AnchorPoint=Vector2.new(0.5,0.5),Image='rbxassetid://103624613466093',BackgroundTransparency=1,Position=UDim2.new(0.5,0,0.5,0),Size=UDim2.new(0.45,0,0.45,0),ImageColor3=I.Themes.Icons.ActionButtons.Color}}}}},w:New'UIPadding'{Name='UIPadding',PaddingLeft=UDim.new(0,10),PaddingRight=UDim.new(0,10)},w:New'Folder'{Name='Script',[x]={w:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,8),FillDirection=Enum.FillDirection.Horizontal},w:New'ImageLabel'{Name='Logo',BackgroundColor3=Color3.fromRGB(255,255,255),Image=I.Icon,BackgroundTransparency=1,Size=UDim2.new(0,20,0,20)},w:New'Frame'{Size=UDim2.fromOffset(150,25),LayoutOrder=1,BackgroundTransparency=1,[x]={w:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,HorizontalAlignment=Enum.HorizontalAlignment.Left,SortOrder=Enum.SortOrder.LayoutOrder,Padding=UDim.new(0,0),FillDirection=Enum.FillDirection.Vertical},w:New'TextLabel'{Name='SubTitle',LayoutOrder=1,FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.SemiBold,Enum.FontStyle.Normal),TextColor3=I.Themes.Text.Description.Color,Text=I.SubTitle,BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,TextSize=12,RichText=true,AutomaticSize=Enum.AutomaticSize.X,Size=UDim2.new(0,0,0,10)},w:New'TextLabel'{Name='Title',FontFace=Font.new('rbxassetid://12187365364',Enum.FontWeight.Bold,Enum.FontStyle.Normal),TextColor3=I.Themes.Text.Title.Color,Text=I.Title,BackgroundColor3=Color3.fromRGB(255,255,255),TextSize=13,BackgroundTransparency=1,RichText=true,AutomaticSize=Enum.AutomaticSize.X,Size=UDim2.new(0,0,0,10),[x]={w:New'UIPadding'{Name='UIPadding',PaddingBottom=UDim.new(0,1)}}}}}}},w:New'Frame'{Name='Line',AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=I.Themes.Background.Line.Color,BackgroundTransparency=I.Themes.Background.Line.Transparency,Position=UDim2.new(0.5,0,0.5,-3),Size=UDim2.new(0.15,0,0,3),[x]={w:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(1,0)}}},B:set(w:New'ScrollingFrame'{Name='Tabs',ScrollBarImageColor3=Color3.fromRGB(0,0,0),CanvasSize=UDim2.new(),ScrollBarImageTransparency=0.89,ScrollBarThickness=2,AnchorPoint=Vector2.new(0,0.5),Selectable=false,BackgroundTransparency=1,Position=UDim2.new(0,0,1,1),BackgroundColor3=Color3.fromRGB(255,255,255),AutomaticCanvasSize=Enum.AutomaticSize.X,Size=UDim2.new(1,0,0,20),[y'AbsoluteWindowSize']=function()local af=q.Unwrap(B)local Y,Z=af.AbsoluteWindowSize.X,af.AbsoluteCanvasSize.X local _=Z>Y q.Unwrap(C).HorizontalAlignment=Enum.HorizontalAlignment[(_ and'Left')or'Center']end
-,[x]={C:set(w:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Center,FillDirection=Enum.FillDirection.Horizontal,HorizontalAlignment=Enum.HorizontalAlignment.Center,Padding=UDim.new(0,15),SortOrder=Enum.SortOrder.LayoutOrder}),w:ForPairs(I.Tabs,function(af,Y,Z,_)return W.CreateTabButton(af,Y,Z,_,I)end
-)}})}},w:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,20)},w:New'Frame'{Name='Resizers',BackgroundTransparency=1,BackgroundColor3=Color3.fromRGB(0,0,0),ZIndex=100,Size=UDim2.new(1,0,1,0),Visible=w:Computed(function(af)return(not af(F))end
-),[x]={D:set(w:New'TextButton'{Name='BottomLeft',Active=false,BackgroundColor3=Color3.fromRGB(255,255,255),AnchorPoint=Vector2.new(0,1),Selectable=false,BackgroundTransparency=1,Position=UDim2.new(0,0,1,0),TextTransparency=1,ZIndex=100,Size=UDim2.fromOffset(20,20),[z'InputBegan']=function(af)if(af.UserInputType==Enum.UserInputType.MouseButton1)then
-    K=q.Unwrap(D)P=Vector2.new(g.X,g.Y)Q=(X.AbsoluteSize)R=(X.Position)J.BottomLeft:set(true)end
-end
-,[z'InputEnded']=function(af)if(af.UserInputType==Enum.UserInputType.MouseButton1)then
-    K=nil J.BottomLeft:set(false)end
-end
-,[z'MouseEnter']=function()J.FocusedBottomLeft:set(true)end
-,[z'MouseLeave']=function()J.FocusedBottomLeft:set(false)end
-,[x]={w:New'ImageLabel'{Name='Icon',ImageColor3=I.Themes.Icons.ActionButtons.Color,Rotation=90,AnchorPoint=Vector2.new(0.5,0.5),Image='rbxassetid://132140133843415',BackgroundTransparency=1,ZIndex=100,Position=UDim2.new(0.65,0,0.37,0),ImageTransparency=u(function(af)local Y,Z=af(J.BottomLeft),af(J.FocusedBottomLeft)return(Y and 0)or(Z and 0.2)or 0.4 end
-,20,1),Size=u(function(af)local Y,Z=af(J.BottomLeft),af(J.FocusedBottomLeft)local _=(Y and 15)or(Z and 16)or 18 return UDim2.fromOffset(_,_)end
-,20,1)}}}),E:set(w:New'TextButton'{Name='BottomRight',Active=false,BackgroundColor3=Color3.fromRGB(255,255,255),TextTransparency=1,AnchorPoint=Vector2.new(1,1),BackgroundTransparency=1,Position=UDim2.new(1,0,1,0),Selectable=false,ZIndex=100,Size=UDim2.fromOffset(20,20),[z'InputBegan']=function(af)if(af.UserInputType==Enum.UserInputType.MouseButton1)then
-    K=q.Unwrap(E)P=Vector2.new(g.X,g.Y)Q=(X.AbsoluteSize)R=(X.Position)J.BottomRight:set(true)end
-end
-,[z'InputEnded']=function(af)if(af.UserInputType==Enum.UserInputType.MouseButton1)then
-    K=nil J.BottomRight:set(false)end
-end
-,[z'MouseEnter']=function()J.FocusedBottomRight:set(true)end
-,[z'MouseLeave']=function()J.FocusedBottomRight:set(false)end
-,[x]={w:New'ImageLabel'{Name='Icon',ImageColor3=I.Themes.Icons.ActionButtons.Color,AnchorPoint=Vector2.new(0.5,0.5),Image='rbxassetid://132140133843415',BackgroundTransparency=1,ZIndex=100,Position=UDim2.new(0.35,0,0.37,0),ImageTransparency=u(function(af)local Y,Z=af(J.BottomRight),af(J.FocusedBottomRight)return(Y and 0)or(Z and 0.2)or 0.4 end
-,20,1),Size=u(function(af)local Y,Z=af(J.BottomRight),af(J.FocusedBottomRight)local _=(Y and 15)or(Z and 16)or 18 return UDim2.fromOffset(_,_)end
-,20,1)}}})}},w:New'UIStroke'{Name='UIStroke',Thickness=0.5,Color=Color3.fromRGB(255,255,255),[x]={w:New'UIGradient'{Name='UIGradient',Color=r.SetupTheme(I.Themes.Background.OuterOutline.Color),Transparency=r.SetupTheme(I.Themes.Background.OuterOutline.Transparency,true),Rotation=I.Themes.Background.OuterOutline.Rotation}}},w:New'TextButton'{Name='Background',TextTransparency=1,AutoButtonColor=false,BackgroundColor3=Color3.fromRGB(0,0,0),Interactable=I.PopupActive,ZIndex=10,Size=UDim2.new(1,0,1,0),BackgroundTransparency=u(function(af)local Y=af(I.PopupActive)return Y and 0.8 or 1 end
-,30,1),[x]={w:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,20)}}}}}local af=w:New'TextButton'{AutoButtonColor=false,AnchorPoint=Vector2.new(0.5,0),BackgroundColor3=Color3.fromRGB(255,255,255),AutomaticSize=Enum.AutomaticSize.X,ZIndex=100,Size=UDim2.new(0,40,0,40),Parent=i.ScreenGuis.Window,Position=u(function(af)local Y=af(H)return UDim2.new(0.5,0,0,(Y and 20)or-50)end
-,20,1),[z'MouseButton1Click']=function()H:set(false)end
-,[x]={w:New'UIGradient'{Name='UIGradient',Color=r.SetupTheme(I.Themes.Background.Color),Rotation=I.Themes.Background.Rotation},w:New'TextLabel'{Size=UDim2.fromScale(0,1),AutomaticSize=Enum.AutomaticSize.X,Text=I.Title,TextColor3=I.Themes.Text.Title.Color,FontFace=Font.new('rbxassetid://11598289817',Enum.FontWeight.Heavy,Enum.FontStyle.Normal),TextSize=14,BackgroundTransparency=1},w:New'UICorner'{Name='UICorner',CornerRadius=UDim.new(0,20)},w:New'UIStroke'{Name='UIStroke',Thickness=0.5,Color=Color3.fromRGB(255,255,255),ApplyStrokeMode=Enum.ApplyStrokeMode.Border,[x]={w:New'UIGradient'{Name='UIGradient',Color=r.SetupTheme(I.Themes.Background.OuterOutline.Color),Transparency=r.SetupTheme(I.Themes.Background.OuterOutline.Transparency,true),Rotation=I.Themes.Background.OuterOutline.Rotation}}},w:New'UIPadding'{Name='UIPadding',PaddingRight=UDim.new(0,15),PaddingLeft=UDim.new(0,15)},w:New'UIStroke'{Name='UIStroke',Thickness=2,Color=Color3.fromRGB(255,255,255),ApplyStrokeMode=Enum.ApplyStrokeMode.Border,BorderStrokePosition=Enum.BorderStrokePosition.Inner,[x]={w:New'UIGradient'{Name='UIGradient',Color=r.SetupTheme(I.Themes.Background.InnerOutline.Color),Transparency=r.SetupTheme(I.Themes.Background.InnerOutline.Transparency,true),Rotation=I.Themes.Background.InnerOutline.Rotation}}}}}t.Add(X)t.Add(af)I.Object=(X)t.ControlTransparency(X,0.25,q.Unwrap(I.Themes.WindowTransparency))w:Observer(F):onChange(function()local Y=q.Unwrap(F)t.ControlTransparency(X,0.25,(Y and 0.5)or(q.Unwrap(I.Themes.WindowTransparency)or 0))end
-)w:Observer(H):onChange(function()local Y=q.Unwrap(H)t.ControlTransparency(af,0.25,(Y and(A.Transparency or 0))or 1)end
-)w:Observer(I.Themes.WindowTransparency):onChange(function()local Y,Z=q.Unwrap(I.Themes.WindowTransparency),q.Unwrap(F)t.ControlTransparency(X,0.25,(Z and 0.5)or Y)end
-)table.insert(w,g.Move:Connect(function()if(K)then
-    local Y=Vector2.new(g.X,g.Y)-P if(P and Q and R)then
-        local Z=(function()if(K.Name=='BottomLeft')then
-            return({X=Vector2.new(-1,0),Y=Vector2.new(0,1)})else return({X=Vector2.new(1,0),Y=Vector2.new(0,1)})end
-        end
-    )()local _=Vector2.new(Q.X+Y.X*Z.X.X,Q.Y+Y.Y*Z.Y.Y)_=Vector2.new(math.clamp(_.X,S.X,T.X),math.clamp(_.Y,S.Y,T.Y))local ag,ah=Vector2.new(X.AnchorPoint.X*Q.X,X.AnchorPoint.Y*Q.Y),Vector2.new(X.AnchorPoint.X*_.X,X.AnchorPoint.Y*_.Y)local ai=(ah-ag)local aj=UDim2.new(R.X.Scale,R.X.Offset+ai.X*Z.X.X,R.Y.Scale,R.Y.Offset+ai.Y*Z.Y.Y)U:set(UDim2.new(0,_.X,0,_.Y))V:set(aj)end
-end
-end
-))table.insert(w,X.InputBegan:Connect(function(ag)if(ag.UserInputType==Enum.UserInputType.MouseButton1 or ag.UserInputType==Enum.UserInputType.Touch)and(not K)then
-    L=(true)N=(ag.Position)O=q.Unwrap(V)ag.Changed:Connect(function()if(ag.UserInputState==Enum.UserInputState.End)then
-        L=false end
-    end
-)end
-end
-))table.insert(w,X.InputChanged:Connect(function(ag)if(ag.UserInputType==Enum.UserInputType.MouseMovement or ag.UserInputType==Enum.UserInputType.Touch)and(not K)then
-    M=ag end
-end
-))table.insert(w,d.InputChanged:Connect(function(ag)if(ag==M and L)and(not K)then
-    local ah,ai,aj=ag.Position-N,workspace.CurrentCamera.ViewportSize,X.AbsoluteSize local Y,Z=O.X.Offset+ah.X,O.Y.Offset+ah.Y V:set(UDim2.new(O.X.Scale,Y,O.Y.Scale,Z))end
-end
-))local ag=({Object=(X)})ag.AddTab=function(ah,ai:string)local aj,Y=w:Value{},({})q.Add(I.Tabs,{Title=ai,Components=aj})Y.New=function(Z,_):(...any)return function(...)local ak=f:FindFirstChild(_)if(ak)then
-    local al=ac(ak)(...,I)q.Add(aj,al)return al else error(`Invalid component type: {_} (Modal)`)end
-end
-end
-return Y end
-ag.SetTab=function(ah,ai)I.CurrentTab:set(ai)end
-ag.SetTheme=function(ah,ai,aj)local ak=(aj or I.Themes)if(typeof(ai)=='string')then
-    ai=ac(e.Storage.Themes:FindFirstChild(ai))end
-    for al,Y in pairs(ak)do
-        local Z=typeof(Y)if(ai and ai[al]~=nil)then
-            if(q.IsFusionValue(Y))then
-                Y:set(ai[al])elseif(Z=='table'and al~='WindowTransparency')then
-                    ag:SetTheme(ai[al],ak[al])end
                 end
-        end
-end
-ag.SetTransparency=function(ah,ai)I.Themes.WindowTransparency:set(ai)end
-ag.SetTitle=function(ah,ai)I.Title:set(ai)end
-ag.SetSubTitle=function(ah,ai)I.SubTitle:set(ai)end
-ag.SetIcon=function(ah,ai)I.Icon:set(ai)end
-ag.Notify=function(ah,ai)return v.new(ai,I)end
-ag.Destroy=function(ah)w:doCleanup()end
-return ag end
-return af end
-,[19]=function()local aa,ab,ac,ad,ae=b(19)local af,ag=game:GetService'TextService',(ab.Parent.Parent.Parent)local ah,ai,aj,ak=ac(ag.Storage.Information),ac(ag.Packages.Fusion),ac(ag.Utilities.Animate),ac(ag.Utilities.Transparency)local al,c,d=(ah.Scope),(ai.Children),(ai.OnEvent)local e=function(e)local f=({})f.CreateScrollingFrame=function(g,h,i,q)local r r=h:New'ScrollingFrame'{Name=q.Title,Active=true,ScrollBarThickness=3,BackgroundTransparency=1,Position=UDim2.new(0,0,0,7),Size=UDim2.new(1,0,1,-14),BackgroundColor3=Color3.fromRGB(255,255,255),CanvasSize=UDim2.new(),AutomaticCanvasSize=Enum.AutomaticSize.Y,ScrollBarImageColor3=e.Themes.Content.ScrollBarColor,[c]={h:New'UIPadding'{Name='UIPadding',PaddingTop=aj(function(t)local u=(t(e.CurrentTab)or'None')==q.Title local v=(u and 1)or 10 return UDim.new(0,v)end
-,15,1)},h:New'UIListLayout'{Name='UIListLayout',SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Center,Padding=UDim.new(0,7)},h:ForPairs(q.Components,function(t,u,v,w)task.spawn(function()local x=ai.peek(e.Themes.WindowTransparency)or 0 if(x)then
-    ak.Add(w.Object)ak.ControlTransparency(w.Object,0.15,x)end
-end
-)return v,w.Object end
-)}}ak.Add(r)h:Observer(e.CurrentTab):onChange(function()local t,u=ai.peek(e.CurrentTab),ai.peek(e.Themes.WindowTransparency)or 0 local v=(t or'None')==q.Title local w=(v and u)or 1 ak.ControlTransparency(r,0.15,w)r.Visible=true task.delay(0.15,function()r.Visible=v end
-)end
-)return i,r end
-f.CreateTabButton=function(g,h,i,q,r)local t,u=Font.new('rbxassetid://12187365364',Enum.FontWeight.Heavy),af:GetTextSize(q.Title,16,Enum.Font.SourceSans,Vector2.new(10000,10000))return i,h:New'TextButton'{Size=UDim2.fromOffset(u.X,20),BackgroundTransparency=1,[d'MouseButton1Click']=function()r.CurrentTab:set(q.Title)end
-,[c]={h:New'TextLabel'{Name='TabButton',TextColor3=r.Themes.Text.Title.Color,Text=q.Title,Position=UDim2.fromScale(0.5,0.5),AnchorPoint=Vector2.new(0.5,0.5),BackgroundColor3=Color3.fromRGB(255,255,255),BackgroundTransparency=1,AutomaticSize=Enum.AutomaticSize.X,TextScaled=true,Size=aj(function(v)local w=(v(r.CurrentTab)or'None')==q.Title local x=(w and 0.8)or 0 return UDim2.fromScale(2,x)end
-,30,1),TextTransparency=aj(function(v)local w=(v(r.CurrentTab)or'None')==q.Title return(w and 0.3)or 0.8 end
-,15,1),FontFace=h:Computed(function(v)local w=(v(r.CurrentTab)or'None')==q.Title local x=(w and Enum.FontWeight.Heavy)or Enum.FontWeight.SemiBold return t end
-),[c]={h:New'UITextSizeConstraint'{MaxTextSize=14,MinTextSize=12}}}}}end
-return f end
-return e end
-,[24]=function()local aa,ab,ac,ad,ae=b(24)local af,ag,ah=ac(ab.Types),(ac(ab.External))type Fusion=af.Fusion export type Animatable=af.Animatable export type UsedAs<T> =af.UsedAs<T>export type Child=af.Child export type Computed<T> =af.Computed<T>export type Contextual<T> =af.Contextual<T>export type GraphObject=af.GraphObject export type For<KO,VO> =af.For<KO,VO>export type Observer=af.Observer export type PropertyTable=af.PropertyTable export type Scope<Constructors=Fusion> =af.Scope<Constructors>export type ScopedObject=af.ScopedObject export type SpecialKey=af.SpecialKey export type Spring<T> =af.Spring<T>export type StateObject<T> =af.StateObject<T>export type Task=af.Task export type Tween<T> =af.Tween<T>export type Use=af.Use export type Value<T,S=T> =af.Value<T,S>export type Version=af.Version do
-    local ai=ac(ab.RobloxExternal)ag.setExternalProvider(ai)end
-    local ai:Fusion=table.freeze{version={major=0,minor=3,isRelease=true},Contextual=ac(ab.Utility.Contextual),Safe=ac(ab.Utility.Safe),cleanup=ac(ab.Memory.legacyCleanup),deriveScope=ac(ab.Memory.deriveScope),doCleanup=ac(ab.Memory.doCleanup),innerScope=ac(ab.Memory.innerScope),scoped=ac(ab.Memory.scoped),Observer=ac(ab.Graph.Observer),Computed=ac(ab.State.Computed),ForKeys=ac(ab.State.ForKeys)::af.ForKeysConstructor,ForPairs=ac(ab.State.ForPairs)::af.ForPairsConstructor,ForValues=ac(ab.State.ForValues)::af.ForValuesConstructor,peek=ac(ab.State.peek),Value=ac(ab.State.Value),Attribute=ac(ab.Instances.Attribute),AttributeChange=ac(ab.Instances.AttributeChange),AttributeOut=ac(ab.Instances.AttributeOut),Child=ac(ab.Instances.Child),Children=ac(ab.Instances.Children),Hydrate=ac(ab.Instances.Hydrate),New=ac(ab.Instances.New),OnChange=ac(ab.Instances.OnChange),OnEvent=ac(ab.Instances.OnEvent),Out=ac(ab.Instances.Out),Tween=ac(ab.Animation.Tween),Spring=ac(ab.Animation.Spring)}return ai end
-    ,[26]=function()local aa,ab,ac,ad,ae=b(26)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak=ac(af.Types),ac(af.External),ac(af.Graph.change),ac(af.Utility.nicknames)type ExternalTime=ah.StateObject<number>type Self=ExternalTime local al={}al.type='State'al.kind='ExternalTime'al.timeliness='lazy'al.dependencySet=table.freeze{}al._EXTREMELY_DANGEROUS_usedAsValue=ai.lastUpdateStep()local c,d:{Self}=table.freeze{__index=al},{}local e=function(e:ah.Scope<unknown>)local f=os.clock()local g:Self=setmetatable({createdAt=f,dependentSet={},lastChange=nil,scope=e,validity='invalid'},c)::any local h=function()g.scope=nil local h=table.find(d,g)if h~=nil then
-        table.remove(d,h)end
+            end
+        end)
     end
-g.oldestTask=h ak[g.oldestTask]='ExternalTime'table.insert(e,h)table.insert(d,g)return g end
-function al._evaluate(f:Self):boolean return true end
-    ai.bindToUpdateStep(function(f:number):()al._EXTREMELY_DANGEROUS_usedAsValue=ai.lastUpdateStep()for g,h in d do
-        aj(h)end
-    end
-)return e end
-,[27]=function()local aa,ab,ac,ad,ae=b(27)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c,d,e,f,g,h,i,q,r,t=ac(af.Types),ac(af.External),ac(af.Memory.checkLifetime),ac(af.Graph.depend),ac(af.Graph.change),ac(af.Graph.evaluate),ac(af.State.castToState),ac(af.State.peek),ac(af.Animation.ExternalTime),ac(af.Animation.Stopwatch),ac(af.Animation.packType),ac(af.Animation.unpackType),ac(af.Animation.springCoefficients),ac(af.Utility.nicknames),0.00001 type Self<T> =ah.Spring<T>&{_activeDamping:number,_activeGoal:T,_activeLatestP:{number},_activeLatestV:{number},_activeNumSprings:number,_activeSpeed:number,_activeStartP:{number},_activeStartV:{number},_activeTargetP:{number},_activeType:string,_speed:ah.UsedAs<number>,_damping:ah.UsedAs<number>,_goal:ah.UsedAs<T>,_stopwatch:g.Stopwatch}local u={}u.type='State'u.kind='Spring'u.timeliness='eager'local v=table.freeze{__index=u}local w=function(w:ah.Scope<unknown>,x:ah.UsedAs<T>,y:ah.UsedAs<number>?,z:ah.UsedAs<number>?)local A=os.clock()if typeof(w)~='table'or d(w)~=nil then
-    ai.logError('scopeMissing',nil,'Springs','myScope:Spring(goalState, speed, damping)')end
-    local B,C=(d(x))if B~=nil then
-        C=g(w,f(w))C:unpause()end
-        local D,E=y or 10,z or 1 local F:Self<T> =setmetatable({createdAt=A,dependencySet={},dependentSet={},lastChange=nil,scope=w,validity='invalid',_activeDamping=-1,_activeGoal=nil,_activeLatestP={},_activeLatestV={},_activeNumSprings=0,_activeSpeed=-1,_activeStartP={},_activeStartV={},_activeTargetP={},_activeType='',_damping=E,_EXTREMELY_DANGEROUS_usedAsValue=e(x),_goal=x,_speed=D,_stopwatch=C},v)::any local G=function()F.scope=nil for G in pairs(F.dependencySet)do
-            G.dependentSet[F]=nil end
+    
+    self:AddConnection("minimizeBtn", btnMinHeader.MouseButton1Click:Connect(function()
+        if not minimized then
+            savedWinPos = self._win.Position
+            savedWinSize = self._win.Size
+            self._win.Size = UDim2.new(0, 0, 0, 0)
+            self._win.Position = UDim2.new(0.5, 0, 0.5, 0)
+            self._win.Visible = false
+            createMinimizedIcon()
+            minimized = true
         end
-    F.oldestTask=G r[F.oldestTask]='Spring'table.insert(w,G)if B~=nil then
-        aj.bOutlivesA(w,F.oldestTask,B.scope,B.oldestTask,aj.formatters.animationGoal)end
-        local H=d(D)if H~=nil then
-            aj.bOutlivesA(w,F.oldestTask,H.scope,H.oldestTask,aj.formatters.parameter,'speed')end
-            local I=d(E)if I~=nil then
-                aj.bOutlivesA(w,F.oldestTask,I.scope,I.oldestTask,aj.formatters.parameter,'damping')end
-                c(F,true)return F end
-                function u.addVelocity<T>(x:Self<T>,y:T):()c(x,false)local z=typeof(y)if z~=x._activeType then
-                    ai.logError('springTypeMismatch',nil,z,x._activeType)end
-                    local A=i(y,z)for B,C in x._activeLatestV do
-                        A[B]+=C end
-                        x._activeStartP=table.clone(x._activeLatestP)x._activeStartV=A x._stopwatch:zero()x._stopwatch:unpause()al(x)end
-                        function u.get<T>(x:Self<T>):never return ai.logError'stateGetWasRemoved'end
-                            function u.setPosition<T>(x:Self<T>,y:T):()c(x,false)local z=typeof(y)if z~=x._activeType then
-                                ai.logError('springTypeMismatch',nil,z,x._activeType)end
-                                x._activeStartP=i(y,z)x._activeStartV=table.clone(x._activeLatestV)x._stopwatch:zero()x._stopwatch:unpause()al(x)end
-                                function u.setVelocity<T>(x:Self<T>,y:T):()c(x,false)local z=typeof(y)if z~=x._activeType then
-                                    ai.logError('springTypeMismatch',nil,z,x._activeType)end
-                                    x._activeStartP=table.clone(x._activeLatestP)x._activeStartV=i(y,z)x._stopwatch:zero()x._stopwatch:unpause()al(x)end
-                                    function u._evaluate<T>(x:Self<T>):boolean local y=d(x._goal)if y==nil then
-                                        x._EXTREMELY_DANGEROUS_usedAsValue=x._goal::T return false end
-                                        local z=e(y)if z~=z then
-                                            ai.logWarn'springNanGoal'return false end
-                                            local A=typeof(z)local B,C=A~=x._activeType,x._stopwatch::g.Stopwatch local D=e(C)ak(x,C)local E,F:T=(x._EXTREMELY_DANGEROUS_usedAsValue)if B then
-                                                F=z elseif D<=0 then
-                                                    F=E else local G,H,I,J=q(D,x._activeDamping,x._activeSpeed)local K=false for L=1,x._activeNumSprings do
-                                                        local M,N,O=x._activeStartP[L],x._activeTargetP[L],x._activeStartV[L]local P=M-N local Q,R=P*G+O*H,P*I+O*J if Q~=Q or R~=R then
-                                                            ai.logWarn'springNanMotion'Q,R=0,0 end
-                                                            if math.abs(Q)>t or math.abs(R)>t then
-                                                                K=true end
-                                                                local S=Q+N x._activeLatestP[L]=S x._activeLatestV[L]=R end
-                                                                if not K then
-                                                                    for L=1,x._activeNumSprings do
-                                                                        x._activeLatestP[L]=x._activeTargetP[L]end
-                                                                    end
-                                                                F=h(x._activeLatestP,x._activeType)::any end
-                                                                local G,H=e(x._speed)::number,e(x._damping)::number if B or z~=x._activeGoal or G~=x._activeSpeed or H~=x._activeDamping then
-                                                                    x._activeTargetP=i(z,A)x._activeNumSprings=#x._activeTargetP if B then
-                                                                        x._activeStartP=table.clone(x._activeTargetP)x._activeLatestP=table.clone(x._activeTargetP)x._activeStartV=table.create(x._activeNumSprings,0)x._activeLatestV=table.create(x._activeNumSprings,0)else x._activeStartP=table.clone(x._activeLatestP)x._activeStartV=table.clone(x._activeLatestV)end
-                                                                        x._activeType=A x._activeGoal=z x._activeDamping=H x._activeSpeed=G C:zero()C:unpause()end
-                                                                        x._EXTREMELY_DANGEROUS_usedAsValue=F return E~=F end
-                                                                        table.freeze(u)return w::ah.SpringConstructor end
-                                                                        ,[28]=function()local aa,ab,ac,ad,ae=b(28)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c=ac(af.Types),ac(af.Memory.checkLifetime),ac(af.Graph.depend),ac(af.Graph.change),ac(af.State.peek),ac(af.Utility.nicknames)export type Stopwatch=ah.StateObject<number>&{zero:(Stopwatch)->(),pause:(Stopwatch)->(),unpause:(Stopwatch)->()}type Self=Stopwatch&{_measureTimeSince:number,_playing:boolean,_timer:ah.StateObject<number>}local d={}d.type='State'd.kind='Stopwatch'd.timeliness='lazy'local e=table.freeze{__index=d}local f=function(f:ah.Scope<unknown>,g:ah.StateObject<number>)local h=os.clock()local i:Self=setmetatable({awake=true,createdAt=h,dependencySet={},dependentSet={},lastChange=nil,scope=f,validity='invalid',_EXTREMELY_DANGEROUS_usedAsValue=0,_measureTimeSince=0,_playing=false,_timer=g},e)::any local q=function()i.scope=nil end
-                                                                        i.oldestTask=q c[i.oldestTask]='Stopwatch'table.insert(f,q)ai.bOutlivesA(f,i.oldestTask,g.scope,g.oldestTask,ai.formatters.parameter,'timer')aj(i,g)return i end
-                                                                        function d.zero(g:Self):()local h=al(g._timer)if h~=g._measureTimeSince then
-                                                                            g._measureTimeSince=h g._EXTREMELY_DANGEROUS_usedAsValue=0 ak(g)end
-                                                                        end
-                                                                    function d.pause(g:Self):()if g._playing==true then
-                                                                        g._playing=false ak(g)end
-                                                                    end
-                                                                function d.unpause(g:Self):()if g._playing==false then
-                                                                    g._playing=true g._measureTimeSince=al(g._timer)-g._EXTREMELY_DANGEROUS_usedAsValue ak(g)end
-                                                                end
-                                                            function d._evaluate(g:Self):boolean if g._playing then
-                                                                aj(g,g._timer)local h,i=al(g._timer),g._EXTREMELY_DANGEROUS_usedAsValue local q=h-g._measureTimeSince g._EXTREMELY_DANGEROUS_usedAsValue=q return i~=q else return false end
-                                                            end
-                                                        table.freeze(d)return f end
-                                                        ,[29]=function()local aa,ab,ac,ad,ae=b(29)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c,d,e,f,g,h,i,q=ac(af.Types),ac(af.External),ac(af.Memory.checkLifetime),ac(af.Graph.depend),ac(af.Graph.evaluate),ac(af.State.castToState),ac(af.State.peek),ac(af.Animation.ExternalTime),ac(af.Animation.Stopwatch),ac(af.Animation.lerpType),ac(af.Animation.getTweenRatio),ac(af.Animation.getTweenDuration),ac(af.Utility.nicknames)export type Self<T> =ah.Tween<T>&{_activeDuration:number,_activeElapsed:number,_activeFrom:T,_activeTo:T,_activeTweenInfo:TweenInfo,_goal:ah.UsedAs<T>,_stopwatch:f.Stopwatch?,_tweenInfo:ah.UsedAs<TweenInfo>}local r={}r.type='State'r.kind='Tween'r.timeliness='eager'local t=table.freeze{__index=r}local u=function(u:ah.Scope<unknown>,v:ah.UsedAs<T>,w:ah.UsedAs<TweenInfo>?)local x=os.clock()if c(u)then
-                                                            ai.logError('scopeMissing',nil,'Tweens','myScope:Tween(goalState, tweenInfo)')end
-                                                            local y,z=(c(v))if y~=nil then
-                                                                z=f(u,e(u))end
-                                                                local A:Self<T> =setmetatable({createdAt=x,dependencySet={},dependentSet={},lastChange=nil,scope=u,validity='invalid',_activeDuration=nil,_activeElapsed=nil,_activeFrom=nil,_activeTo=nil,_activeTweenInfo=nil,_EXTREMELY_DANGEROUS_usedAsValue=d(v),_goal=v,_stopwatch=z,_tweenInfo=w or TweenInfo.new()},t)::any local B=function()A.scope=nil for B in pairs(A.dependencySet)do
-                                                                    B.dependentSet[A]=nil end
-                                                                end
-                                                            A.oldestTask=B q[A.oldestTask]='Tween'table.insert(u,B)if y~=nil then
-                                                                aj.bOutlivesA(u,A.oldestTask,y.scope,y.oldestTask,aj.formatters.animationGoal)end
-                                                                local C=c(w)if C~=nil then
-                                                                    aj.bOutlivesA(u,A.oldestTask,C.scope,C.oldestTask,aj.formatters.parameter,'tween info')end
-                                                                    al(A,true)return A end
-                                                                    function r.get<T>(v:Self<T>):never return ai.logError'stateGetWasRemoved'end
-                                                                        function r._evaluate<T>(v:Self<T>):boolean local w=c(v._goal)if w==nil then
-                                                                            v._EXTREMELY_DANGEROUS_usedAsValue=v._goal::T return false end
-                                                                            ak(v,w)local x=d(w)if x~=x then
-                                                                                ai.logWarn'tweenNanGoal'return false end
-                                                                                local y,z=v._stopwatch::f.Stopwatch,d(v._tweenInfo)::TweenInfo if v._activeTo~=x or(v._activeElapsed<v._activeDuration and v._activeTweenInfo~=z)then
-                                                                                    v._activeDuration=i(z)v._activeFrom=v._EXTREMELY_DANGEROUS_usedAsValue v._activeTo=x v._activeTweenInfo=z y:zero()y:unpause()end
-                                                                                    ak(v,y)v._activeElapsed=d(y)if v._activeFrom==v._activeTo or v._activeElapsed>=v._activeDuration or typeof(v._activeTo)~=typeof(v._activeFrom)then
-                                                                                        v._activeFrom=v._activeTo v._activeElapsed=v._activeDuration y:pause()end
-                                                                                        local A,B=h(z,v._activeElapsed),v._EXTREMELY_DANGEROUS_usedAsValue local C=g(v._activeFrom,v._activeTo,A)::T if C~=C then
-                                                                                            ai.logWarn'tweenNanMotion'C=v._activeTo end
-                                                                                            v._EXTREMELY_DANGEROUS_usedAsValue=C return B~=C end
-                                                                                            table.freeze(r)return u::ah.TweenConstructor end
-                                                                                            ,[30]=function()local aa,ab,ac,ad,ae=b(30)local af,ag,ah=game:GetService'TweenService',function(af:TweenInfo)if af.RepeatCount<=-1 then
-                                                                                                return math.huge end
-                                                                                                local ag=af.DelayTime+af.Time if af.Reverses then
-                                                                                                    ag+=af.Time end
-                                                                                                    ag*=af.RepeatCount+1 return ag end
-                                                                                                    return ag end
-                                                                                                    ,[31]=function()local aa,ab,ac,ad,ae=b(31)local af,ag=(game:GetService'TweenService')local ah=function(ah:TweenInfo,ai:number)local aj,ak,al,c,d,e=ah.DelayTime,ah.Time,ah.Reverses,1+ah.RepeatCount,ah.EasingStyle,ah.EasingDirection local f=aj+ak if al then
-                                                                                                        f+=ak end
-                                                                                                        if ai==math.huge then
-                                                                                                            return 1 end
-                                                                                                            if ai>=f*c and ah.RepeatCount>-1 then
-                                                                                                                return 1 end
-                                                                                                                local g=ai%f if g<=aj then
-                                                                                                                    return 0 end
-                                                                                                                    local h=(g-aj)/ak if h>1 then
-                                                                                                                        h=2-h end
-                                                                                                                        local i=af:GetValue(h,d,e)return i end
-                                                                                                                        return ah end
-                                                                                                                        ,[32]=function()local aa,ab,ac,ad,ae=b(32)local af,ag=(ab.Parent.Parent)local ah=ac(af.Colour.Oklab)local ai=function(ai:unknown,aj:unknown,ak:number)local al=typeof(ai)if typeof(aj)==al then
-                                                                                                                            if al=='number'then
-                                                                                                                                local c,d=aj::number,ai::number return(c-d)*ak+d elseif al=='CFrame'then
-                                                                                                                                    local c,d=aj::CFrame,ai::CFrame return d:Lerp(c,ak)elseif al=='Color3'then
-                                                                                                                                        local c,d=aj::Color3,ai::Color3 local e,f=ah.fromSRGB(d),ah.fromSRGB(c)return ah.toSRGB(e:Lerp(f,ak),false)elseif al=='ColorSequenceKeypoint'then
-                                                                                                                                            local c,d=aj::ColorSequenceKeypoint,ai::ColorSequenceKeypoint local e,f=ah.fromSRGB(d.Value),ah.fromSRGB(c.Value)return ColorSequenceKeypoint.new((c.Time-d.Time)*ak+d.Time,ah.toSRGB(e:Lerp(f,ak),false))elseif al=='DateTime'then
-                                                                                                                                                local c,d=aj::DateTime,ai::DateTime return DateTime.fromUnixTimestampMillis((c.UnixTimestampMillis-d.UnixTimestampMillis)*ak+d.UnixTimestampMillis)elseif al=='NumberRange'then
-                                                                                                                                                    local c,d=aj::NumberRange,ai::NumberRange return NumberRange.new((c.Min-d.Min)*ak+d.Min,(c.Max-d.Max)*ak+d.Max)elseif al=='NumberSequenceKeypoint'then
-                                                                                                                                                        local c,d=aj::NumberSequenceKeypoint,ai::NumberSequenceKeypoint return NumberSequenceKeypoint.new((c.Time-d.Time)*ak+d.Time,(c.Value-d.Value)*ak+d.Value,(c.Envelope-d.Envelope)*ak+d.Envelope)elseif al=='PhysicalProperties'then
-                                                                                                                                                            local c,d=aj::PhysicalProperties,ai::PhysicalProperties return PhysicalProperties.new((c.Density-d.Density)*ak+d.Density,(c.Friction-d.Friction)*ak+d.Friction,(c.Elasticity-d.Elasticity)*ak+d.Elasticity,(c.FrictionWeight-d.FrictionWeight)*ak+d.FrictionWeight,(c.ElasticityWeight-d.ElasticityWeight)*ak+d.ElasticityWeight)elseif al=='Ray'then
-                                                                                                                                                                local c,d=aj::Ray,ai::Ray return Ray.new(d.Origin:Lerp(c.Origin,ak),d.Direction:Lerp(c.Direction,ak))elseif al=='Rect'then
-                                                                                                                                                                    local c,d=aj::Rect,ai::Rect return Rect.new(d.Min:Lerp(c.Min,ak),d.Max:Lerp(c.Max,ak))elseif al=='Region3'then
-                                                                                                                                                                        local c,d=aj::Region3,ai::Region3 local e,f=d.CFrame.Position:Lerp(c.CFrame.Position,ak),d.Size:Lerp(c.Size,ak)/2 return Region3.new(e-f,e+f)elseif al=='Region3int16'then
-                                                                                                                                                                            local c,d=aj::Region3int16,ai::Region3int16 return Region3int16.new(Vector3int16.new((c.Min.X-d.Min.X)*ak+d.Min.X,(c.Min.Y-d.Min.Y)*ak+d.Min.Y,(c.Min.Z-d.Min.Z)*ak+d.Min.Z),Vector3int16.new((c.Max.X-d.Max.X)*ak+d.Max.X,(c.Max.Y-d.Max.Y)*ak+d.Max.Y,(c.Max.Z-d.Max.Z)*ak+d.Max.Z))elseif al=='UDim'then
-                                                                                                                                                                                local c,d=aj::UDim,ai::UDim return UDim.new((c.Scale-d.Scale)*ak+d.Scale,(c.Offset-d.Offset)*ak+d.Offset)elseif al=='UDim2'then
-                                                                                                                                                                                    local c,d=aj::UDim2,ai::UDim2 return d:Lerp(c,ak)elseif al=='Vector2'then
-                                                                                                                                                                                        local c,d=aj::Vector2,ai::Vector2 return d:Lerp(c,ak)elseif al=='Vector2int16'then
-                                                                                                                                                                                            local c,d=aj::Vector2int16,ai::Vector2int16 return Vector2int16.new((c.X-d.X)*ak+d.X,(c.Y-d.Y)*ak+d.Y)elseif al=='Vector3'then
-                                                                                                                                                                                                local c,d=aj::Vector3,ai::Vector3 return d:Lerp(c,ak)elseif al=='Vector3int16'then
-                                                                                                                                                                                                    local c,d=aj::Vector3int16,ai::Vector3int16 return Vector3int16.new((c.X-d.X)*ak+d.X,(c.Y-d.Y)*ak+d.Y,(c.Z-d.Z)*ak+d.Z)end
-                                                                                                                                                                                                end
-                                                                                                                                                                                            if ak<0.5 then
-                                                                                                                                                                                                return ai else return aj end
-                                                                                                                                                                                            end
-                                                                                                                                                                                        return ai end
-                                                                                                                                                                                        ,[33]=function()local aa,ab,ac,ad,ae=b(33)local af,ag=(ab.Parent.Parent)local ah,ai=ac(af.Types),ac(af.Colour.Oklab)local aj=function(aj:{number},ak:string)if ak=='number'then
-                                                                                                                                                                                            return aj[1]elseif ak=='CFrame'then
-                                                                                                                                                                                                return CFrame.new(aj[1],aj[2],aj[3])*CFrame.fromAxisAngle(Vector3.new(aj[4],aj[5],aj[6]).Unit,aj[7])elseif ak=='Color3'then
-                                                                                                                                                                                                    return ai.toSRGB(Vector3.new(aj[1],aj[2],aj[3]),false)elseif ak=='ColorSequenceKeypoint'then
-                                                                                                                                                                                                        return ColorSequenceKeypoint.new(aj[4],ai.toSRGB(Vector3.new(aj[1],aj[2],aj[3]),false))elseif ak=='DateTime'then
-                                                                                                                                                                                                            return DateTime.fromUnixTimestampMillis(aj[1])elseif ak=='NumberRange'then
-                                                                                                                                                                                                                return NumberRange.new(aj[1],aj[2])elseif ak=='NumberSequenceKeypoint'then
-                                                                                                                                                                                                                    return NumberSequenceKeypoint.new(aj[2],aj[1],aj[3])elseif ak=='PhysicalProperties'then
-                                                                                                                                                                                                                        return PhysicalProperties.new(aj[1],aj[2],aj[3],aj[4],aj[5])elseif ak=='Ray'then
-                                                                                                                                                                                                                            return Ray.new(Vector3.new(aj[1],aj[2],aj[3]),Vector3.new(aj[4],aj[5],aj[6]))elseif ak=='Rect'then
-                                                                                                                                                                                                                                return Rect.new(aj[1],aj[2],aj[3],aj[4])elseif ak=='Region3'then
-                                                                                                                                                                                                                                    local al,c=Vector3.new(aj[1],aj[2],aj[3]),Vector3.new(aj[4]/2,aj[5]/2,aj[6]/2)return Region3.new(al-c,al+c)elseif ak=='Region3int16'then
-                                                                                                                                                                                                                                        return Region3int16.new(Vector3int16.new(aj[1],aj[2],aj[3]),Vector3int16.new(aj[4],aj[5],aj[6]))elseif ak=='UDim'then
-                                                                                                                                                                                                                                            return UDim.new(aj[1],aj[2])elseif ak=='UDim2'then
-                                                                                                                                                                                                                                                return UDim2.new(aj[1],aj[2],aj[3],aj[4])elseif ak=='Vector2'then
-                                                                                                                                                                                                                                                    return Vector2.new(aj[1],aj[2])elseif ak=='Vector2int16'then
-                                                                                                                                                                                                                                                        return Vector2int16.new(aj[1],aj[2])elseif ak=='Vector3'then
-                                                                                                                                                                                                                                                            return Vector3.new(aj[1],aj[2],aj[3])elseif ak=='Vector3int16'then
-                                                                                                                                                                                                                                                                return Vector3int16.new(aj[1],aj[2],aj[3])else return nil end
-                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                        return aj end
-                                                                                                                                                                                                                                                        ,[34]=function()local aa,ab,ac,ad,ae=b(34)local af,ag=function(af:number,ag:number,ah:number)if af==0 or ah==0 then
-                                                                                                                                                                                                                                                            return 1,0,0,1 end
-                                                                                                                                                                                                                                                            local ai,aj,ak,al if ag>1 then
-                                                                                                                                                                                                                                                                local c=math.sqrt(ag^2-1)local d,e,f=-0.5/(c*ah),ah*(c+ag)*-1,ah*(c-ag)local g,h=math.exp(af*e),math.exp(af*f)ai=(h*e-g*f)*d aj=(g-h)*d/ah ak=(h-g)*d*ah al=(g*e-h*f)*d elseif ag==1 then
-                                                                                                                                                                                                                                                                    local c=af*ah local d=c*-1 local e=math.exp(d)ai=e*(c+1)aj=e*af ak=e*(d*ah)al=e*(d+1)else local c=ah*math.sqrt(1-ag^2)local d,e,f,g=1/c,math.exp(-1*af*ah*ag),math.sin(c*af),math.cos(c*af)local h,i=e*f,e*g local q=h*ah*ag*d ai=q+i aj=h*d ak=-1*(h*c+ah*ag*q)al=i-q end
-                                                                                                                                                                                                                                                                    return ai,aj,ak,al end
-                                                                                                                                                                                                                                                                    return af end
-                                                                                                                                                                                                                                                                    ,[35]=function()local aa,ab,ac,ad,ae=b(35)local af,ag=(ab.Parent.Parent)local ah=ac(af.Colour.Oklab)local ai=function(ai:unknown,aj:string)if aj=='number'then
-                                                                                                                                                                                                                                                                        local ak=ai::number return{ak}elseif aj=='CFrame'then
-                                                                                                                                                                                                                                                                            local ak=ai::CFrame local al,c=ak:ToAxisAngle()return{ak.X,ak.Y,ak.Z,al.X,al.Y,al.Z,c}elseif aj=='Color3'then
-                                                                                                                                                                                                                                                                                local ak=ai::Color3 local al=ah.fromSRGB(ak)return{al.X,al.Y,al.Z}elseif aj=='ColorSequenceKeypoint'then
-                                                                                                                                                                                                                                                                                    local ak=ai::ColorSequenceKeypoint local al=ah.fromSRGB(ak.Value)return{al.X,al.Y,al.Z,ak.Time}elseif aj=='DateTime'then
-                                                                                                                                                                                                                                                                                        local ak=ai::DateTime return{ak.UnixTimestampMillis}elseif aj=='NumberRange'then
-                                                                                                                                                                                                                                                                                            local ak=ai::NumberRange return{ak.Min,ak.Max}elseif aj=='NumberSequenceKeypoint'then
-                                                                                                                                                                                                                                                                                                local ak=ai::NumberSequenceKeypoint return{ak.Value,ak.Time,ak.Envelope}elseif aj=='PhysicalProperties'then
-                                                                                                                                                                                                                                                                                                    local ak=ai::PhysicalProperties return{ak.Density,ak.Friction,ak.Elasticity,ak.FrictionWeight,ak.ElasticityWeight}elseif aj=='Ray'then
-                                                                                                                                                                                                                                                                                                        local ak=ai::Ray return{ak.Origin.X,ak.Origin.Y,ak.Origin.Z,ak.Direction.X,ak.Direction.Y,ak.Direction.Z}elseif aj=='Rect'then
-                                                                                                                                                                                                                                                                                                            local ak=ai::Rect return{ak.Min.X,ak.Min.Y,ak.Max.X,ak.Max.Y}elseif aj=='Region3'then
-                                                                                                                                                                                                                                                                                                                local ak=ai::Region3 return{ak.CFrame.X,ak.CFrame.Y,ak.CFrame.Z,ak.Size.X,ak.Size.Y,ak.Size.Z}elseif aj=='Region3int16'then
-                                                                                                                                                                                                                                                                                                                    local ak=ai::Region3int16 return{ak.Min.X,ak.Min.Y,ak.Min.Z,ak.Max.X,ak.Max.Y,ak.Max.Z}elseif aj=='UDim'then
-                                                                                                                                                                                                                                                                                                                        local ak=ai::UDim return{ak.Scale,ak.Offset}elseif aj=='UDim2'then
-                                                                                                                                                                                                                                                                                                                            local ak=ai::UDim2 return{ak.X.Scale,ak.X.Offset,ak.Y.Scale,ak.Y.Offset}elseif aj=='Vector2'then
-                                                                                                                                                                                                                                                                                                                                local ak=ai::Vector2 return{ak.X,ak.Y}elseif aj=='Vector2int16'then
-                                                                                                                                                                                                                                                                                                                                    local ak=ai::Vector2int16 return{ak.X,ak.Y}elseif aj=='Vector3'then
-                                                                                                                                                                                                                                                                                                                                        local ak=ai::Vector3 return{ak.X,ak.Y,ak.Z}elseif aj=='Vector3int16'then
-                                                                                                                                                                                                                                                                                                                                            local ak=ai::Vector3int16 return{ak.X,ak.Y,ak.Z}else return{}end
-                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                    return ai end
-                                                                                                                                                                                                                                                                                                                                    ,[37]=function()local aa,ab,ac,ad,ae=b(37)local af,ag,ah=ac(ab.Parent.sRGB),{}function ag.fromLinear(ai:Color3):Vector3 local aj,ak,al=ai.R*0.4122214708+ai.G*0.5363325363+ai.B*0.0514459929,ai.R*0.2119034982+ai.G*0.6806995451+ai.B*0.1073969566,ai.R*0.0883024619+ai.G*0.2817188376+ai.B*0.6299787005 local c,d,e=aj^(0.3333333333333333),ak^(0.3333333333333333),al^(0.3333333333333333)return Vector3.new(c*0.2104542553+d*0.793617785-e*0.0040720468,c*1.9779984951-d*2.428592205+e*0.4505937099,c*0.0259040371+d*0.7827717662-e*0.808675766)end
-                                                                                                                                                                                                                                                                                                                                    function ag.fromSRGB(ai:Color3):Vector3 return ag.fromLinear(af.toLinear(ai))end
-                                                                                                                                                                                                                                                                                                                                        function ag.toLinear(ai:Vector3,aj:boolean?):Color3 local ak,al,c=ai.X+ai.Y*0.3963377774+ai.Z*0.2158037573,ai.X-ai.Y*0.1055613458-ai.Z*0.0638541728,ai.X-ai.Y*0.0894841775-ai.Z*1.291485548 local d,e,f=ak^3,al^3,c^3 local g,h,i=d*4.0767416621-e*3.3077115913+f*0.2309699292,d*-1.2684380046+e*2.6097574011-f*0.3413193965,d*-4.1960863E-3-e*0.7034186147+f*1.707614701 if not aj then
-                                                                                                                                                                                                                                                                                                                                            g=math.clamp(g,0,1)h=math.clamp(h,0,1)i=math.clamp(i,0,1)end
-                                                                                                                                                                                                                                                                                                                                            return Color3.new(g,h,i)end
-                                                                                                                                                                                                                                                                                                                                            function ag.toSRGB(ai:Vector3,aj:boolean?):Color3 return af.fromLinear(ag.toLinear(ai,aj))end
-                                                                                                                                                                                                                                                                                                                                                return ag end
-                                                                                                                                                                                                                                                                                                                                                ,[38]=function()local aa,ab,ac,ad,ae=b(38)local af,ag,ah,ai={},function(af:number)if af>=0.04045 then
-                                                                                                                                                                                                                                                                                                                                                    return((af+0.055)/(1.055))^2.4 else return af/12.92 end
-                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                            ,function(af:number)if af>=0.0031308 then
-                                                                                                                                                                                                                                                                                                                                                return(1.055)*af^(0.4166666666666667)-0.055 else return 12.92*af end
-                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                        function af.fromLinear(aj:Color3):Color3 return Color3.new(ag(aj.R),ag(aj.G),ag(aj.B))end
-                                                                                                                                                                                                                                                                                                                                            function af.toLinear(aj:Color3):Color3 return Color3.new(ah(aj.R),ah(aj.G),ah(aj.B))end
-                                                                                                                                                                                                                                                                                                                                                return af end
-                                                                                                                                                                                                                                                                                                                                                ,[39]=function()local aa,ab,ac,ad,ae=b(39)local af,ag=(ab.Parent)local ah,ai,aj,ak,al=ac(af.Logging.formatError),ac(af.Types),'https://elttob.uk/Fusion/0.3/api-reference/general/errors/#',{},false ak.safetyTimerMultiplier=1 local c,d,e:ai.ExternalProvider?={},0 function ak.setExternalProvider(f:ai.ExternalProvider?):ai.ExternalProvider?local g=e if g~=nil then
-                                                                                                                                                                                                                                                                                                                                                    g.stopScheduler()end
-                                                                                                                                                                                                                                                                                                                                                    e=f if f~=nil then
-                                                                                                                                                                                                                                                                                                                                                        f.startScheduler()end
-                                                                                                                                                                                                                                                                                                                                                        return g end
-                                                                                                                                                                                                                                                                                                                                                        function ak.isTimeCritical():boolean return al end
-                                                                                                                                                                                                                                                                                                                                                            function ak.doTaskImmediate(f:()->())if e==nil then
-                                                                                                                                                                                                                                                                                                                                                                ak.logError'noTaskScheduler'else e.doTaskImmediate(f)end
-                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                        function ak.doTaskDeferred(f:()->())if e==nil then
-                                                                                                                                                                                                                                                                                                                                                            ak.logError'noTaskScheduler'else e.doTaskDeferred(f)end
-                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                    function ak.logError(f:string,g:ai.Error?,...:unknown):never error(ah(e,f,g,...),0)end
-                                                                                                                                                                                                                                                                                                                                                        function ak.logErrorNonFatal(f:string,g:ai.Error?,...:unknown):()local h=ah(e,f,g,...)if e~=nil then
-                                                                                                                                                                                                                                                                                                                                                            e.logErrorNonFatal(h)else print(h)end
-                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                    function ak.logWarn(f:string,...:unknown):()local g=ah(e,f,debug.traceback(nil,2),...)if e~=nil then
-                                                                                                                                                                                                                                                                                                                                                        e.logWarn(g)else print(g)end
-                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                function ak.bindToUpdateStep(f:(now:number)->()):()->()local g={}c[g]=f return function()c[g]=nil end
-                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                            function ak.performUpdateStep(f:number)d=f for g,h in c do
-                                                                                                                                                                                                                                                                                                                                                h(f)end
-                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                        function ak.lastUpdateStep()return d end
-                                                                                                                                                                                                                                                                                                                                            return ak end
-                                                                                                                                                                                                                                                                                                                                            ,[40]=function()local aa,ab,ac,ad,ae=b(40)local af,ag=(ab.Parent)local ah,ai,aj,ak:Types.ExternalDebugger?=ac(af.Types),0,{}function aj.setDebugger(al:ah.ExternalDebugger?):ah.ExternalDebugger?local c=ak if c~=nil then
-                                                                                                                                                                                                                                                                                                                                                c.stopDebugging()end
-                                                                                                                                                                                                                                                                                                                                                ak=al if al~=nil then
-                                                                                                                                                                                                                                                                                                                                                    al.startDebugging()end
-                                                                                                                                                                                                                                                                                                                                                    return c end
-                                                                                                                                                                                                                                                                                                                                                    function aj.trackScope(al:ah.Scope<unknown>):()if ak==nil then
-                                                                                                                                                                                                                                                                                                                                                        return end
-                                                                                                                                                                                                                                                                                                                                                        ak.trackScope(al)end
-                                                                                                                                                                                                                                                                                                                                                        function aj.untrackScope(al:ah.Scope<unknown>):()if ak==nil then
-                                                                                                                                                                                                                                                                                                                                                            return end
-                                                                                                                                                                                                                                                                                                                                                            ak.trackScope(al)end
-                                                                                                                                                                                                                                                                                                                                                            return aj end
-                                                                                                                                                                                                                                                                                                                                                            ,[42]=function()local aa,ab,ac,ad,ae=b(42)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c,d=ac(af.Types),ac(af.External),ac(af.Memory.checkLifetime),ac(af.Graph.castToGraph),ac(af.Graph.depend),ac(af.Graph.evaluate),ac(af.Utility.nicknames)type Self=ah.Observer&{_watchingGraph:ah.GraphObject?,_changeListeners:{[unknown]:()->()}}local e={}e.type='Observer'e.timeliness='eager'e.dependentSet=table.freeze{}local f=table.freeze{__index=e}local g=function(g:ah.Scope<unknown>,h:unknown)local i=os.clock()if h==nil then
-                                                                                                                                                                                                                                                                                                                                                                ai.logError('scopeMissing',nil,'Observers','myScope:Observer(watching)')end
-                                                                                                                                                                                                                                                                                                                                                                local q:Self=setmetatable({scope=g,createdAt=i,dependencySet={},lastChange=nil,validity='invalid',_watchingGraph=ak(h),_changeListeners={}},f)::any local r=function()q.scope=nil for r in pairs(q.dependencySet)do
-                                                                                                                                                                                                                                                                                                                                                                    r.dependentSet[q]=nil end
-                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                            q.oldestTask=r d[q.oldestTask]='Observer'table.insert(g,r)if q._watchingGraph~=nil then
-                                                                                                                                                                                                                                                                                                                                                                aj.bOutlivesA(g,q.oldestTask,q._watchingGraph.scope,q._watchingGraph.oldestTask,aj.formatters.observer)end
-                                                                                                                                                                                                                                                                                                                                                                c(q,true)return q end
-                                                                                                                                                                                                                                                                                                                                                                function e.onBind(h:Self,i:()->()):()->()ai.doTaskImmediate(i)return h:onChange(i)end
-                                                                                                                                                                                                                                                                                                                                                                    function e.onChange(h:Self,i:()->()):()->()local q=table.freeze{}h._changeListeners[q]=i return function()h._changeListeners[q]=nil end
-                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                function e._evaluate(h:Self):()if h._watchingGraph~=nil then
-                                                                                                                                                                                                                                                                                                                                                                    al(h,h._watchingGraph)end
-                                                                                                                                                                                                                                                                                                                                                                    for i,q in h._changeListeners do
-                                                                                                                                                                                                                                                                                                                                                                        ai.doTaskImmediate(q)end
-                                                                                                                                                                                                                                                                                                                                                                        return true end
-                                                                                                                                                                                                                                                                                                                                                                        table.freeze(e)return g::ah.ObserverConstructor end
-                                                                                                                                                                                                                                                                                                                                                                        ,[43]=function()local aa,ab,ac,ad,ae=b(43)local af,ag=(ab.Parent.Parent)local ah,ai=ac(af.Types),function(ah:any)if typeof(ah)=='table'and typeof(ah.validity)=='string'and typeof(ah.timeliness)=='string'and typeof(ah.dependencySet)=='table'and typeof(ah.dependentSet)=='table'then
-                                                                                                                                                                                                                                                                                                                                                                            return ah else return nil end
-                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                    return ai end
-                                                                                                                                                                                                                                                                                                                                                                    ,[44]=function()local aa,ab,ac,ad,ae=b(44)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak=ac(af.Types),ac(af.External),ac(af.Graph.evaluate),1 local al=function(al:ah.GraphObject)if al.validity=='busy'then
-                                                                                                                                                                                                                                                                                                                                                                        return ai.logError'infiniteLoop'end
-                                                                                                                                                                                                                                                                                                                                                                        local c=aj(al,true)if not c then
-                                                                                                                                                                                                                                                                                                                                                                            return end
-                                                                                                                                                                                                                                                                                                                                                                            local d:{ah.GraphObject},e:{ah.GraphObject},f:{ah.GraphObject}={},{},{}d[1]=al local g=os.clock()+ak*ai.safetyTimerMultiplier repeat if os.clock()>g then
-                                                                                                                                                                                                                                                                                                                                                                                return ai.logError'infiniteLoop'end
-                                                                                                                                                                                                                                                                                                                                                                                local h=true for i,q in d do
-                                                                                                                                                                                                                                                                                                                                                                                    for r in q.dependentSet do
-                                                                                                                                                                                                                                                                                                                                                                                        if r.validity=='valid'then
-                                                                                                                                                                                                                                                                                                                                                                                            h=false table.insert(f,r)table.insert(e,r)elseif r.validity=='busy'then
-                                                                                                                                                                                                                                                                                                                                                                                                return ai.logError'infiniteLoop'end
-                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                d,e=e,d table.clear(e)until h local h:{ah.GraphObject}={}for i,q in f do
-                                                                                                                                                                                                                                                                                                                                                                                    q.validity='invalid'if q.timeliness=='eager'then
-                                                                                                                                                                                                                                                                                                                                                                                        table.insert(h,q)end
-                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                table.sort(h,function(i,q)return i.createdAt<q.createdAt end
-                                                                                                                                                                                                                                                                                                                                                                                )for i,q in h do
-                                                                                                                                                                                                                                                                                                                                                                                    aj(q,false)end
-                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                            return al end
-                                                                                                                                                                                                                                                                                                                                                                            ,[45]=function()local aa,ab,ac,ad,ae=b(45)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak=ac(af.Types),ac(af.External),ac(af.Graph.evaluate),ac(af.Utility.nameOf)local al=function(al:ah.GraphObject,c:ah.GraphObject)aj(c,false)if table.isfrozen(al.dependencySet)or table.isfrozen(c.dependentSet)then
-                                                                                                                                                                                                                                                                                                                                                                                ai.logError('cannotDepend',nil,ak(al,'Dependent'),ak(c,'dependency'))end
-                                                                                                                                                                                                                                                                                                                                                                                c.dependentSet[al]=true al.dependencySet[c]=true end
-                                                                                                                                                                                                                                                                                                                                                                                return al end
-                                                                                                                                                                                                                                                                                                                                                                                ,[46]=function()local aa,ab,ac,ad,ae=b(46)local af,ag=(ab.Parent.Parent)local ah,ai=ac(af.Types),ac(af.External)local function aj(ak:ah.GraphObject,al:boolean):boolean if ak.validity=='busy'then
-                                                                                                                                                                                                                                                                                                                                                                                    return ai.logError'infiniteLoop'end
-                                                                                                                                                                                                                                                                                                                                                                                    local c,d=ak.lastChange==nil,ak.validity=='invalid'if c or d or al then
-                                                                                                                                                                                                                                                                                                                                                                                        local e=c or al if not e then
-                                                                                                                                                                                                                                                                                                                                                                                            for f in ak.dependencySet do
-                                                                                                                                                                                                                                                                                                                                                                                                aj(f,false)if f.lastChange>ak.lastChange then
-                                                                                                                                                                                                                                                                                                                                                                                                    e=true break end
-                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                    local f=false if e then
-                                                                                                                                                                                                                                                                                                                                                                                        for g in ak.dependencySet do
-                                                                                                                                                                                                                                                                                                                                                                                            g.dependentSet[ak]=nil ak.dependencySet[g]=nil end
-                                                                                                                                                                                                                                                                                                                                                                                            ak.validity='busy'f=ak:_evaluate()or c end
-                                                                                                                                                                                                                                                                                                                                                                                            if f then
-                                                                                                                                                                                                                                                                                                                                                                                                ak.lastChange=os.clock()end
-                                                                                                                                                                                                                                                                                                                                                                                                ak.validity='valid'return f else return false end
-                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                        return aj end
-                                                                                                                                                                                                                                                                                                                                                                                        ,[48]=function()local aa,ab,ac,ad,ae=b(48)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c:{[string]:Types.SpecialKey}=ac(af.Types),ac(af.Memory.checkLifetime),ac(af.Graph.Observer),ac(af.State.castToState),ac(af.State.peek),{}local d=function(d:string)local e=c[d]if e==nil then
-                                                                                                                                                                                                                                                                                                                                                                                            e={type='SpecialKey',kind='Attribute',stage='self',apply=function(f:ah.SpecialKey,g:ah.Scope<unknown>,h:unknown,i:Instance)if ak(h)then
-                                                                                                                                                                                                                                                                                                                                                                                                local q=h::ah.StateObject<unknown>ai.bOutlivesA(g,i,q.scope,q.oldestTask,ai.formatters.boundAttribute,d)aj(g,q::any):onBind(function()i:SetAttribute(d,al(q))end
-                                                                                                                                                                                                                                                                                                                                                                                                )else i:SetAttribute(d,h)end
-                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                        }c[d]=e end
-                                                                                                                                                                                                                                                                                                                                                                                        return e end
-                                                                                                                                                                                                                                                                                                                                                                                        return d end
-                                                                                                                                                                                                                                                                                                                                                                                        ,[49]=function()local aa,ab,ac,ad,ae=b(49)local af,ag=(ab.Parent.Parent)local ah,ai,aj:{[string]:Types.SpecialKey}=ac(af.Types),ac(af.External),{}local ak=function(ak:string)local al=aj[ak]if al==nil then
-                                                                                                                                                                                                                                                                                                                                                                                            al={type='SpecialKey',kind='AttributeChange',stage='observer',apply=function(c:ah.SpecialKey,d:ah.Scope<unknown>,e:unknown,f:Instance)if typeof(e)~='function'then
-                                                                                                                                                                                                                                                                                                                                                                                                ai.logError('invalidAttributeChangeHandler',nil,ak)end
-                                                                                                                                                                                                                                                                                                                                                                                                local g,h=e::(...unknown)->(...unknown),f:GetAttributeChangedSignal(ak)table.insert(d,h:Connect(function()g((f::any):GetAttribute(ak))end
-                                                                                                                                                                                                                                                                                                                                                                                                ))end
-                                                                                                                                                                                                                                                                                                                                                                                                }aj[ak]=al end
-                                                                                                                                                                                                                                                                                                                                                                                                return al end
-                                                                                                                                                                                                                                                                                                                                                                                                return ak end
-                                                                                                                                                                                                                                                                                                                                                                                                ,[50]=function()local aa,ab,ac,ad,ae=b(50)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al:{[string]:Types.SpecialKey}=ac(af.Types),ac(af.External),ac(af.Memory.checkLifetime),ac(af.State.castToState),{}local c=function(c:string)local d=al[c]if d==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                    d={type='SpecialKey',kind='AttributeOut',stage='observer',apply=function(e:ah.SpecialKey,f:ah.Scope<unknown>,g:unknown,h:Instance)local i=h:GetAttributeChangedSignal(c)if not ak(g)then
-                                                                                                                                                                                                                                                                                                                                                                                                        ai.logError'invalidAttributeOutType'end
-                                                                                                                                                                                                                                                                                                                                                                                                        local q=g::ah.StateObject<unknown>if q.kind~='Value'then
-                                                                                                                                                                                                                                                                                                                                                                                                            ai.logError'invalidAttributeOutType'end
-                                                                                                                                                                                                                                                                                                                                                                                                            local r=q::ah.Value<unknown>aj.bOutlivesA(f,h,r.scope,r.oldestTask,aj.formatters.attributeOutputsTo,c)r:set((h::any):GetAttribute(c))table.insert(f,i:Connect(function()r:set((h::any):GetAttribute(c))end
-                                                                                                                                                                                                                                                                                                                                                                                                            ))end
-                                                                                                                                                                                                                                                                                                                                                                                                            }al[c]=d end
-                                                                                                                                                                                                                                                                                                                                                                                                            return d end
-                                                                                                                                                                                                                                                                                                                                                                                                            return c end
-                                                                                                                                                                                                                                                                                                                                                                                                            ,[51]=function()local aa,ab,ac,ad,ae=b(51)local af,ag=(ab.Parent.Parent)local ah,ai=ac(af.Types),function(ah:{Types.Child})return ah end
-                                                                                                                                                                                                                                                                                                                                                                                                            return ai end
-                                                                                                                                                                                                                                                                                                                                                                                                            ,[52]=function()local aa,ab,ac,ad,ae=b(52)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c=ac(af.Types),ac(af.External),ac(af.Graph.Observer),ac(af.State.peek),ac(af.State.castToState),ac(af.Memory.doCleanup)type Set<T> ={[T]:unknown}local d=false return{type='SpecialKey',kind='Children',stage='descendants',apply=function(e:ah.SpecialKey,f:ah.Scope<unknown>,g:unknown,h:Instance)local i:Set<Instance>,r:Set<Instance>,t:{[ah.StateObject<unknown>]:ah.Scope<unknown>},u:{[ah.StateObject<unknown>]:ah.Scope<unknown>}={},{},{},{}local function v()r,i=i,r u,t=t,u local function w(x:unknown,y:string?)local z=typeof(x)if z=='Instance'then
-                                                                                                                                                                                                                                                                                                                                                                                                                local A=x::Instance i[A]=true if r[A]==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                    A.Parent=h else r[A]=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                    if d and y~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                        A.Name=y end
-                                                                                                                                                                                                                                                                                                                                                                                                                    elseif al(x)then
-                                                                                                                                                                                                                                                                                                                                                                                                                        local A=x::ah.StateObject<unknown>local B=ak(A)if B~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                            w(B,y)end
-                                                                                                                                                                                                                                                                                                                                                                                                                            local C=u[A]if C==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                C={}aj(C,A):onChange(v)else u[A]=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                t[A]=C elseif z=='table'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                    local A=x::{[unknown]:unknown}for B,C in pairs(A)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                        local D,E:string?=(typeof(B))if D=='string'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                            local F=B::string E=F elseif D=='number'and y~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                local F=B::number E=y..'_'..F end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                w(C,E)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                            else ai.logWarn('unrecognisedChildType',z)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                    if g~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                        w(g)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                        for x in pairs(r)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                            x.Parent=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                            table.clear(r)for x,y in pairs(u)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                c(y)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                table.clear(u)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                table.insert(f,function()g=nil v()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                )v()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                }::ah.SpecialKey end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[53]=function()local aa,ab,ac,ad,ae=b(53)local af,ag=(ab.Parent.Parent)local ah,ai,aj=ac(af.Types),ac(af.External),ac(af.Instances.applyInstanceProps)local ak=function(ak:ah.Scope<unknown>,al:Instance)if al::any==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    ai.logError('scopeMissing',nil,'instances using Hydrate','myScope:Hydrate (instance) { ... }')end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    return function(c:ah.PropertyTable):Instance table.insert(ak,al)aj(ak,c,al)return al end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                            return ak end
-                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[54]=function()local aa,ab,ac,ad,ae=b(54)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak=ac(af.Types),ac(af.External),ac(af.Instances.defaultProps),ac(af.Instances.applyInstanceProps)type Component=(ah.PropertyTable)->Instance local al=function(al:ah.Scope<unknown>,c:string)if(c::any)==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                local d=(al::any)::string ai.logError('scopeMissing',nil,'instances using New','myScope:New "'..d..'" { ... }')end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                return function(d:ah.PropertyTable):Instance local e,f=pcall(Instance.new,c)if not e then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    ai.logError('cannotCreateClass',nil,c)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    local g=aj[c]if g~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        for h,i in pairs(g)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            (f::any)[h]=i end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    table.insert(al,f)ak(al,d,f)return f end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                            return al end
-                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[55]=function()local aa,ab,ac,ad,ae=b(55)local af,ag=(ab.Parent.Parent)local ah,ai,aj:{[string]:Types.SpecialKey}=ac(af.Types),ac(af.External),{}local ak=function(ak:string)local al=aj[ak]if al==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                al={type='SpecialKey',kind='OnChange',stage='observer',apply=function(c:ah.SpecialKey,d:ah.Scope<unknown>,e:unknown,f:Instance)local g,h=pcall(f.GetPropertyChangedSignal,f,ak)if not g then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    ai.logError('cannotConnectChange',nil,f.ClassName,ak)elseif typeof(e)~='function'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        ai.logError('invalidChangeHandler',nil,ak)else local i=e::(...unknown)->(...unknown)table.insert(d,h:Connect(function()i((f::any)[ak])end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        ))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                }aj[ak]=al end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                return al end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                return ak end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[56]=function()local aa,ab,ac,ad,ae=b(56)local af,ag=(ab.Parent.Parent)local ah,ai,aj:{[string]:Types.SpecialKey},ak=ac(af.Types),ac(af.External),{},function(ah:Instance,ai:string)return(ah::any)[ai]end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                local al=function(al:string)local c=aj[al]if c==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    c={type='SpecialKey',kind='OnEvent',stage='observer',apply=function(d:ah.SpecialKey,e:ah.Scope<unknown>,f:unknown,g:Instance)local h,i=pcall(ak,g,al)if not h or typeof(i)~='RBXScriptSignal'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        ai.logError('cannotConnectEvent',nil,g.ClassName,al)elseif typeof(f)~='function'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            ai.logError('invalidEventHandler',nil,al)else table.insert(e,i:Connect(f::any))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    }aj[al]=c end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    return c end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    return al end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,[57]=function()local aa,ab,ac,ad,ae=b(57)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al:{[string]:Types.SpecialKey}=ac(af.Types),ac(af.External),ac(af.Memory.checkLifetime),ac(af.State.castToState),{}local c=function(c:string)local d=al[c]if d==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        d={type='SpecialKey',kind='Out',stage='observer',apply=function(e:ah.SpecialKey,f:ah.Scope<unknown>,g:unknown,h:Instance)local i,r=pcall(h.GetPropertyChangedSignal,h,c)if not i then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            ai.logError('invalidOutProperty',nil,h.ClassName,c)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            if not ak(g)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                ai.logError'invalidOutType'end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                local t=g::ah.StateObject<unknown>if t.kind~='Value'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ai.logError'invalidOutType'end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local u=t::ah.Value<unknown>aj.bOutlivesA(f,h,u.scope,u.oldestTask,aj.formatters.propertyOutputsTo,c)u:set((h::any)[c])table.insert(f,r:Connect(function()u:set((h::any)[c])end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }al[c]=d end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return d end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return c end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,[58]=function()local aa,ab,ac,ad,ae=b(58)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c,d,e,f,g=ac(af.Types),ac(af.External),ac(af.Logging.parseError),ac(af.Memory.checkLifetime),ac(af.Graph.Observer),ac(af.State.castToState),ac(af.State.peek),ac(af.Utility.xtypeof),function(ah:Instance,ai:string,aj:unknown)(ah::any)[ai]=aj end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,function(ah:Instance,ai:string)(ah::any)[ai]=(ah::any)[ai]end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local h=function(h:Instance,i:string,r:unknown)local u,v=xpcall(f::any,aj,h,i,r)if not u then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if not pcall(g,h,i)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ai.logErrorNonFatal('cannotAssignProperty',nil,h.ClassName,i)else local w,x=typeof(r),typeof((h::any)[i])if w==x then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ai.logErrorNonFatal('propertySetError',v)else ai.logErrorNonFatal('invalidPropertyType',nil,h.ClassName,i,x,w)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        local i=function(i:ah.Scope<unknown>,r:Instance,u:string,v:ah.UsedAs<unknown>)if c(v)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            local w=v::ah.StateObject<unknown>ak.bOutlivesA(i,r,w.scope,w.oldestTask,ak.formatters.boundProperty,u)al(i,w::any):onBind(function()h(r,u,d(w))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            )else h(r,u,v)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    local r=function(r:ah.Scope<unknown>,u:ah.PropertyTable,v:Instance)local w={self={}::{[ah.SpecialKey]:unknown},descendants={}::{[ah.SpecialKey]:unknown},ancestor={}::{[ah.SpecialKey]:unknown},observer={}::{[ah.SpecialKey]:unknown}}for x,y in pairs(u)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        local z=e(x)if z=='string'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            if x~='Parent'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                i(r,v,x::string,y)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            elseif z=='SpecialKey'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                local A=(x::ah.SpecialKey).stage local B=w[A]if B==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ai.logError('unrecognisedPropertyStage',nil,A)else B[x]=y end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                else ai.logError('unrecognisedPropertyKey',nil,z)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        for x,y in pairs(w.self)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            x:apply(r,y,v)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            for x,y in pairs(w.descendants)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                x:apply(r,y,v)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                if u.Parent~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    i(r,v,'Parent',u.Parent)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    for x,y in pairs(w.ancestor)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        x:apply(r,y,v)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        for x,y in pairs(w.observer)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            x:apply(r,y,v)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return r end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,[59]=function()local aa,ab,ac,ad,ae=b(59)local af return{ScreenGui={ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling},BillboardGui={ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling,Active=true},SurfaceGui={ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling,SizingMode=Enum.SurfaceGuiSizingMode.PixelsPerStud,PixelsPerStud=50},Frame={BackgroundColor3=Color3.new(1,1,1),BorderColor3=Color3.new(0,0,0),BorderSizePixel=0},ScrollingFrame={BackgroundColor3=Color3.new(1,1,1),BorderColor3=Color3.new(0,0,0),BorderSizePixel=0,ScrollBarImageColor3=Color3.new(0,0,0)},TextLabel={BackgroundColor3=Color3.new(1,1,1),BorderColor3=Color3.new(0,0,0),BorderSizePixel=0,Font=Enum.Font.SourceSans,Text='',TextColor3=Color3.new(0,0,0),TextSize=14},TextButton={BackgroundColor3=Color3.new(1,1,1),BorderColor3=Color3.new(0,0,0),BorderSizePixel=0,AutoButtonColor=false,Font=Enum.Font.SourceSans,Text='',TextColor3=Color3.new(0,0,0),TextSize=14},TextBox={BackgroundColor3=Color3.new(1,1,1),BorderColor3=Color3.new(0,0,0),BorderSizePixel=0,ClearTextOnFocus=false,Font=Enum.Font.SourceSans,Text='',TextColor3=Color3.new(0,0,0),TextSize=14},ImageLabel={BackgroundColor3=Color3.new(1,1,1),BorderColor3=Color3.new(0,0,0),BorderSizePixel=0},ImageButton={BackgroundColor3=Color3.new(1,1,1),BorderColor3=Color3.new(0,0,0),BorderSizePixel=0,AutoButtonColor=false},ViewportFrame={BackgroundColor3=Color3.new(1,1,1),BorderColor3=Color3.new(0,0,0),BorderSizePixel=0},VideoFrame={BackgroundColor3=Color3.new(1,1,1),BorderColor3=Color3.new(0,0,0),BorderSizePixel=0},CanvasGroup={BackgroundColor3=Color3.new(1,1,1),BorderColor3=Color3.new(0,0,0),BorderSizePixel=0},SpawnLocation={Duration=0},BoxHandleAdornment={ZIndex=0},ConeHandleAdornment={ZIndex=0},CylinderHandleAdornment={ZIndex=0},ImageHandleAdornment={ZIndex=0},LineHandleAdornment={ZIndex=0},SphereHandleAdornment={ZIndex=0},WireframeHandleAdornment={ZIndex=0},Part={Anchored=true,Size=Vector3.one,FrontSurface=Enum.SurfaceType.Smooth,BackSurface=Enum.SurfaceType.Smooth,LeftSurface=Enum.SurfaceType.Smooth,RightSurface=Enum.SurfaceType.Smooth,TopSurface=Enum.SurfaceType.Smooth,BottomSurface=Enum.SurfaceType.Smooth},TrussPart={Anchored=true,Size=Vector3.one*2,FrontSurface=Enum.SurfaceType.Smooth,BackSurface=Enum.SurfaceType.Smooth,LeftSurface=Enum.SurfaceType.Smooth,RightSurface=Enum.SurfaceType.Smooth,TopSurface=Enum.SurfaceType.Smooth,BottomSurface=Enum.SurfaceType.Smooth},MeshPart={Anchored=true,Size=Vector3.one,FrontSurface=Enum.SurfaceType.Smooth,BackSurface=Enum.SurfaceType.Smooth,LeftSurface=Enum.SurfaceType.Smooth,RightSurface=Enum.SurfaceType.Smooth,TopSurface=Enum.SurfaceType.Smooth,BottomSurface=Enum.SurfaceType.Smooth},CornerWedgePart={Anchored=true,Size=Vector3.one,FrontSurface=Enum.SurfaceType.Smooth,BackSurface=Enum.SurfaceType.Smooth,LeftSurface=Enum.SurfaceType.Smooth,RightSurface=Enum.SurfaceType.Smooth,TopSurface=Enum.SurfaceType.Smooth,BottomSurface=Enum.SurfaceType.Smooth},VehicleSeat={Anchored=true,Size=Vector3.one,FrontSurface=Enum.SurfaceType.Smooth,BackSurface=Enum.SurfaceType.Smooth,LeftSurface=Enum.SurfaceType.Smooth,RightSurface=Enum.SurfaceType.Smooth,TopSurface=Enum.SurfaceType.Smooth,BottomSurface=Enum.SurfaceType.Smooth}}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,[61]=function()local aa,ab,ac,ad,ae=b(61)local af,ag=(ab.Parent.Parent)local ah,ai,aj=ac(af.Types),ac(af.Logging.messages),'https://elttob.uk/Fusion/0.3/api-reference/general/errors/#'local ak=function(ak:ah.ExternalProvider?,al:string,c:ah.Error|string|nil,...)local d,e:ah.Error?,f:string?,g=al,if typeof(c)=='table'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        c else nil,if typeof(c)=='table'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            c.trace else c,ai[al]if g==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                al='unknownMessage'g=ai[al]end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                g=g:format(...)if e~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    g=g:gsub('ERROR_MESSAGE',e.message)if e.context~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        g..=` ({e.context})`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    else g=g:gsub('ERROR_MESSAGE',d)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    g=`[Fusion] {g} \nID: {al}`if ak~=nil and ak.policies.allowWebLinks then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        g..=`\nLearn more: {aj}{al:lower()}`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if f~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            g..=` \n---- Stack trace ----\n{f}`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return g:gsub('\n','\n    ')end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return ak end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[62]=function()local aa,ab,ac,ad,ae=b(62)local af return{callbackError='Error in callback:\nERROR_MESSAGE',cannotAssignProperty="The class type '%s' has no assignable property '%s'.",cannotConnectChange="The %s class doesn't have a property called '%s'.",cannotConnectEvent="The %s class doesn't have an event called '%s'.",cannotCreateClass="Can't create a new instance of class '%s'.",cannotDepend="%s can't depend on %s.",cleanupWasRenamed=[[`Fusion.cleanup` was renamed to `Fusion.doCleanup`. This will be an error in future versions of Fusion.]],destroyedTwice=[[`doCleanup()` was given something that it is already cleaning up. Unclear how to proceed.]],destructorRedundant=[[%s destructors no longer do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                anything. If you wish to run code on destroy, `table.insert` a function into the `scope` argument. See discussion #292 on GitHub for advice.]],forKeyCollision=[[The key '%s' was returned multiple times simultaneously, which is not allowed in `For` objects.]],infiniteLoop=[[Detected an infinite loop. Consider adding an explicit breakpoint to your code to prevent a cyclic dependency.]],invalidAttributeChangeHandler=[[The change handler for the '%s' attribute must be a function.]],invalidAttributeOutType='[AttributeOut] properties must be given Value objects.',invalidChangeHandler=[[The change handler for the '%s' property must be a function.]],invalidEventHandler="The handler for the '%s' event must be a function.",invalidOutProperty="The %s class doesn't have a property called '%s'.",invalidOutType='[Out] properties must be given Value objects.',invalidPropertyType="'%s.%s' expected a '%s' type, but got a '%s' type.",invalidRefType='Instance refs must be Value objects.',invalidSpringDamping=[[The damping ratio for a spring must be >= 0. (damping was %.2f)]],invalidSpringSpeed='The speed of a spring must be >= 0. (speed was %.2f)',mergeConflict="Multiple definitions for '%s' found while merging.",mistypedSpringDamping='The damping ratio for a spring must be a number. (got a %s)',mistypedSpringSpeed='The speed of a spring must be a number. (got a %s)',mistypedTweenInfo='The tween info of a tween must be a TweenInfo. (got a %s)',noTaskScheduler='Fusion is not connected to an external task scheduler.',poisonedScope="Attempted to use a scope after it's been destroyed;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                %s",possiblyOutlives=[[%s will be destroyed before %s;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                %s. To fix this, review the order they're created in, and what scopes they belong to. See discussion #292 on GitHub for advice.]],propertySetError='Error setting property:\nERROR_MESSAGE',scopeMissing=[[To create %s, provide a scope. (e.g. `%s`). See discussion #292 on GitHub for advice.]],springNanGoal=[[A spring was given a NaN goal, so some simulation has been skipped. Ensure no springs have NaN goals.]],springNanMotion=[[A spring encountered NaN during motion, so has snapped to the goal position. Ensure no springs have NaN positions or velocities.]],springTypeMismatch="The type '%s' doesn't match the spring's type '%s'.",stateGetWasRemoved=[[`StateObject:get()` has been replaced by `use()` and `peek()` - see discussion #217 on GitHub.]],tweenNanGoal=[[A tween was given a NaN goal, so some animation has been skipped. Ensure no tweens have NaN goals.]],tweenNanMotion=[[A tween encountered NaN during motion, so has snapped to the goal. Ensure no tweens have NaN in their tween infos.]],unknownMessage='Unknown error:\nERROR_MESSAGE',unrecognisedChildType="'%s' type children aren't accepted by `[Children]`.",unrecognisedPropertyKey="'%s' keys aren't accepted in property tables.",unrecognisedPropertyStage=[['%s' isn't a valid stage for a special key to be applied at.]],useAfterDestroy=[[%s is no longer valid - it was destroyed before %s. See discussion #292 on GitHub for advice.]]}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[63]=function()local aa,ab,ac,ad,ae=b(63)local af,ag=(ab.Parent.Parent)local ah,ai=ac(af.Types),function(ah:string)return{type='Error',raw=ah,message=ah:gsub('^.+:%d+:%s*',''),trace=debug.traceback(nil,2)}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return ai end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[65]=function()local aa,ab,ac,ad,ae=b(65)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al=ac(af.Types),ac(af.External),ac(af.Memory.whichLivesLonger),ac(af.Utility.nameOf),{}al.formatters={}function al.formatters.useFunction(c:unknown,d:unknown):(string,string)local e,f=ak(c,'object'),ak(d,'object')return`The use()-d {f}`,`the {e}`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                function al.formatters.boundProperty(c:Instance,d:unknown,e:string):(string,string)local f,g=c.Name,ak(d,'value')return`The {g} (bound to the {e} property)`,`the {f} instance`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    function al.formatters.boundAttribute(c:Instance,d:unknown,e:string):(string,string)local f,g=c.Name,ak(d,'value')return`The {g} (bound to the {e} attribute)`,`the {f} instance`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        function al.formatters.propertyOutputsTo(c:Instance,d:unknown,e:string):(string,string)local f,g=c.Name,ak(d,'object')return`The {g} (which the {e} property outputs to)`,`the {f} instance`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            function al.formatters.attributeOutputsTo(c:Instance,d:unknown,e:string):(string,string)local f,g=c.Name,ak(d,'object')return`The {g} (which the {e} attribute outputs to)`,`the {f} instance`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                function al.formatters.refOutputsTo(c:Instance,d:unknown):(string,string)local e,f=c.Name,ak(d,'object')return`The {f} (which the Ref key outputs to)`,`the {e} instance`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    function al.formatters.animationGoal(c:unknown,d:unknown):(string,string)local e,f=ak(c,'object'),ak(d,'object')return`The goal {f}`,`the {e} that is following it`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        function al.formatters.parameter(c:unknown,d:unknown,e:string|false):(string,string)local f,g=ak(c,'object'),ak(d,'object')if e==false then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return`The {g} parameter`,`the {f} that it was used for`else return`The {g} representing the {e} parameter`,`the {f} that it was used for`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    function al.formatters.observer(c:unknown,d:unknown):(string,string)local e,f=ak(c,'object'),ak(d,'object')return`The watched {f}`,`the {e} that's observing it for changes`end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        function al.bOutlivesA<A,B,Args...>(c:ah.Scope<unknown>,d:A,e:ah.Scope<unknown>?,f:B,g:(a:A,b:B,Args...)->(string,string),...:Args...)if e==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ai.logError('useAfterDestroy',nil,g(d,f,...))elseif aj(c,d,e,f)=='definitely-a'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local h,i=g(d,f,...)ai.logWarn('possiblyOutlives',h,i,if c==e then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    [[they're in the same scope, but the latter is destroyed too quickly]]else[[the latter is in a different scope that gets destroyed too quickly]])end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return al end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[66]=function()local aa,ab,ac,ad,ae=b(66)local af,ag=(ab.Parent.Parent)local ah,ai,aj=ac(af.Types),ac(af.ExternalDebug),ac(af.Memory.deriveScopeImpl)local ak=function(...)local ak=aj(...)ai.trackScope(ak)return ak end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return ak::ah.DeriveScopeConstructor end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[67]=function()local aa,ab,ac,ad,ae=b(67)local af,ag=(ab.Parent.Parent)local ah,ai,aj=ac(af.Types),ac(af.Utility.merge),ac(af.Memory.scopePool)local ak=function(ak:ah.Scope<T>,al:{[unknown]:unknown}?,...)local c=getmetatable(ak)if al~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                c=table.clone(c)c.__index=ai(true,{},c.__index,ai(false,{},al,...))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local d=setmetatable(aj.reuseAny()::any or{},c)return d end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return(ak::any)::ah.DeriveScopeConstructor end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[68]=function()local aa,ab,ac,ad,ae=b(68)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al:{[Types.Task]:true}=ac(af.Types),ac(af.External),ac(af.Memory.scopePool),ac(af.Memory.poisonScope),{}local function c(d:ah.Task):()if al[d]then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return ai.logError'destroyedTwice'end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    al[d]=true if typeof(d)=='Instance'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        d:Destroy()elseif typeof(d)=='RBXScriptConnection'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            d:Disconnect()elseif typeof(d)=='function'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                d()elseif typeof(d)=='table'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local e=(d::any)::{Destroy:(...unknown)->(unknown)?,destroy:(...unknown)->(unknown)?}if typeof(e.destroy)=='function'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local f=(e::any)::{destroy:(...unknown)->(...unknown)}f:destroy()elseif typeof(e.Destroy)=='function'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local f=(e::any)::{Destroy:(...unknown)->(...unknown)}f:Destroy()elseif e[1]~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local f=e::{ah.Task}for g=#f,1,-1 do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    c(f[g])f[g]=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if ai.isTimeCritical()then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        aj.giveIfEmpty(f)else ak(f,[[`doCleanup()` was previously called on this scope. Ensure you are not reusing scopes after cleanup.]])end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        al[d]=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return c end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,[69]=function()local aa,ab,ac,ad,ae=b(69)local af,ag=(ab.Parent.Parent)local ah,ai,aj=ac(af.Types),ac(af.ExternalDebug),ac(af.Memory.deriveScopeImpl)local ak=function(ak:ah.Scope<T>,...)local al=aj(ak,...)table.insert(ak,al)table.insert(al,function()local c=table.find(ak,al)if c~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            table.remove(ak,c)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    )ai.trackScope(al)return al end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return(ak::any)::ah.DeriveScopeConstructor end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,[70]=function()local aa,ab,ac,ad,ae=b(70)local af,ag=(ab.Parent.Parent)local ah,ai,aj=ac(af.Types),ac(af.External),ac(af.Memory.doCleanup)local ak=function(ak:ah.Task)ai.logWarn'cleanupWasRenamed'return aj(ak)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return ak end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,[71]=function()local aa,ab,ac,ad,ae=b(71)local af,ag=function(af:unknown)return typeof(af)=='Instance'end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return af end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,[72]=function()local aa,ab,ac,ad,ae=b(72)local af,ag=(ab.Parent.Parent)local ah,ai=ac(af.Types),ac(af.External)local aj=function(aj:ah.Scope,ak:string)local al=getmetatable(aj)if typeof(al)=='table'and al._FUSION_POISONED then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        table.clear(aj)setmetatable(aj::any,{_FUSION_POISONED=true,__index=function()ai.logError('poisonedScope',nil,ak)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,__newindex=function()ai.logError('poisonedScope',nil,ak)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        })end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return aj end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,[73]=function()local aa,ab,ac,ad,ae=b(73)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c,d=ac(af.Types),ac(af.Memory.poisonScope),ac(af.ExternalDebug),false,16,{},0 return{giveIfEmpty=function<S>(e:ah.Scope<S>):ah.Scope<S>?if next(e)==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            aj.untrackScope(e)if ak and d<al then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                d+=1 c[d]=e else ai(e,[[previously passed to the internal scope pool, which indicates a Fusion bug.]])end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return nil else return e end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,clearAndGive=function(e:ah.Scope<unknown>)aj.untrackScope(e)table.clear(e)if ak and d<al then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            d+=1 c[d]=e::any else ai(e,[[previously passed to the internal scope pool, which indicates a Fusion bug.]])end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,reuseAny=function():ah.Scope<unknown>if d==0 then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return nil::any else local e=c[d]d-=1 return e end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[74]=function()local aa,ab,ac,ad,ae=b(74)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak=ac(af.Types),ac(af.ExternalDebug),ac(af.Utility.merge),ac(af.Memory.scopePool)local al=function(...)local al=setmetatable(ak.reuseAny()::any or{},{__index=aj(false,{},...)})::any ai.trackScope(al)return al end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return(al::any)::ah.ScopedConstructor end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[75]=function()local aa,ab,ac,ad,ae=b(75)local af,ag=(ab.Parent.Parent)local ah,ai,aj=ac(af.Types),ac(af.External),function(ah:Types.Scope<unknown>,ai:Types.Scope<unknown>)local aj:{Types.Scope<unknown>},ak:{Types.Scope<unknown>},al,c,d={ah,ai},{},2,0,{}while al>0 do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    for e,f in aj do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        d[f]=true for g,h in ipairs(f)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if h==ah then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return'definitely-b'elseif h==ai then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return'definitely-a'elseif typeof(h)=='table'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local i=h::{unknown}if i[1]~=nil and d[f]==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            c+=1 ak[c]=i::Types.Scope<unknown>end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    table.clear(aj)aj,ak=ak,aj al,c=c,0 end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return'unsure'end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local ak=function(ak:ah.Scope<unknown>,al:unknown,c:ah.Scope<unknown>,d:unknown)if ai.isTimeCritical()then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return'unsure'elseif ak==c then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local e:{unknown}=ak for f=#e,1,-1 do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local g=e[f]if g==al then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return'definitely-b'elseif g==d then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return'definitely-a'end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return'unsure'else return aj(ak,c)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return ak end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,[76]=function()local aa,ab,ac,ad,ae=b(76)local af,ag,ah=game:GetService'RunService',game:GetService'HttpService',ab.Parent local ai,aj=ac(ah.External),{}aj.policies={allowWebLinks=af:IsStudio()}function aj.doTaskImmediate(ak:()->())task.spawn(ak)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        function aj.doTaskDeferred(ak:()->())task.defer(ak)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            function aj.logErrorNonFatal(ak:string)task.spawn(error,ak,0)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                aj.logWarn=warn local ak,al=function()ai.performUpdateStep(os.clock())end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,nil::(()->())?function aj.startScheduler()if al~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if af:IsClient()then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local c='FusionUpdateStep_'..ag:GenerateGUID()af:BindToRenderStep(c,Enum.RenderPriority.First.Value,ak)al=function()af:UnbindFromRenderStep(c)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    else local c=af.Heartbeat:Connect(ak)al=function()c:Disconnect()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    function aj.stopScheduler()if al~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        al()al=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return aj end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[78]=function()local aa,ab,ac,ad,ae=b(78)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c,d,e,f,g,h,i,r=ac(af.Types),ac(af.External),ac(af.Logging.parseError),ac(af.Utility.isSimilar),ac(af.Utility.never),ac(af.Graph.depend),ac(af.State.castToState),ac(af.State.peek),ac(af.Memory.doCleanup),ac(af.Memory.deriveScope),ac(af.Memory.checkLifetime),ac(af.Memory.scopePool),ac(af.Utility.nicknames)type Self<T,S> =ah.Computed<T>&{_innerScope:ah.Scope<S>?,_processor:(ah.Use,ah.Scope<S>)->T}local u={}u.type='State'u.kind='Computed'u.timeliness='lazy'local v=table.freeze{__index=u}local w=function(w:S&ah.Scope<unknown>,x:(ah.Use,S)->T,y:unknown?)local z=os.clock()if typeof(w)=='function'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ai.logError('scopeMissing',nil,'Computeds','myScope:Computed(function(use, scope) ... end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    )')elseif y~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ai.logWarn('destructorRedundant','Computed')end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local A:Self<T,S> =setmetatable({createdAt=z,dependencySet={},dependentSet={},lastChange=nil,scope=w,validity='invalid',_EXTREMELY_DANGEROUS_usedAsValue=nil,_innerScope=nil,_processor=x},v)::any local B=function()A.scope=nil for B in pairs(A.dependencySet)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            B.dependentSet[A]=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if A._innerScope~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                f(A._innerScope)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        A.oldestTask=B r[A.oldestTask]='Computed'table.insert(w,B)return A end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        function u.get<T,S>(x:Self<T,S>):never ai.logError'stateGetWasRemoved'return al()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            function u._evaluate<T,S>(x:Self<T,S>):boolean if x.scope==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return false end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local y=x.scope::S&ah.Scope<unknown>local z,A=g(y),function(z:ah.UsedAs<T>)local A=d(z)if A~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    h.bOutlivesA(y,x.oldestTask,A.scope,A.oldestTask,h.formatters.useFunction)c(x,A)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return e(z)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local B,C=xpcall(x._processor,aj,A,z)local D=i.giveIfEmpty(z)if B then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local E=ak(x._EXTREMELY_DANGEROUS_usedAsValue,C)if x._innerScope~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            f(x._innerScope)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            x._innerScope=D x._EXTREMELY_DANGEROUS_usedAsValue=C return not E else local E=(C::any)::ah.Error if D~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                f(D)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                D=nil ai.logErrorNonFatal('callbackError',E)return false end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        table.freeze(u)return w::ah.ComputedConstructor end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,[79]=function()local aa,ab,ac,ad,ae=b(79)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c,d,e,f=ac(af.Types),ac(af.External),ac(af.Graph.depend),ac(af.State.peek),ac(af.State.castToState),ac(af.State.For.ForTypes),ac(af.Utility.never),ac(af.Utility.nicknames),ac(af.State.For.Disassembly)type Self<S,KI,KO,VI,VO> =ah.For<KO,VO>&{_disassembly:c.Disassembly<S,KI,KO,VI,VO>}local g={}g.type='State'g.kind='For'g.timeliness='lazy'local h=table.freeze{__index=g}local i=function(i:ah.Scope<S>,r:ah.UsedAs<{[KI]:VI}>,u:(ah.Scope<S>,initialKey:KI,initialValue:VI)->c.SubObject<S,KI,KO,VI,VO>)local v=os.clock()local w:Self<S,KI,KO,VI,VO> =setmetatable({createdAt=v,dependencySet={},dependentSet={},scope=i,validity='invalid',_EXTREMELY_DANGEROUS_usedAsValue={},_disassembly=f(i,r,u)},h)::any local x=function()w.scope=nil for x in pairs(w.dependencySet)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            x.dependentSet[w]=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    w.oldestTask=x e[w.oldestTask]='For'table.insert(i,x)return w end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    function g.get<S,KI,KO,VI,VO>(r:Self<S,KI,KO,VI,VO>):never ai.logError'stateGetWasRemoved'return d()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        function g._evaluate<S,KI,KO,VI,VO>(r:Self<S,KI,KO,VI,VO>):boolean if r.scope==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return false end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local u=r.scope::S&ah.Scope<unknown>aj(r,r._disassembly)table.clear(r._EXTREMELY_DANGEROUS_usedAsValue)r._disassembly:populate(function<T>(v:ah.UsedAs<T>):T local w=al(v)if w~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                aj(r,w)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return ak(v)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,r._EXTREMELY_DANGEROUS_usedAsValue)return true end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                table.freeze(g)return i end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[80]=function()local aa,ab,ac,ad,ae=b(80)local af,ag=(ab.Parent.Parent.Parent)local ah,ai,aj,ak,al,c,d,e,f,g,h=ac(af.Types),ac(af.External),ac(af.Graph.depend),ac(af.State.peek),ac(af.State.castToState),ac(af.State.For.ForTypes),ac(af.Memory.doCleanup),ac(af.Memory.deriveScope),ac(af.Memory.scopePool),ac(af.Utility.nameOf),ac(af.Utility.nicknames)type Self<S,KI,KO,VI,VO> =c.Disassembly<S,KI,KO,VI,KO>&{scope:(S&ah.Scope<unknown>)?,_inputTable:ah.UsedAs<{[KI]:VI}>,_constructor:(ah.Scope<S>,initialKey:KI,initialValue:VI)->c.SubObject<S,KI,KO,VI,VO>,_subObjects:{[c.SubObject<S,KI,KO,VI,VO>]:true}}local i={}i.type='Graph'i.kind='For.Disassembly'i.timeliness='lazy'local r=table.freeze{__index=i}local u=function(u:S&ah.Scope<unknown>,v:ah.UsedAs<{[KI]:VI}>,w:(ah.Scope<S>,initialKey:KI,initialValue:VI)->c.SubObject<S,KI,KO,VI,VO>)local x=os.clock()local y=setmetatable({createdAt=x,dependencySet={},dependentSet={},scope=u,validity='invalid',_inputTable=v,_constructor=w,_subObjects={}},r)::any local A=function()y.scope=nil for A in pairs(y.dependencySet)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    A.dependentSet[y]=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    for A in y._subObjects do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if A.maybeScope~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            d(A.maybeScope)A.maybeScope=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            y.oldestTask=A h[y.oldestTask]='For (internal disassembler)'table.insert(u,A)return y end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            function i.populate<S,KI,KO,VI,VO>(v:Self<S,KI,KO,VI,VO>,w:ah.Use,x:{[KO]:VO}):()local y,A,B=math.huge,-math.huge,false for C in v._subObjects do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local D,E=C:useOutputPair(w)if D==nil or E==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    B=true continue elseif x[D]~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ai.logErrorNonFatal('forKeyCollision',nil,tostring(D))continue end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        x[D]=E if typeof(D)=='number'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            y=math.min(y,D)A=math.max(A,D)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if B and A>y then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local C:{[number]:VO},D=x::any,y for E=y,A do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local F=C[E]if F==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                continue end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                C[E]=nil C[D]=F D+=1 end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                function i._evaluate<S,KI,KO,VI,VO>(v:Self<S,KI,KO,VI,VO>):boolean local w,x=v.scope::S&ah.Scope<unknown>,al(v._inputTable)if x~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if x.scope==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ai.logError('useAfterDestroy',nil,`The input {g(x,'table')}`,`the For object that is watching it`)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        aj(v,x)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local y={}::{[KI]:VI}for A,B in ak(v._inputTable)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            y[A]=B end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local A={}::typeof(v._subObjects)for B in v._subObjects do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local C,D,E,F:KI=false,B.inputKey,(B.inputValue)if not B.roamKeys and y[D]~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    C=true F=D else for G,H in y do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        C=true F=G if B.roamValues then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            break end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if H==E then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                break end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if C then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local G=y[F]A[B]=true if F~=D then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        B.inputKey=F B:invalidateInputKey()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if G~=E then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            B.inputValue=G B:invalidateInputValue()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            y[F]=nil else if B.maybeScope~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                d(B.maybeScope)B.maybeScope=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                for B,C in y do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local D=v._constructor(e(w),B,C)if D.maybeScope~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        D.maybeScope=f.giveIfEmpty(D.maybeScope)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        A[D]=true end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        v._subObjects=A return true end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        table.freeze(i)return u end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,[81]=function()local aa,ab,ac,ad,ae=b(81)local af,ag=(ab.Parent.Parent.Parent)local ah=ac(af.Types)export type SubObject<S,KI,KO,VI,VO> ={maybeScope:ah.Scope<S>?,inputKey:KI,inputValue:VI,roamKeys:boolean,roamValues:boolean,invalidateInputKey:(SubObject<S,KI,KO,VI,VO>)->(),invalidateInputValue:(SubObject<S,KI,KO,VI,VO>)->(),useOutputPair:(SubObject<S,KI,KO,VI,VO>,ah.Use)->(KO?,VO?)}export type Disassembly<S,KI,KO,VI,VO> =ah.GraphObject&{populate:(Disassembly<S,KI,KO,VI,VO>,ah.Use,output:{[KO]:VO})->()}return nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,[82]=function()local aa,ab,ac,ad,ae=b(82)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c,d,e,f=ac(af.Types),ac(af.External),ac(af.Memory.doCleanup),ac(af.State.For),ac(af.State.Value),ac(af.State.Computed),ac(af.State.For.ForTypes),ac(af.Logging.parseError),{__index={roamKeys=false,roamValues=true,invalidateInputKey=function(ah):()ah._inputKeyState:set(ah.inputKey)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,invalidateInputValue=function(ah):()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,useOutputPair=function(ah,ai)return ai(ah._outputKeyState),ah.inputValue end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }}local g=function(g:ah.Scope<S>,h:KI,i:V,r:(ah.Use,ah.Scope<S>,KI)->KO)local u={}u.maybeScope=g u.inputKey=h u.inputValue=i u._inputKeyState=al(g,h)u._processor=r u._outputKeyState=c(g,function(v,w):KO?local x=v(u._inputKeyState)local y,A=xpcall(u._processor,e,v,w,x)if y then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return A else local B:ah.Error=A::any B.context=`while processing key {tostring(x)}`ai.logErrorNonFatal('callbackError',B)aj(w)table.clear(w)return nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    )return setmetatable(u,f)::any end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local h=function(h:ah.Scope<S>,i:ah.UsedAs<{[KI]:V}>,r:(ah.Use,ah.Scope<S>,KI)->KO,u:unknown?)if typeof(i)=='function'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ai.logError('scopeMissing',nil,'ForKeys',[[myScope:ForKeys(inputTable, function(scope, use, key) ... end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        )]])elseif u~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ai.logWarn('destructorRedundant','ForKeys')end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return ak(h,i,function(v,w,x)return g(v,w,x,r)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            )end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return h::ah.ForKeysConstructor end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[83]=function()local aa,ab,ac,ad,ae=b(83)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c,d,e,f=ac(af.Types),ac(af.External),ac(af.State.For),ac(af.State.Value),ac(af.State.Computed),ac(af.State.For.ForTypes),ac(af.Logging.parseError),ac(af.Memory.doCleanup),{__index={roamKeys=false,roamValues=false,invalidateInputKey=function(ah):()ah._inputKeyState:set(ah.inputKey)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,invalidateInputValue=function(ah):()ah._inputValueState:set(ah.inputValue)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,useOutputPair=function(ah,ai)local aj=ai(ah._outputPairState)return aj.key,aj.value end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }}local g=function(g:ah.Scope<S>,h:KI,i:VI,r:(ah.Use,ah.Scope<S>,KI,VI)->(KO,VO))local u={}u.maybeScope=g u.inputKey=h u.inputValue=i u._inputKeyState=ak(g,h)u._inputValueState=ak(g,i)u._processor=r u._outputPairState=al(g,function(v,w):{key:KO?,value:VO?}local x,y=v(u._inputKeyState),v(u._inputValueState)local A,B,C=xpcall(u._processor,d,v,w,x,y)if A then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return{key=B,value=C}else local D:ah.Error=B::any D.context=`while processing key {tostring(y)} and value {tostring(y)}`ai.logErrorNonFatal('callbackError',D)e(w)table.clear(w)return{key=nil,value=nil}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        )return setmetatable(u,f)::any end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local h=function(h:ah.Scope<S>,i:ah.UsedAs<{[KI]:VI}>,r:(ah.Use,ah.Scope<S>,KI,VI)->(KO,VO),u:unknown?)if typeof(i)=='function'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ai.logError('scopeMissing',nil,'ForPairs',[[myScope:ForPairs(inputTable, function(scope, use, key, value) ... end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            )]])elseif u~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ai.logWarn('destructorRedundant','ForPairs')end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return aj(h,i,function(v,w,x)return g(v,w,x,r)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                )end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return h::ah.ForPairsConstructor end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[84]=function()local aa,ab,ac,ad,ae=b(84)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c,d,e,f=ac(af.Types),ac(af.External),ac(af.State.For),ac(af.State.Value),ac(af.State.Computed),ac(af.State.For.ForTypes),ac(af.Logging.parseError),ac(af.Memory.doCleanup),{__index={roamKeys=true,roamValues=false,invalidateInputKey=function(ah):()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,invalidateInputValue=function(ah):()ah._inputValueState:set(ah.inputValue)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,useOutputPair=function(ah,ai)return ah.inputKey,ai(ah._outputValueState)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }}local g=function(g:ah.Scope<S>,h:K,i:VI,r:(ah.Use,ah.Scope<S>,VI)->VO)local u={}u.maybeScope=g u.inputKey=h u.inputValue=i u._inputValueState=ak(g,i)u._processor=r u._outputValueState=al(g,function(v,w):VO?local x=v(u._inputValueState)local y,A=xpcall(u._processor,d,v,w,x)if y then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return A else local B:ah.Error=A::any B.context=`while processing value {tostring(x)}`ai.logErrorNonFatal('callbackError',B)e(w)table.clear(w)return nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            )return setmetatable(u,f)::any end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local h=function(h:ah.Scope<S>,i:ah.UsedAs<{[K]:VI}>,r:(ah.Use,ah.Scope<S>,VI)->VO,u:unknown?)if typeof(i)=='function'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ai.logError('scopeMissing',nil,'ForValues',[[myScope:ForValues(inputTable, function(scope, use, value) ... end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                )]])elseif u~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ai.logWarn('destructorRedundant','ForValues')end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return aj(h,i,function(v,w,x)return g(v,w,x,r)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    )end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return h::ah.ForValuesConstructor end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,[85]=function()local aa,ab,ac,ad,ae=b(85)local af,ag=(ab.Parent.Parent)local ah,ai,aj,ak,al,c=ac(af.Types),ac(af.External),ac(af.Graph.change),ac(af.Utility.isSimilar),ac(af.Utility.never),ac(af.Utility.nicknames)type Self<T,S> =ah.Value<T,S>local d={}d.type='State'd.kind='Value'd.timeliness='lazy'd.dependencySet=table.freeze{}local e=table.freeze{__index=d}local f=function(f:ah.Scope<unknown>,g:T)local h=os.clock()if g==nil and(typeof(f)~='table'or(f[1]==nil and next(f)~=nil))then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ai.logError('scopeMissing',nil,'Value','myScope:Value(initialValue)')end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local i:Self<T,any> =setmetatable({createdAt=h,dependentSet={},lastChange=os.clock(),scope=f,validity='valid',_EXTREMELY_DANGEROUS_usedAsValue=g},e)::any local r=function()i.scope=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        i.oldestTask=r c[i.oldestTask]='Value'table.insert(f,r)return i end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        function d.get<T,S>(g,h:Self<T,S>):never ai.logError'stateGetWasRemoved'return al()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            function d.set<T,S>(g:Self<T,S>,h:S):S local i=g._EXTREMELY_DANGEROUS_usedAsValue if not ak(i,h)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                g._EXTREMELY_DANGEROUS_usedAsValue=h::any aj(g)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return h end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                function d._evaluate<T,S>(g:Self<T,S>):boolean return true end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    table.freeze(d)return f::ah.ValueConstructor end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,[86]=function()local aa,ab,ac,ad,ae=b(86)local af,ag=(ab.Parent.Parent)local ah,ai=ac(af.Types),function(ah:Types.UsedAs<T>)if typeof(ah)=='table'and ah.type=='State'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return ah else return nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return ai end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[87]=function()local aa,ab,ac,ad,ae=b(87)local af,ag=(ab.Parent.Parent)local ah,ai,aj=ac(af.Types),ac(af.State.castToState),ac(af.Graph.evaluate)local ak=function(ak:ah.UsedAs<T>)local al=ai(ak)if al~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    aj(al,false)return al._EXTREMELY_DANGEROUS_usedAsValue::T else return ak::T end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return ak end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[88]=function()local aa,ab,ac,ad,ae=b(88)return nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[89]=function()local aa,ab,ac,ad,ae=b(89)local af export type Error={type:'Error',raw:string,message:string,trace:string,context:string?}export type Animatable=number|CFrame|Color3|ColorSequenceKeypoint|DateTime|NumberRange|NumberSequenceKeypoint|PhysicalProperties|Ray|Rect|Region3|Region3int16|UDim|UDim2|Vector2|Vector2int16|Vector3|Vector3int16 export type Task=Instance|RBXScriptConnection|(()->())|{destroy:(unknown)->()}|{Destroy:(unknown)->()}|{Task}export type Scope<Constructors=any> ={Task}&Constructors export type ScopedObject={scope:Scope<unknown>?,oldestTask:unknown}export type Version={major:number,minor:number,isRelease:boolean}export type Contextual<T> ={type:'Contextual',now:(Contextual<T>)->T,is:(Contextual<T>,T)->ContextualIsMethods}type ContextualIsMethods={during:<R,A...>(ContextualIsMethods,(A...)->R,A...)->R}export type GraphObject=ScopedObject&{createdAt:number,dependencySet:{[GraphObject]:unknown},dependentSet:{[GraphObject]:unknown},lastChange:number?,timeliness:'lazy'|'eager',validity:'valid'|'invalid'|'busy',_evaluate:(GraphObject)->boolean}export type StateObject<T> =GraphObject&{type:'State',kind:string,_EXTREMELY_DANGEROUS_usedAsValue:T}export type UsedAs<T> =StateObject<T>|T export type Use=<T>(target:UsedAs<T>)->T export type Value<T,S=T> =StateObject<T>&{kind:'State',timeliness:'lazy',set:(Value<T,S>,newValue:S,force:boolean?)->S,____phantom_setType:(never)->S}export type ValueConstructor=<T>(scope:Scope<unknown>,initialValue:T)->Value<T,any>export type Computed<T> =StateObject<T>&{kind:'Computed',timeliness:'lazy'}export type ComputedConstructor=<T,S>(scope:S&Scope<unknown>,callback:(Use,S)->T)->Computed<T>export type For<KO,VO> =StateObject<{[KO]:VO}>&{kind:'For'}export type ForPairsConstructor=<KI,KO,VI,VO,S>(scope:S&Scope<unknown>,inputTable:UsedAs<{[KI]:VI}>,processor:(Use,S,key:KI,value:VI)->(KO,VO))->For<KO,VO>export type ForKeysConstructor=<KI,KO,V,S>(scope:S&Scope<unknown>,inputTable:UsedAs<{[KI]:V}>,processor:(Use,S,key:KI)->KO)->For<KO,V>export type ForValuesConstructor=<K,VI,VO,S>(scope:S&Scope<unknown>,inputTable:UsedAs<{[K]:VI}>,processor:(Use,S,value:VI)->VO)->For<K,VO>export type Observer=GraphObject&{type:'Observer',timeliness:'eager',onChange:(Observer,callback:()->())->(()->()),onBind:(Observer,callback:()->())->(()->())}export type ObserverConstructor=(scope:Scope<unknown>,watching:unknown)->Observer export type Tween<T> =StateObject<T>&{kind:'Tween'}export type TweenConstructor=<T>(scope:Scope<unknown>,goalState:UsedAs<T>,tweenInfo:UsedAs<TweenInfo>?)->Tween<T>export type Spring<T> =StateObject<T>&{kind:'Spring',setPosition:(Spring<T>,newPosition:T)->(),setVelocity:(Spring<T>,newVelocity:T)->(),addVelocity:(Spring<T>,deltaVelocity:T)->()}export type SpringConstructor=<T>(scope:Scope<unknown>,goalState:UsedAs<T>,speed:UsedAs<number>?,damping:UsedAs<number>?)->Spring<T>export type SpecialKey={type:'SpecialKey',kind:string,stage:'self'|'descendants'|'ancestor'|'observer',apply:(self:SpecialKey,scope:Scope<unknown>,value:unknown,applyTo:Instance)->()}export type Child=Instance|StateObject<Child>|{[unknown]:Child}export type PropertyTable={[(string|SpecialKey)]:unknown}export type NewConstructor=(scope:Scope<unknown>,className:string)->(propertyTable:PropertyTable)->Instance export type HydrateConstructor=(scope:Scope<unknown>,target:Instance)->(propertyTable:PropertyTable)->Instance export type DeriveScopeConstructor=(<S>(Scope<S>)->Scope<S>)&(<S,A>(Scope<S>,A&{})->Scope<S&A>)&(<S,A,B>(Scope<S>,A&{},B&{})->Scope<S&A&B>)&(<S,A,B,C>(Scope<S>,A&{},B&{},C&{})->Scope<S&A&B&C>)&(<S,A,B,C,D>(Scope<S>,A&{},B&{},C&{},D&{})->Scope<S&A&B&C&D>)&(<S,A,B,C,D,E>(Scope<S>,A&{},B&{},C&{},D&{},E&{})->Scope<S&A&B&C&D&E>)&(<S,A,B,C,D,E,F>(Scope<S>,A&{},B&{},C&{},D&{},E&{},F&{})->Scope<S&A&B&C&D&E&F>)&(<S,A,B,C,D,E,F,G>(Scope<S>,A&{},B&{},C&{},D&{},E&{},F&{},G&{})->Scope<S&A&B&C&D&E&F&G>)&(<S,A,B,C,D,E,F,G,H>(Scope<S>,A&{},B&{},C&{},D&{},E&{},F&{},G&{},H&{})->Scope<S&A&B&C&D&E&F&G&H>)&(<S,A,B,C,D,E,F,G,H,I>(Scope<S>,A&{},B&{},C&{},D&{},E&{},F&{},G&{},H&{},I&{})->Scope<S&A&B&C&D&E&F&G&H&I>)&(<S,A,B,C,D,E,F,G,H,I,J>(Scope<S>,A&{},B&{},C&{},D&{},E&{},F&{},G&{},H&{},I&{},J&{})->Scope<S&A&B&C&D&E&F&G&H&I&J>)&(<S,A,B,C,D,E,F,G,H,I,J,K>(Scope<S>,A&{},B&{},C&{},D&{},E&{},F&{},G&{},H&{},I&{},J&{},K&{})->Scope<S&A&B&C&D&E&F&G&H&I&J&K>)&(<S,A,B,C,D,E,F,G,H,I,J,K,L>(Scope<S>,A&{},B&{},C&{},D&{},E&{},F&{},G&{},H&{},I&{},J&{},K&{},L&{})->Scope<S&A&B&C&D&E&F&G&H&I&J&K&L>)export type ScopedConstructor=(()->Scope<{}>)&(<A>(A&{})->Scope<A>)&(<A,B>(A&{},B&{})->Scope<A&B>)&(<A,B,C>(A&{},B&{},C&{})->Scope<A&B&C>)&(<A,B,C,D>(A&{},B&{},C&{},D&{})->Scope<A&B&C&D>)&(<A,B,C,D,E>(A&{},B&{},C&{},D&{},E&{})->Scope<A&B&C&D&E>)&(<A,B,C,D,E,F>(A&{},B&{},C&{},D&{},E&{},F&{})->Scope<A&B&C&D&E&F>)&(<A,B,C,D,E,F,G>(A&{},B&{},C&{},D&{},E&{},F&{},G&{})->Scope<A&B&C&D&E&F&G>)&(<A,B,C,D,E,F,G,H>(A&{},B&{},C&{},D&{},E&{},F&{},G&{},H&{})->Scope<A&B&C&D&E&F&G&H>)&(<A,B,C,D,E,F,G,H,I>(A&{},B&{},C&{},D&{},E&{},F&{},G&{},H&{},I&{})->Scope<A&B&C&D&E&F&G&H&I>)&(<A,B,C,D,E,F,G,H,I,J>(A&{},B&{},C&{},D&{},E&{},F&{},G&{},H&{},I&{},J&{})->Scope<A&B&C&D&E&F&G&H&I&J>)&(<A,B,C,D,E,F,G,H,I,J,K>(A&{},B&{},C&{},D&{},E&{},F&{},G&{},H&{},I&{},J&{},K&{})->Scope<A&B&C&D&E&F&G&H&I&J&K>)&(<A,B,C,D,E,F,G,H,I,J,K,L>(A&{},B&{},C&{},D&{},E&{},F&{},G&{},H&{},I&{},J&{},K&{},L&{})->Scope<A&B&C&D&E&F&G&H&I&J&K&L>)export type ContextualConstructor=<T>(defaultValue:T)->Contextual<T>export type Safe=<Success,Fail>(callbacks:{try:()->Success,fallback:(err:unknown)->Fail})->Success|Fail export type Fusion={version:Version,Contextual:ContextualConstructor,Safe:Safe,doCleanup:(Task)->(),scoped:ScopedConstructor,deriveScope:DeriveScopeConstructor,innerScope:DeriveScopeConstructor,peek:Use,Value:ValueConstructor,Computed:ComputedConstructor,ForPairs:ForPairsConstructor,ForKeys:ForKeysConstructor,ForValues:ForValuesConstructor,Observer:ObserverConstructor,Tween:TweenConstructor,Spring:SpringConstructor,New:NewConstructor,Hydrate:HydrateConstructor,Child:({Child})->Child,Children:SpecialKey,Out:(propertyName:string)->SpecialKey,OnEvent:(eventName:string)->SpecialKey,OnChange:(propertyName:string)->SpecialKey,Attribute:(attributeName:string)->SpecialKey,AttributeChange:(attributeName:string)->SpecialKey,AttributeOut:(attributeName:string)->SpecialKey}export type ExternalProvider={policies:{allowWebLinks:boolean},logErrorNonFatal:(errorString:string)->(),logWarn:(errorString:string)->(),doTaskImmediate:(resume:()->())->(),doTaskDeferred:(resume:()->())->(),startScheduler:()->(),stopScheduler:()->()}export type ExternalDebugger={startDebugging:()->(),stopDebugging:()->(),trackScope:(scope:Scope<unknown>)->(),untrackScope:(scope:Scope<unknown>)->()}return nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[91]=function()local aa,ab,ac,ad,ae=b(91)local af,ag=(ab.Parent.Parent)local ah,ai,aj=ac(af.Types),ac(af.External),ac(af.Logging.parseError)export type Self<T> =ah.Contextual<T>&{_valuesNow:{[thread]:{value:T}},_defaultValue:T}local ak={}ak.type='Contextual'local al,c=table.freeze{__index=ak},table.freeze{__mode='k'}local d=function(d:T)local e:Self<T> =setmetatable({_valuesNow=setmetatable({},c),_defaultValue=d},al)::any return e end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            function ak.now<T>(e:Self<T>):T local f=coroutine.running()local g=e._valuesNow[f]if typeof(g)~='table'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return e._defaultValue else return g.value end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        function ak.is<T>(e:Self<T>,f:T)local g={}function g.during<T,A...>(h:any,i:(A...)->T,...:A...):T local r=coroutine.running()local u=e._valuesNow[r]e._valuesNow[r]={value=f}local v,w=xpcall(i,aj,...)e._valuesNow[r]=u if not v then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ai.logError('callbackError',w::any)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return w end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return g end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            table.freeze(ak)return d end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[92]=function()local aa,ab,ac,ad,ae=b(92)local af,ag,ah=ab.Parent.Parent,function(af:{try:()->Success,fallback:(err:unknown)->Fail})local ag,ah=xpcall(af.try,af.fallback)return ah end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return ag end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[93]=function()local aa,ab,ac,ad,ae=b(93)local af,ag=function(af:unknown,ag:unknown)local ah=typeof(af)local ai,aj=ah=='table',ah=='userdata'return if not(ai or aj)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                af==ag or af~=af and ag~=ag elseif ah==typeof(ag)and(aj or table.isfrozen(af::any)or getmetatable(af::any)~=nil)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    af==ag else false end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return af end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,[94]=function()local aa,ab,ac,ad,ae=b(94)local af,ag=(ab.Parent.Parent)local ah=ac(af.External)local ai=function(ai:boolean,aj:{[unknown]:unknown},...)local ak={...}if#ak<1 then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return aj else for al,c in ak do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            for d,e in c do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if aj[d]==nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    aj[d]=e elseif not ai then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ah.logError('mergeConflict',nil,tostring(d))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return aj end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return ai end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[95]=function()local aa,ab,ac,ad,ae=b(95)local af,ag=(ab.Parent.Parent)local ah=ac(af.Utility.nicknames)local ai=function(ai:unknown,aj:string)local ak=ah[ai]if typeof(ak)=='string'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return ak end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if typeof(ai)=='table'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local al=ai::{[any]:any}if typeof(al.name)=='string'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return al.name elseif typeof(al.kind)=='string'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return al.kind elseif typeof(al.type)=='string'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return al.type end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return aj end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return ai end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[96]=function()local aa,ab,ac,ad,ae=b(96)local af,ag=function()error'This codepath should not be reachable'end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return af end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[97]=function()local aa,ab,ac,ad,ae=b(97)local af return setmetatable({},{__mode='k'})end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[98]=function()local aa,ab,ac,ad,ae=b(98)local af,ag=function(af:unknown)local ag=typeof(af)if ag=='table'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local ah=af::{type:unknown?}if typeof(ah.type)=='string'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return ah.type end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return ag end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return af end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[99]=function()local aa,ab,ac,ad,ae=b(99)local af=ac(ab.Parent:FindFirstChild'.pesde':FindFirstChild'elttob_fusion@0.3.0':FindFirstChild'fusion':FindFirstChild'src')export type Animatable=af.Animatable export type UsedAs<T> =af.UsedAs<T>export type Child=af.Child export type Computed<T> =af.Computed<T>export type Contextual<T> =af.Contextual<T>export type GraphObject=af.GraphObject export type For<KO,VO> =af.For<KO,VO>export type Observer=af.Observer export type PropertyTable=af.PropertyTable export type Scope<Constructors=Fusion> =af.Scope<Constructors>export type ScopedObject=af.ScopedObject export type SpecialKey=af.SpecialKey export type Spring<T> =af.Spring<T>export type StateObject<T> =af.StateObject<T>export type Task=af.Task export type Tween<T> =af.Tween<T>export type Use=af.Use export type Value<T,S=T> =af.Value<T,S>export type Version=af.Version return af end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[101]=function()local aa,ab,ac,ad,ae=b(101)local af,ag,ah=game:GetService'CoreGui',game:GetService'Players',(ab.Parent.Parent)local ai=ac(ah.Packages.Fusion)local aj,ak=ai:scoped(),(ai.Children)local al,c=function()return aj:New'ScreenGui'{IgnoreGuiInset=true,ResetOnSpawn=false,ZIndexBehavior=Enum.ZIndexBehavior.Sibling,Parent=(function()if(gethui and gethui())then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return gethui()elseif(af)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return af else return ag.LocalPlayer.PlayerGui end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            )()}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,({})c.Scope=aj c.ScreenGuis=({Window=al(),Notification=(function()local d=al()aj:New'Frame'{Name='Holder',AnchorPoint=Vector2.new(1,0),BackgroundTransparency=1,Position=UDim2.new(1,0,0,0),BackgroundColor3=Color3.fromRGB(255,255,255),Size=UDim2.new(0,230,1,0),Parent=d,[ak]={aj:New'UIListLayout'{Name='UIListLayout',VerticalAlignment=Enum.VerticalAlignment.Bottom,SortOrder=Enum.SortOrder.LayoutOrder,HorizontalAlignment=Enum.HorizontalAlignment.Right},aj:New'UIPadding'{Name='UIPadding',PaddingTop=UDim.new(0,10),PaddingBottom=UDim.new(0,10),PaddingRight=UDim.new(0,10),PaddingLeft=UDim.new(0,10)}}}return d end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            )()})return c end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[103]=function()local aa,ab,ac,ad,ae=b(103)local af,ag=game:GetService'UserInputService',(ab.Parent.Parent.Parent)local ah,ai,aj,ak=(ag.Storage.Themes),ac(ag.Packages.Fusion),ac(ag.Storage.Information),ac(ag)local al=aj.Scope local c={fusion=ai,controls={},story=function(c)task.spawn(function()local d,e=ak:CreateWindow{Title='Modal Library',SubTitle='github.com/lxte/Modal',Size=UDim2.fromOffset(400,400),MinimumSize=Vector2.new(250,200),Transparency=0,Icon='rbxassetid://68073547',Parent=c.target},({NotificationKey=Enum.KeyCode.LeftControl})local f=d:AddTab'Components'f:New'Title'{Title='Components'}f:New'Button'{Title='Button',Description='Click this for a notification',Callback=function()d:Notify{Title='Notification',Description='This is a notification',Duration=5,Type='Info'}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }f:New'Input'{Title='Input',Description='Type and it will change the Window Title',DefaultText='Modal Library',Placeholder='Title Name',Callback=function(g)d:SetTitle(g)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }f:New'Keybind'{Title='Keybind',Description='Change keybind to send notifications',DefaultKeybind='LeftControl',Callback=function(g)e.NotificationKey=g print('Got key:',g)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }f:New'Slider'{Title='Slider',Description='Change the transparency of the UI',Default=0,Minimum=0,Maximum=0.8,DecimalCount=2,Callback=function(g)d:SetTransparency(g)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }local g g=f:New'Toggle'{Title='Toggle',Description='Used to toggle features',DefaultValue=true,Callback=function(h)print('Got:',h)g:SetTitle'Value Changed'g:SetDescription('New value is '..tostring(h))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }f:New'Title'{Title='Popups'}f:New'Dropdown'{Title='Regular Dropdown',Description='Only can select 1 option',Options={'Option 1','Option 2'},Default='Option 1',Callback=function(h)print('Dropdown got:',h)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }f:New'MultiDropdown'{Title='Regular Dropdown',Description='Multiple selectable options',Options={'Option 1','Option 2','Option 3'},Default={'Option 2','Option 3'},Callback=function(h)print('MultiDropdown got:',h)print('Concat:',table.concat(h,', '))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }f:New'ColorPicker'{Title='Color Picker',Description='Returns a Color3 value',Default=Color3.fromRGB(255,114,43),Callback=function(h)print('ColorPicker got:',h)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }local h=d:AddTab'Settings'h:New'Title'{Title='Themes'}h:New'Dropdown'{Title='Theme',Description='Default theme options',Options={'Light','Dark','Midnight','Rose','Emerald'},Callback=function(i)d:SetTheme(i)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }h:New'Button'{Title='Set Custom GUI',Description=[[This is to showcase how custom themes work (without the default ones)]],Callback=function()local i={Mode='Dark',Accent=Color3.fromRGB(255,170,70),Background={Rotation=120,Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(22,18,14)),ColorSequenceKeypoint.new(1,Color3.fromRGB(10,8,6))},Line={Color=Color3.fromRGB(255,200,120),Transparency=0.9},OuterOutline={Transparency=0,Color=Color3.fromRGB(5,4,3),Rotation=0},InnerOutline={Transparency=0.78,Color=Color3.fromRGB(170,130,90),Rotation=0}},Text={Title={Color=Color3.fromRGB(255,245,230)},Description={Color=Color3.fromRGB(205,190,170)}},Icons={ActionButtons={Color=Color3.fromRGB(255,215,160),Transparency=0.18}},Content={Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(24,20,16)),ColorSequenceKeypoint.new(1,Color3.fromRGB(16,13,10))},Rotation=240,ScrollBarColor=Color3.fromRGB(200,160,110),InnerOutline={Transparency=0.92,Color=Color3.fromRGB(160,125,85),Rotation=0},OuterOutline={Transparency=0,Color=Color3.fromRGB(6,5,4),Rotation=0}},Component={Color=Color3.fromRGB(26,22,18),Rotation=0},Controls={Color=Color3.fromRGB(36,30,24),Outline=Color3.fromRGB(48,40,32)}}d:SetTheme(i)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }h:New'Button'{Title='Destroy GUI',Description="Click to get rid of the UI (can't be brought back)",Callback=function()d:Destroy()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }local i=d:AddTab'Benchmark'i:New'Button'{Title='Start',Callback=function()for r=1,50 do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                i:New'Toggle'{Title='Button '..r,Description='This is button number '..r,DefaultValue=math.random(1,2)==1,Callback=function()print('Clicked button '..r)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                }end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        }d:SetTab'Components'd:SetTheme'Rose'table.insert(al,af.InputBegan:Connect(function(r)if(ak:IsCorrectInput(r,e.NotificationKey))then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local u=string.rep('a',math.random(20,100))d:Notify{Title='Modal',Description=u,Duration=5,Type='Success'}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    )return function()al:doCleanup()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            }return c end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[105]=function()local aa,ab,ac,ad,ae=b(105)return{Mode='Dark',Accent=Color3.fromRGB(125,73,255),Background={Rotation=75,Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(23,23,34)),ColorSequenceKeypoint.new(1,Color3.fromRGB(10,10,15))},Line={Color=Color3.fromRGB(180,180,220),Transparency=0.87},OuterOutline={Transparency=0,Color=Color3.fromRGB(0,0,0),Rotation=0},InnerOutline={Transparency=0.7,Color=Color3.fromRGB(160,160,200),Rotation=0}},Text={Title={Color=Color3.fromRGB(255,255,255)},Description={Color=Color3.fromRGB(190,190,210)}},Icons={ActionButtons={Color=Color3.fromRGB(235,235,255),Transparency=0.2}},Content={Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(17,17,24)),ColorSequenceKeypoint.new(1,Color3.fromRGB(16,16,22))},Rotation=225,ScrollBarColor=Color3.fromRGB(160,160,190),InnerOutline={Transparency=0.9,Color=Color3.fromRGB(150,150,190),Rotation=0},OuterOutline={Transparency=0,Color=Color3.fromRGB(0,0,0),Rotation=0}},Component={Color=Color3.fromRGB(23,23,33),Rotation=0},Controls={Color=Color3.fromRGB(30,30,43),Outline=Color3.fromRGB(33,33,46)}}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[106]=function()local aa,ab,ac,ad,ae=b(106)return{Mode='Dark',Accent=Color3.fromRGB(80,230,160),Background={Rotation=135,Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(14,20,16)),ColorSequenceKeypoint.new(1,Color3.fromRGB(8,14,10))},Line={Color=Color3.fromRGB(160,220,190),Transparency=0.87},OuterOutline={Transparency=0,Color=Color3.fromRGB(0,0,0),Rotation=0},InnerOutline={Transparency=0.7,Color=Color3.fromRGB(130,180,160),Rotation=0}},Text={Title={Color=Color3.fromRGB(255,255,255)},Description={Color=Color3.fromRGB(185,205,195)}},Icons={ActionButtons={Color=Color3.fromRGB(255,255,255),Transparency=0.1}},Content={Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(16,22,18)),ColorSequenceKeypoint.new(1,Color3.fromRGB(14,20,16))},Rotation=225,ScrollBarColor=Color3.fromRGB(130,180,160),InnerOutline={Transparency=0.9,Color=Color3.fromRGB(130,180,160),Rotation=0},OuterOutline={Transparency=0,Color=Color3.fromRGB(0,0,0),Rotation=0}},Component={Color=Color3.fromRGB(22,28,24),Rotation=0},Controls={Color=Color3.fromRGB(30,37,33),Outline=Color3.fromRGB(34,42,37)}}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[107]=function()local aa,ab,ac,ad,ae=b(107)return{Mode='Light',Accent=Color3.fromRGB(113,182,232),Background={Rotation=90,Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(239,237,255)),ColorSequenceKeypoint.new(1,Color3.fromRGB(255,255,255))},Line={Color=Color3.fromRGB(0,0,0),Transparency=0.9},OuterOutline={Transparency=0.6,Color=Color3.fromRGB(0,0,0),Rotation=0},InnerOutline={Transparency=0,Color=Color3.fromRGB(255,255,255),Rotation=0}},Text={Title={Color=Color3.fromRGB(0,0,0)},Description={Color=Color3.fromRGB(110,110,110)}},Icons={ActionButtons={Color=Color3.fromRGB(0,0,0),Transparency=0.7}},Content={Color=Color3.fromRGB(251,248,255),Rotation=0,ScrollBarColor=Color3.fromRGB(200,200,200),InnerOutline={Transparency=0.9,Color=Color3.fromRGB(0,0,0)},OuterOutline={Transparency=1,Color=Color3.fromRGB(0,0,0),Rotation=0}},Component={Color=Color3.fromRGB(245,242,249),Rotation=0},Controls={Color=Color3.fromRGB(235,232,239),Outline=Color3.fromRGB(227,225,231)}}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[108]=function()local aa,ab,ac,ad,ae=b(108)return{Mode='Dark',Accent=Color3.fromRGB(120,160,255),Background={Rotation=180,Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(5,8,15)),ColorSequenceKeypoint.new(1,Color3.fromRGB(0,0,5))},Line={Color=Color3.fromRGB(100,140,255),Transparency=0.88},OuterOutline={Transparency=0,Color=Color3.fromRGB(0,0,0),Rotation=0},InnerOutline={Transparency=0.7,Color=Color3.fromRGB(80,120,200),Rotation=0}},Text={Title={Color=Color3.fromRGB(240,245,255)},Description={Color=Color3.fromRGB(160,180,220)}},Icons={ActionButtons={Color=Color3.fromRGB(240,245,255),Transparency=0.15}},Content={Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(8,12,20)),ColorSequenceKeypoint.new(1,Color3.fromRGB(5,8,15))},Rotation=270,ScrollBarColor=Color3.fromRGB(100,140,200),InnerOutline={Transparency=0.85,Color=Color3.fromRGB(80,120,200),Rotation=0},OuterOutline={Transparency=0,Color=Color3.fromRGB(0,0,0),Rotation=0}},Component={Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(13,18,31)),ColorSequenceKeypoint.new(1,Color3.fromRGB(15,20,35))},Rotation=45},Controls={Color=Color3.fromRGB(18,24,40),Outline=Color3.fromRGB(25,35,60)}}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[109]=function()local aa,ab,ac,ad,ae=b(109)return{Mode='Dark',Accent=Color3.fromRGB(255,85,140),Background={Rotation=135,Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(20,14,16)),ColorSequenceKeypoint.new(1,Color3.fromRGB(14,8,10))},Line={Color=Color3.fromRGB(220,160,180),Transparency=0.87},OuterOutline={Transparency=0,Color=Color3.fromRGB(0,0,0),Rotation=0},InnerOutline={Transparency=0.8,Color=Color3.fromRGB(180,130,150),Rotation=0}},Text={Title={Color=Color3.fromRGB(255,255,255)},Description={Color=Color3.fromRGB(205,185,195)}},Icons={ActionButtons={Color=Color3.fromRGB(255,255,255),Transparency=0.1}},Content={Color=ColorSequence.new{ColorSequenceKeypoint.new(0,Color3.fromRGB(22,16,18)),ColorSequenceKeypoint.new(1,Color3.fromRGB(20,14,16))},Rotation=225,ScrollBarColor=Color3.fromRGB(180,130,150),InnerOutline={Transparency=0.9,Color=Color3.fromRGB(180,130,150),Rotation=0},OuterOutline={Transparency=0,Color=Color3.fromRGB(0,0,0),Rotation=0}},Component={Color=Color3.fromRGB(28,22,24),Rotation=0},Controls={Color=Color3.fromRGB(37,30,33),Outline=Color3.fromRGB(42,34,37)}}end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,[111]=function()local aa,ab,ac,ad,ae=b(111)local af=(ab.Parent.Parent)local ah=ac(af.Storage.Information)local ai=(ah.Scope)local aj=function(aj:()->(),ak,al,c)local d,e=(c or ai),(typeof(ak)=='number')local f=d:Computed(aj)if(e)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return d:Spring(f,ak,al)else return d:Tween(f,ak)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return aj end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,[112]=function()local aa,ab,ac,ad,ae=b(112)local af=(ab.Parent.Parent)local ah,ai=ac(af.Packages.Fusion),ac(af.Storage.Information)local aj=(ai.Scope)local ak=function(ak)local al,c=ak or aj,({})c.Darken=function(d,e)if(typeof(d)=='Color3')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return Color3.fromRGB(math.clamp(d.R*255-e,0,255),math.clamp(d.G*255-e,0,255),math.clamp(d.B*255-e,0,255))elseif(typeof(d)=='ColorSequence')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local f=({})for g,h in next,(d.Keypoints)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    f[g]=ColorSequenceKeypoint.new(h.Time,Color3.fromRGB(math.clamp(h.Value.R*255-e,0,255),math.clamp(h.Value.G*255-e,0,255),math.clamp(h.Value.B*255-e,0,255)))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return ColorSequence.new(f)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            c.Lighten=function(d,e)if(typeof(d)=='Color3')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return Color3.fromRGB(math.clamp(d.R*255+e,0,255),math.clamp(d.G*255+e,0,255),math.clamp(d.B*255+e,0,255))elseif(typeof(d)=='ColorSequence')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local f=({})for g,h in next,(d.Keypoints)do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        f[g]=ColorSequenceKeypoint.new(h.Time,Color3.fromRGB(math.clamp(h.Value.R*255+e,0,255),math.clamp(h.Value.G*255+e,0,255),math.clamp(h.Value.B*255+e,0,255)))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return ColorSequence.new(f)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                c.Set=function(d:Color3,e:number,f:string)local g=(f=='Light'and c.Darken)or c.Lighten return g(d,e)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                c.Get=function(d:ah.Value,e:boolean,f:boolean)local g=(f and d)or ah.peek(d)if(e)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if(typeof(g)=='number')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return NumberSequence.new{NumberSequenceKeypoint.new(0,g),NumberSequenceKeypoint.new(1,g)}elseif(typeof(g)=='NumberSequence')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return(g)else return(1)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        else if(typeof(g)=='Color3')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return ColorSequence.new{ColorSequenceKeypoint.new(0,g),ColorSequenceKeypoint.new(1,g)}elseif(typeof(g)=='ColorSequence')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return(g)else return Color3.fromRGB(255,0,0)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                c.SetupTheme=function(d:ah.Value,e:boolean)return al:Computed(function(f)local g=(f(d))return c.Get(g,e,true)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                )end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return c end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return setmetatable(ak(),{__call=function(al,c)return ak(c)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                })end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,[113]=function()local aa,ab,ac,ad,ae=b(113)local af=(ab.Parent.Parent)local ah,ai=ac(af.Packages.Fusion),({})ai.IsPoisoned=function(aj:ah.Scope)local ak=getmetatable(aj)if(typeof(ak)~='table')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return false end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return ak._FUSION_POISONED end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ai.Insert=function(aj:ah.Value,ak:{any})for al,c in next,ak or{}do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        table.insert(aj,c)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ai.IsFusionValue=function(aj:any)return(typeof(aj)=='table')and(typeof(aj.scope)=='table')end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ai.Unwrap=function(aj:any)if ai.IsFusionValue(aj)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return ah.peek(aj)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return aj end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ai.Add=function(aj:ah.Value,ak)if ai.IsFusionValue(aj)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local al=ai.Unwrap(aj)table.insert(al,ak)aj:set(al)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return aj end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return ai end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,[114]=function()local aa,ab,ac,ad,ae=b(114)local af,ah=game:GetService'TweenService',({AddedObjects=({}),IgnoredNames=({'TabButton'})})ah.Add=function(ai:GuiObject)local aj=function(aj)if(table.find(ah.AddedObjects,aj))then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if(table.find(ah.IgnoredNames,aj.Name))then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                table.insert(ah.AddedObjects,aj)if(aj:IsA'UIStroke')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if(aj.Transparency<1)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if(not aj:FindFirstChild'Transparency')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local ak=Instance.new'NumberValue'ak.Name='Transparency'ak.Parent=aj ak.Value=aj.Transparency end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if(aj:IsA'GuiObject')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if(aj.BackgroundTransparency<1)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if(not aj:FindFirstChild'BackgroundTransparency')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local ak=Instance.new'NumberValue'ak.Name='BackgroundTransparency'ak.Parent=aj ak.Value=aj.BackgroundTransparency end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if(aj:IsA'TextLabel'or aj:IsA'TextButton'or aj:IsA'TextBox')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if(aj.TextTransparency<1)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if(not aj:FindFirstChild'TextTransparency')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local ak=Instance.new'NumberValue'ak.Name='TextTransparency'ak.Parent=aj ak.Value=aj.TextTransparency end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                elseif(aj:IsA'ImageLabel'or aj:IsA'ImageButton')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if(aj.ImageTransparency<1)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if(not aj:FindFirstChild'ImageTransparency')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local ak=Instance.new'NumberValue'ak.Name='ImageTransparency'ak.Parent=aj ak.Value=aj.ImageTransparency end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                elseif(aj:IsA'ScrollingFrame')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if(aj.ScrollBarImageTransparency<1)then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if(not aj:FindFirstChild'ScrollBarImageTransparency')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local ak=Instance.new'NumberValue'ak.Name='ScrollBarImageTransparency'ak.Parent=aj ak.Value=aj.ScrollBarImageTransparency end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            aj(ai)ai.DescendantAdded:Connect(aj)for ak,al in next,ai:GetDescendants()do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                aj(al)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ah.Tween=function(ai,aj,ak)return af:Create(ai,TweenInfo.new(aj),ak):Play()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ah.ControlTransparency=function(ai,aj,ak)for al,c in next,ai:GetDescendants()do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if(c:IsA'NumberValue'and string.find(c.Name,'Transparency'))then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local d=math.clamp(ak,c.Value,1)if(c.Parent.Name=='_Window')then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    d/=3 end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ah.Tween(c.Parent,aj,{[c.Name]=d})end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return ah end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    }do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local ab,ac,ad,ae,af,ah,ai,aj,ak,al,c,d,e,f,g,h=task,setmetatable,error,newproxy,getmetatable,next,table,unpack,coroutine,script,type,require,pcall,getfenv,setfenv,rawget local i,r,u,v,w,x,y,A,B,C,D=ai.insert,ai.remove,ai.freeze or function(i)return i end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,ab and ab.defer or function(i,...)local r=ak.create(i)ak.resume(r,...)return r end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ,'0.0.0-venv',{},{},{},{},{},{}local E,F={GetChildren=function(E)local F,G=D[E],{}for H in ah,F do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            i(G,H)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return G end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ,FindFirstChild=function(E,F)if not F then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ad('Argument 1 missing or nil',2)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                for G in ah,D[E]do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if G.Name==F then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return G end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,GetFullName=function(E)local F,G=E.Name,E.Parent while G do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    F=G.Name..'.'..F G=G.Parent end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return'VirtualEnv.'..F end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    },{}for G,H in ah,E do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        F[G]=function(I,...)if not D[I]then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ad("Expected ':' not '.' calling member function "..G,1)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return H(I,...)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local G=function(G,H,I)local J,K,L,M,N=ac({},{__mode='k'}),function(J)ad(J..' is not a valid (virtual) member of '..G..' "'..H..'"',1)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,function(J)ad('Unable to assign (virtual) property '..J..'. Property is read only',1)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,(ae(true))local O=af(M)O.__index=function(P,Q)if Q=='ClassName'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return G elseif Q=='Name'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return H elseif Q=='Parent'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return I elseif G=='StringValue'and Q=='Value'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return N else local R=F[Q]if R then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return R end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                for R in ah,J do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if R.Name==Q then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return R end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                K(Q)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                O.__newindex=function(P,Q,R)if Q=='ClassName'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    L(Q)elseif Q=='Name'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        H=R elseif Q=='Parent'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if R==M then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if I~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    D[I][M]=nil end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    I=R if R~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        D[R][M]=true end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    elseif G=='StringValue'and Q=='Value'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        N=R else K(Q)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                O.__tostring=function()return H end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                D[M]=J if I~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    D[I][M]=true end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return M end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local function H(I,J)local K,L,M,N=I[1],I[2],I[3],I[4]local O=r(M,1)local P=G(L,O,J)x[K]=P if M then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        for Q,R in ah,M do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            P[Q]=R end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if N then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        for Q,R in ah,N do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            H(R,P)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return P end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local I={}for J,K in ah,a do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        i(I,H(K))end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        for J,K in ah,aa do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local L=x[J]y[L]=K local M=L.ClassName if M=='LocalScript'or M=='Script'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                i(B,L)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local J=function(J)local K,L=J.ClassName,A[J]if L and K=='ModuleScript'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return aj(L)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            local M=y[J]if not M then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                if K=='LocalScript'or K=='Script'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    M()return else local N={M()}A[J]=N return aj(N)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            function b(K)local L=x[K]local M=y[L]if not M then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                local N,O,P,Q,R,S,T=false,u{Version=w,Script=al,Shared=C,GetScript=function()return al end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ,GetShared=function()return C end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                },L,function(N,...)if D[N]and N.ClassName=='ModuleScript'and y[N]then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return J(N)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return d(N,...)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local U,V=function(U,...)if not N then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        T()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if c(U)=='number'and U>=0 then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if U==0 then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return S else U=U+1 local V,W=e(f,U)if V and W==R then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return S end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return f(U,...)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ,function(U,V,...)if not N then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        T()end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if c(U)=='number'and U>=0 then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            if U==0 then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                return g(S,V)else U=U+1 local W,X=e(f,U)if W and X==R then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return g(S,V)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    return g(U,V,...)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    function T()R=f(0)local W={maui=O,script=P,require=Q,getfenv=U,setfenv=V}S=ac({},{__index=function(X,Y)local Z=h(S,Y)if Z~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return Z end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        local _=W[Y]if _~=nil then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return _ end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return R[Y]end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            })g(M,S)N=true end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            return O,P,Q,U,V end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            for K,L in ah,B do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                v(J,L)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    local K for L,M in ah,I do
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        if M.ClassName=='ModuleScript'and M.Name=='MainModule'then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            K=M break end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    if K then
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        return J(K)end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            end
+    end))
+    local dragging, dragStart, startPos = false, nil, nil
 
---[[
-    MDW Modern UI Theme Addon
-    Tambahkan UI modern dengan gradient, tab, toggle, button, notification.
-    Gunakan setelah library Modal dimuat.
-]]
-
-local function CreateModernUI(Modal)
-    local Window = Modal:CreateWindow({
-        Title = "MDW Panel",
-        Description = "Modern Interface",
-    })
-
-    local MainTab = Window:CreateTab({
-        Name = "Home",
-    })
-
-    MainTab:CreateTitle({
-        Title = "Dashboard",
-    })
-
-    MainTab:CreateButton({
-        Title = "Execute",
-        Description = "Jalankan fitur",
-        Callback = function()
-            print("Executed")
+    scriptHeader.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            bringToFront()
+            dragging, dragStart, startPos = true, input.Position, self._win.Position
         end
-    })
-
-    MainTab:CreateToggle({
-        Title = "Enable Feature",
-        Description = "Aktifkan fitur",
-        Callback = function(state)
-            print("Toggle:", state)
+    end)
+    
+    local resizing = false
+    local resizeStartPos, resizeStartSize = nil, nil
+    
+    resizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            resizing, resizeStartPos, resizeStartSize = true, input.Position, self._win.Size
         end
-    })
-
-    local Settings = Window:CreateTab({
-        Name = "Settings",
-    })
-
-    Settings:CreateTitle({
-        Title = "Appearance",
-    })
-
-    Settings:CreateDropdown({
-        Title = "Theme",
-        Options = {
-            "Dark",
-            "Midnight",
-            "Purple"
-        },
-        Callback = function(value)
-            print(value)
+    end)
+    
+    self:AddConnection("inputChanged", UserInputService.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            if dragging and startPos then
+                local delta = input.Position - dragStart
+                self._win.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            end
+            if resizing and resizeStartPos then
+                local delta = input.Position - resizeStartPos
+                local newWidth = math.clamp(resizeStartSize.X.Offset + delta.X, minWindowSize.X, maxWindowSize.X)
+                local newHeight = math.clamp(resizeStartSize.Y.Offset + delta.Y, minWindowSize.Y, maxWindowSize.Y)
+                self._win.Size = UDim2.new(0, newWidth, 0, newHeight)
+            end
         end
-    })
-
-    return Window
+    end))
+    
+    self:AddConnection("inputEnded", UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            resizing = false
+        end
+    end))
+    
+    self._gui.Destroying:Connect(function()
+        self:Cleanup()
+    end)
+    
+    return self
 end
 
-return CreateModernUI
+function Library:CreatePage(name, title, imageId, order)
+    local page = new("Frame", {
+        Parent = self._contentBg,
+        Size = UDim2.new(1, -12, 1, -38),
+        Position = UDim2.new(0, 6, 0, 36),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Visible = false,
+        ClipsDescendants = true,
+        ZIndex = 5
+    })
+    
+    local contentContainer = new("ScrollingFrame", {
+        Parent = page,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 0,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        ClipsDescendants = true,
+        ZIndex = 5
+    })
+    
+    new("UIListLayout", {Parent = contentContainer, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder})
+    new("UIPadding", {Parent = contentContainer, PaddingTop = UDim.new(0, 3), PaddingBottom = UDim.new(0, 3), PaddingRight = UDim.new(0, 5)})
+    
+    self.pages[name] = {frame = page, title = title, content = contentContainer}
+    
+    local btn = new("TextButton", {
+        Parent = self._navContainer,
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundColor3 = colors.bg2,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Text = "",
+        AutoButtonColor = false,
+        LayoutOrder = order or 999,
+        ZIndex = 6
+    })
+    new("UICorner", {Parent = btn, CornerRadius = UDim.new(0, 7)})
+    
+    local indicator = new("Frame", {
+        Parent = btn,
+        Size = UDim2.new(0, 3, 0, 18),
+        Position = UDim2.new(0, 0, 0.5, -9),
+        BackgroundColor3 = colors.primary,
+        BorderSizePixel = 0,
+        Visible = false,
+        ZIndex = 7
+    })
+    new("UICorner", {Parent = indicator, CornerRadius = UDim.new(1, 0)})
+    
+    new("ImageLabel", {
+        Parent = btn,
+        Image = imageId or "",
+        Size = UDim2.new(0, 15, 0, 15),
+        Position = UDim2.new(0, 8, 0.5, -7),
+        BackgroundTransparency = 1,
+        ImageColor3 = colors.textDim,
+        ZIndex = 7,
+        Name = "Icon"
+    })
+    
+    new("TextLabel", {
+        Parent = btn,
+        Text = name,
+        Size = UDim2.new(1, -35, 1, 0),
+        Position = UDim2.new(0, 30, 0, 0),
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.small,
+        TextColor3 = colors.textDim,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 7,
+        Name = "Label"
+    })
+    
+    self._navButtons[name] = {btn = btn, indicator = indicator, page = page, title = title}
+    
+    btn.MouseButton1Click:Connect(function()
+        self:_switchPage(name)
+    end)
+    
+    return contentContainer
+end
+
+function Library:SetFirstPage(name, title)
+    self:_switchPage(name)
+end
+
+function Library:_switchPage(pageName)
+    if self._currentPage == pageName then return end
+    
+    for _, pageData in pairs(self.pages) do
+        pageData.frame.Visible = false
+    end
+    
+    for name, data in pairs(self._navButtons) do
+        local isActive = name == pageName
+        data.btn.BackgroundColor3 = isActive and colors.bg2 or colors.bg2
+        data.btn.BackgroundTransparency = isActive and 0.3 or 1
+        local icon = data.btn:FindFirstChild("Icon")
+        if icon then
+            icon.ImageColor3 = isActive and colors.primary or colors.textDim
+        end
+        local label = data.btn:FindFirstChild("Label")
+        if label then
+            label.TextColor3 = isActive and colors.text or colors.textDim
+        end
+        data.indicator.Visible = isActive
+    end
+    
+    if self.pages[pageName] then
+        self.pages[pageName].frame.Visible = true
+        if self._pageTitle then
+            self._pageTitle.Text = self.pages[pageName].title or pageName
+        end
+    end
+    self._currentPage = pageName
+end
+
+function Library:CreateCategory(parent, title)
+    local categoryFrame = new("Frame", {
+        Parent = parent,
+        Size = UDim2.new(1, 0, 0, 34),
+        BackgroundColor3 = colors.bg2,
+        BackgroundTransparency = 0.4,
+        BorderSizePixel = 0,
+        AutomaticSize = Enum.AutomaticSize.Y,
+        ZIndex = 6
+    })
+    new("UICorner", {Parent = categoryFrame, CornerRadius = UDim.new(0, 8)})
+    
+    local header = new("TextButton", {
+        Parent = categoryFrame,
+        Size = UDim2.new(1, 0, 0, 34),
+        BackgroundTransparency = 1,
+        Text = "",
+        AutoButtonColor = false,
+        ZIndex = 7
+    })
+    
+    new("TextLabel", {
+        Parent = header,
+        Text = title,
+        Size = UDim2.new(1, -40, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.normal,
+        TextColor3 = colors.text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 8
+    })
+    
+    local arrow = new("TextLabel", {
+        Parent = header,
+        Text = "▼",
+        Size = UDim2.new(0, 20, 1, 0),
+        Position = UDim2.new(1, -25, 0, 0),
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.small,
+        TextColor3 = colors.primary,
+        ZIndex = 8
+    })
+    
+    local contentContainer = new("Frame", {
+        Parent = categoryFrame,
+        Size = UDim2.new(1, -14, 0, 0),
+        Position = UDim2.new(0, 7, 0, 36),
+        BackgroundTransparency = 1,
+        Visible = false,
+        AutomaticSize = Enum.AutomaticSize.Y,
+        ZIndex = 7
+    })
+    new("UIListLayout", {Parent = contentContainer, Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder})
+    new("UIPadding", {Parent = contentContainer, PaddingBottom = UDim.new(0, 7)})
+    
+    local isOpen = false
+    header.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
+        contentContainer.Visible = isOpen
+        arrow.Rotation = isOpen and 180 or 0
+        categoryFrame.BackgroundTransparency = isOpen and 0.3 or 0.4
+    end)
+    
+    return contentContainer
+end
+
+function Library:CreateToggle(parent, label, configPath, callback, disableSave, defaultValue)
+    local frame = new("Frame", {Parent = parent, Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, ZIndex = 7})
+    
+    new("TextLabel", {
+        Parent = frame,
+        Text = label,
+        Size = UDim2.new(1, -45, 1, 0),
+        BackgroundTransparency = 1,
+        TextColor3 = colors.text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.small,
+        ZIndex = 8
+    })
+    
+    local toggleBg = new("Frame", {
+        Parent = frame,
+        Size = UDim2.new(0, 34, 0, 18),
+        Position = UDim2.new(1, -34, 0.5, -9),
+        BackgroundColor3 = colors.bg3,
+        BorderSizePixel = 0,
+        ZIndex = 8
+    })
+    new("UICorner", {Parent = toggleBg, CornerRadius = UDim.new(1, 0)})
+    
+    local toggleCircle = new("Frame", {
+        Parent = toggleBg,
+        Size = UDim2.new(0, 14, 0, 14),
+        Position = UDim2.new(0, 2, 0.5, -7),
+        BackgroundColor3 = colors.textDim,
+        BorderSizePixel = 0,
+        ZIndex = 9
+    })
+    new("UICorner", {Parent = toggleCircle, CornerRadius = UDim.new(1, 0)})
+    
+    local btn = new("TextButton", {Parent = toggleBg, Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Text = "", ZIndex = 10})
+    
+    local on = defaultValue or false
+    if configPath and not disableSave then
+        on = Library.ConfigSystem.Get(configPath, on)
+    end
+    
+    local function updateVisual()
+        toggleBg.BackgroundColor3 = on and colors.primary or colors.bg3
+        toggleCircle.Position = on and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+        toggleCircle.BackgroundColor3 = on and colors.text or colors.textDim
+    end
+    updateVisual()
+    
+    btn.MouseButton1Click:Connect(function()
+        on = not on
+        updateVisual()
+        if configPath and not disableSave then
+            Library.ConfigSystem.Set(configPath, on)
+            MarkDirty()
+        end
+        if callback then callback(on) end
+    end)
+    
+    if configPath and not disableSave then
+        RegisterCallback(configPath, callback, "toggle", defaultValue or false)
+    end
+    
+    self.flags[configPath or label] = on
+    return frame
+end
+
+Library._dropdownOverlay = nil
+Library._dropdownPanel = nil
+Library._dropdownFolder = nil
+Library._dropdownPageLayout = nil
+Library._dropdownCount = 0
+
+function Library:_initDropdownSystem()
+    if self._dropdownOverlay then return end
+    
+    self._dropdownOverlay = new("Frame", {
+        Parent = self._win,
+        Size = UDim2.new(1, 0, 1, -42),
+        Position = UDim2.new(0, 0, 0, 42),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        Visible = false,
+        ZIndex = 150,
+        Name = "DropdownOverlay"
+    })
+    
+    local closeOverlay = new("TextButton", {
+        Parent = self._dropdownOverlay,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundTransparency = 0.999,
+        BorderSizePixel = 0,
+        Text = "",
+        ZIndex = 151
+    })
+    
+    self._dropdownPanel = new("Frame", {
+        Parent = self._dropdownOverlay,
+        AnchorPoint = Vector2.new(1, 0.5),
+        Size = UDim2.new(0, 160, 1, -16),
+        Position = UDim2.new(1, 172, 0.5, 0),
+        BackgroundColor3 = colors.bg1,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        ZIndex = 152,
+        Name = "DropdownPanel"
+    })
+    new("UICorner", {Parent = self._dropdownPanel, CornerRadius = UDim.new(0, 3)})
+    
+    local panelStroke = new("UIStroke", {
+        Parent = self._dropdownPanel,
+        Color = colors.primary,
+        Thickness = 2.5,
+        Transparency = 0.8
+    })
+    
+    local panelInner = new("Frame", {
+        Parent = self._dropdownPanel,
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Size = UDim2.new(1, 1, 1, 1),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        BackgroundColor3 = colors.bg1,
+        BackgroundTransparency = 0.7,
+        BorderSizePixel = 0,
+        ZIndex = 153,
+        Name = "PanelInner"
+    })
+    
+    self._dropdownFolder = new("Folder", {
+        Parent = panelInner,
+        Name = "DropdownFolder"
+    })
+    
+    self._dropdownPageLayout = new("UIPageLayout", {
+        Parent = self._dropdownFolder,
+        EasingDirection = Enum.EasingDirection.InOut,
+        EasingStyle = Enum.EasingStyle.Quad,
+        TweenTime = 0.01,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        FillDirection = Enum.FillDirection.Vertical,
+        Name = "DropdownPageLayout"
+    })
+    
+    closeOverlay.Activated:Connect(function()
+        if self._dropdownOverlay.Visible then
+            self._dropdownOverlay.BackgroundTransparency = 0.999
+            self._dropdownPanel.Position = UDim2.new(1, 172, 0.5, 0)
+            self._dropdownOverlay.Visible = false
+        end
+    end)
+end
+
+function Library:_showDropdown(layoutOrder)
+    self:_initDropdownSystem()
+    
+    if not self._dropdownOverlay.Visible then
+        self._dropdownOverlay.Visible = true
+        self._dropdownPageLayout:JumpToIndex(layoutOrder)
+        self._dropdownOverlay.BackgroundTransparency = 1
+        self._dropdownPanel.Position = UDim2.new(1, -11, 0.5, 0)
+    end
+end
+
+function Library:_hideDropdown()
+    if self._dropdownOverlay and self._dropdownOverlay.Visible then
+        self._dropdownOverlay.BackgroundTransparency = 0.999
+        self._dropdownPanel.Position = UDim2.new(1, 172, 0.5, 0)
+        self._dropdownOverlay.Visible = false
+    end
+end
+
+function Library:CreateDropdown(parent, title, imageId, items, configPath, onSelect, uniqueId, defaultValue)
+    self:_initDropdownSystem()
+    
+    local dropdownLayoutOrder = self._dropdownCount
+    self._dropdownCount = self._dropdownCount + 1
+    
+    local dropdownFrame = new("Frame", {
+        Parent = parent,
+        Size = UDim2.new(1, 0, 0, 28),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 7,
+        Name = uniqueId or "Dropdown"
+    })
+    
+    local dropdownButton = new("TextButton", {
+        Parent = dropdownFrame,
+        Text = "",
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 1, 0),
+        ZIndex = 8
+    })
+    
+    local dropdownTitle = new("TextLabel", {
+        Parent = dropdownFrame,
+        Font = Enum.Font.GothamBold,
+        Text = title or "Dropdown",
+        TextColor3 = colors.text,
+        TextSize = fontSize.small,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0.5, 0, 1, 0),
+        ZIndex = 8
+    })
+    
+    local selectFrame = new("Frame", {
+        Parent = dropdownFrame,
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundColor3 = colors.bg3,
+        BackgroundTransparency = 0.3,
+        Position = UDim2.new(1, 0, 0.5, 0),
+        Size = UDim2.new(0.48, 0, 0, 22),
+        LayoutOrder = dropdownLayoutOrder,
+        ZIndex = 8
+    })
+    new("UICorner", {Parent = selectFrame, CornerRadius = UDim.new(0, 6)})
+    
+    local optionLabel = new("TextLabel", {
+        Parent = selectFrame,
+        Font = Enum.Font.GothamBold,
+        Text = "Select Option",
+        TextColor3 = colors.textDim,
+        TextSize = fontSize.small,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 8, 0.5, 0),
+        Size = UDim2.new(1, -24, 1, 0),
+        ZIndex = 9
+    })
+    
+    local optionImg = new("ImageLabel", {
+        Parent = selectFrame,
+        Image = "rbxassetid://6031091004",
+        ImageColor3 = colors.textDim,
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(1, -4, 0.5, 0),
+        Size = UDim2.new(0, 12, 0, 12),
+        ZIndex = 9
+    })
+    
+    local dropdownContainer = new("Frame", {
+        Parent = self._dropdownFolder,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        LayoutOrder = dropdownLayoutOrder
+    })
+    
+    local searchBox = new("TextBox", {
+        Parent = dropdownContainer,
+        PlaceholderText = "Search...",
+        Font = Enum.Font.GothamBold,
+        Text = "",
+        TextSize = fontSize.small,
+        TextColor3 = colors.text,
+        PlaceholderColor3 = colors.textDimmer,
+        BackgroundColor3 = colors.bg3,
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, -8, 0, 24),
+        Position = UDim2.new(0, 4, 0, 4),
+        ClearTextOnFocus = false,
+        ZIndex = 154
+    })
+    new("UICorner", {Parent = searchBox, CornerRadius = UDim.new(0, 6)})
+    new("UIPadding", {Parent = searchBox, PaddingLeft = UDim.new(0, 8)})
+    
+    local scrollSelect = new("ScrollingFrame", {
+        Parent = dropdownContainer,
+        Size = UDim2.new(1, -8, 1, -36),
+        Position = UDim2.new(0, 4, 0, 32),
+        ScrollBarImageTransparency = 0.5,
+        ScrollBarImageColor3 = colors.primary,
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        ScrollBarThickness = 3,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        ZIndex = 154
+    })
+    
+    local listLayout = new("UIListLayout", {
+        Parent = scrollSelect,
+        Padding = UDim.new(0, 3),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+    
+    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        scrollSelect.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+    end)
+    
+    local configKey = configPath and configPath:gsub("%.", "_") or ("Dropdown_" .. (title or "Dropdown"))
+    local savedValue = configPath and Library.ConfigSystem.Get(configPath, defaultValue) or defaultValue
+    
+    local DropdownFunc = { Value = savedValue, Options = items }
+    
+    function DropdownFunc:Clear()
+        for _, child in scrollSelect:GetChildren() do
+            if child.Name == "Option" then
+                child:Destroy()
+            end
+        end
+        DropdownFunc.Value = nil
+        DropdownFunc.Options = {}
+        optionLabel.Text = "Select Option"
+    end
+    
+    function DropdownFunc:AddOption(option)
+        local label, value
+        if typeof(option) == "table" and option.Label and option.Value ~= nil then
+            label = tostring(option.Label)
+            value = option.Value
+        else
+            label = tostring(option)
+            value = option
+        end
+        
+        local optionFrame = new("Frame", {
+            Parent = scrollSelect,
+            BackgroundColor3 = colors.bg3,
+            BackgroundTransparency = 0.5,
+            Size = UDim2.new(1, 0, 0, 26),
+            Name = "Option",
+            ZIndex = 155
+        })
+        new("UICorner", {Parent = optionFrame, CornerRadius = UDim.new(0, 4)})
+        
+        local optionButton = new("TextButton", {
+            Parent = optionFrame,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 1, 0),
+            Text = "",
+            ZIndex = 156
+        })
+        
+        local optText = new("TextLabel", {
+            Parent = optionFrame,
+            Font = Enum.Font.GothamBold,
+            Text = label,
+            TextSize = fontSize.small,
+            TextColor3 = colors.text,
+            Position = UDim2.new(0, 8, 0, 0),
+            Size = UDim2.new(1, -16, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            Name = "OptionText",
+            ZIndex = 156
+        })
+        
+        optionFrame:SetAttribute("RealValue", value)
+        
+        local chooseFrame = new("Frame", {
+            Parent = optionFrame,
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundColor3 = colors.primary,
+            Position = UDim2.new(0, 2, 0.5, 0),
+            Size = UDim2.new(0, 0, 0, 0),
+            Name = "ChooseFrame",
+            ZIndex = 156
+        })
+        new("UIStroke", {Parent = chooseFrame, Color = colors.primary, Thickness = 1.6, Transparency = 0.999})
+        new("UICorner", {Parent = chooseFrame})
+        
+        optionButton.Activated:Connect(function()
+            DropdownFunc.Value = value
+            DropdownFunc:Set(DropdownFunc.Value)
+        end)
+    end
+    
+    function DropdownFunc:Set(Value)
+        DropdownFunc.Value = Value
+        
+        if configPath then
+            Library.ConfigSystem.Set(configPath, Value)
+            MarkDirty()
+        end
+        
+        local texts = {}
+        for _, opt in scrollSelect:GetChildren() do
+            if opt.Name == "Option" and opt:FindFirstChild("OptionText") then
+                local v = opt:GetAttribute("RealValue")
+                local selected = (DropdownFunc.Value == v)
+                
+                if selected then
+                    opt.ChooseFrame.Size = UDim2.new(0, 1, 0, 12)
+                    opt.ChooseFrame.UIStroke.Transparency = 0
+                    opt.BackgroundTransparency = 0.935
+                    table.insert(texts, opt.OptionText.Text)
+                else
+                    opt.ChooseFrame.Size = UDim2.new(0, 0, 0, 0)
+                    opt.ChooseFrame.UIStroke.Transparency = 0.999
+                    opt.BackgroundTransparency = 0.999
+                end
+            end
+        end
+        
+        optionLabel.Text = (#texts == 0) and "Select Option" or table.concat(texts, ", ")
+        
+        if onSelect then
+            local str = (DropdownFunc.Value ~= nil) and tostring(DropdownFunc.Value) or ""
+            onSelect(str)
+        end
+    end
+    
+    function DropdownFunc:SetValue(val)
+        self:Set(val)
+    end
+    
+    function DropdownFunc:GetValue()
+        return self.Value
+    end
+    
+    function DropdownFunc:SetValues(newList, selecting)
+        newList = newList or {}
+        selecting = selecting or nil
+        DropdownFunc:Clear()
+        
+        for _, opt in ipairs(newList) do
+            DropdownFunc:AddOption(opt)
+        end
+        DropdownFunc.Options = newList
+        DropdownFunc:Set(selecting)
+    end
+    
+    function DropdownFunc:Refresh(newList)
+        self:SetValues(newList, nil)
+    end
+    
+    searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        local query = string.lower(searchBox.Text)
+        for _, option in pairs(scrollSelect:GetChildren()) do
+            if option.Name == "Option" and option:FindFirstChild("OptionText") then
+                local text = string.lower(option.OptionText.Text)
+                option.Visible = query == "" or string.find(text, query, 1, true)
+            end
+        end
+        scrollSelect.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+    end)
+    
+    dropdownButton.Activated:Connect(function()
+        self:_showDropdown(dropdownLayoutOrder)
+    end)
+    
+    DropdownFunc:SetValues(items, savedValue)
+    
+    if configPath then RegisterCallback(configPath, onSelect, "dropdown", defaultValue) end
+    
+    if uniqueId then
+        self.flags[uniqueId] = DropdownFunc
+    end
+    
+    return dropdownFrame
+end
+
+function Library:CreateMultiDropdown(parent, title, imageId, items, configPath, onSelect, uniqueId, defaultValues)
+    self:_initDropdownSystem()
+    
+    local dropdownLayoutOrder = self._dropdownCount
+    self._dropdownCount = self._dropdownCount + 1
+    
+    local dropdownFrame = new("Frame", {
+        Parent = parent,
+        Size = UDim2.new(1, 0, 0, 28),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 7,
+        Name = uniqueId or "MultiDropdown"
+    })
+    
+    local dropdownButton = new("TextButton", {
+        Parent = dropdownFrame,
+        Text = "",
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 1, 0),
+        ZIndex = 8
+    })
+    
+    local dropdownTitle = new("TextLabel", {
+        Parent = dropdownFrame,
+        Font = Enum.Font.GothamBold,
+        Text = title or "Multi Select",
+        TextColor3 = colors.text,
+        TextSize = fontSize.small,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0.5, 0, 1, 0),
+        ZIndex = 8
+    })
+    
+    local selectFrame = new("Frame", {
+        Parent = dropdownFrame,
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundColor3 = colors.bg3,
+        BackgroundTransparency = 0.3,
+        Position = UDim2.new(1, 0, 0.5, 0),
+        Size = UDim2.new(0.48, 0, 0, 22),
+        LayoutOrder = dropdownLayoutOrder,
+        ZIndex = 8
+    })
+    new("UICorner", {Parent = selectFrame, CornerRadius = UDim.new(0, 6)})
+    
+    local optionLabel = new("TextLabel", {
+        Parent = selectFrame,
+        Font = Enum.Font.GothamBold,
+        Text = "Select Options",
+        TextColor3 = colors.textDim,
+        TextSize = fontSize.small,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        AnchorPoint = Vector2.new(0, 0.5),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 8, 0.5, 0),
+        Size = UDim2.new(1, -24, 1, 0),
+        ZIndex = 9
+    })
+    
+    local optionImg = new("ImageLabel", {
+        Parent = selectFrame,
+        Image = "rbxassetid://6031091004",
+        ImageColor3 = colors.textDim,
+        AnchorPoint = Vector2.new(1, 0.5),
+        BackgroundTransparency = 1,
+        Position = UDim2.new(1, -4, 0.5, 0),
+        Size = UDim2.new(0, 12, 0, 12),
+        ZIndex = 9
+    })
+    
+    local dropdownContainer = new("Frame", {
+        Parent = self._dropdownFolder,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        LayoutOrder = dropdownLayoutOrder
+    })
+    
+    local searchBox = new("TextBox", {
+        Parent = dropdownContainer,
+        PlaceholderText = "Search...",
+        Font = Enum.Font.GothamBold,
+        Text = "",
+        TextSize = fontSize.small,
+        TextColor3 = colors.text,
+        PlaceholderColor3 = colors.textDimmer,
+        BackgroundColor3 = colors.bg3,
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, -8, 0, 24),
+        Position = UDim2.new(0, 4, 0, 4),
+        ClearTextOnFocus = false,
+        ZIndex = 154
+    })
+    new("UICorner", {Parent = searchBox, CornerRadius = UDim.new(0, 6)})
+    new("UIPadding", {Parent = searchBox, PaddingLeft = UDim.new(0, 8)})
+    
+    local scrollSelect = new("ScrollingFrame", {
+        Parent = dropdownContainer,
+        Size = UDim2.new(1, -8, 1, -36),
+        Position = UDim2.new(0, 4, 0, 32),
+        ScrollBarImageTransparency = 0.5,
+        ScrollBarImageColor3 = colors.primary,
+        BorderSizePixel = 0,
+        BackgroundTransparency = 1,
+        ScrollBarThickness = 3,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        ZIndex = 154
+    })
+    
+    local listLayout = new("UIListLayout", {
+        Parent = scrollSelect,
+        Padding = UDim.new(0, 3),
+        SortOrder = Enum.SortOrder.LayoutOrder
+    })
+    
+    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        scrollSelect.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+    end)
+    
+    local configKey = configPath and configPath:gsub("%.", "_") or ("MultiDropdown_" .. (title or "MultiDropdown"))
+    local savedValues = configPath and Library.ConfigSystem.Get(configPath, defaultValues or {}) or (defaultValues or {})
+    if type(savedValues) ~= "table" then savedValues = {} end
+    
+    local DropdownFunc = { Value = savedValues, Options = items }
+    
+    function DropdownFunc:Clear()
+        for _, child in scrollSelect:GetChildren() do
+            if child.Name == "Option" then
+                child:Destroy()
+            end
+        end
+        DropdownFunc.Value = {}
+        DropdownFunc.Options = {}
+        optionLabel.Text = "Select Options"
+    end
+    
+    function DropdownFunc:AddOption(option)
+        local label, value
+        if typeof(option) == "table" and option.Label and option.Value ~= nil then
+            label = tostring(option.Label)
+            value = option.Value
+        else
+            label = tostring(option)
+            value = option
+        end
+        
+        local optionFrame = new("Frame", {
+            Parent = scrollSelect,
+            BackgroundColor3 = colors.bg3,
+            BackgroundTransparency = 0.5,
+            Size = UDim2.new(1, 0, 0, 26),
+            Name = "Option",
+            ZIndex = 155
+        })
+        new("UICorner", {Parent = optionFrame, CornerRadius = UDim.new(0, 4)})
+        
+        local optionButton = new("TextButton", {
+            Parent = optionFrame,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 1, 0),
+            Text = "",
+            ZIndex = 156
+        })
+        
+        local optText = new("TextLabel", {
+            Parent = optionFrame,
+            Font = Enum.Font.GothamBold,
+            Text = label,
+            TextSize = fontSize.small,
+            TextColor3 = colors.text,
+            Position = UDim2.new(0, 8, 0, 0),
+            Size = UDim2.new(1, -16, 1, 0),
+            BackgroundTransparency = 1,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            Name = "OptionText",
+            ZIndex = 156
+        })
+        
+        optionFrame:SetAttribute("RealValue", value)
+        
+        local chooseFrame = new("Frame", {
+            Parent = optionFrame,
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundColor3 = colors.primary,
+            Position = UDim2.new(0, 2, 0.5, 0),
+            Size = UDim2.new(0, 0, 0, 0),
+            Name = "ChooseFrame",
+            ZIndex = 156
+        })
+        new("UIStroke", {Parent = chooseFrame, Color = colors.primary, Thickness = 1.6, Transparency = 0.999})
+        new("UICorner", {Parent = chooseFrame})
+        
+        optionButton.Activated:Connect(function()
+            if not table.find(DropdownFunc.Value, value) then
+                table.insert(DropdownFunc.Value, value)
+            else
+                for i, v in pairs(DropdownFunc.Value) do
+                    if v == value then
+                        table.remove(DropdownFunc.Value, i)
+                        break
+                    end
+                end
+            end
+            DropdownFunc:Set(DropdownFunc.Value)
+        end)
+    end
+    
+    function DropdownFunc:Set(Value)
+        if type(Value) ~= "table" then Value = {} end
+        DropdownFunc.Value = Value
+        
+        if configPath then
+            Library.ConfigSystem.Set(configPath, Value)
+            MarkDirty()
+        end
+        
+        local texts = {}
+        for _, opt in scrollSelect:GetChildren() do
+            if opt.Name == "Option" and opt:FindFirstChild("OptionText") then
+                local v = opt:GetAttribute("RealValue")
+                local selected = table.find(DropdownFunc.Value, v)
+                
+                if selected then
+                    opt.ChooseFrame.Size = UDim2.new(0, 1, 0, 12)
+                    opt.ChooseFrame.UIStroke.Transparency = 0
+                    opt.BackgroundTransparency = 0.935
+                    table.insert(texts, opt.OptionText.Text)
+                else
+                    opt.ChooseFrame.Size = UDim2.new(0, 0, 0, 0)
+                    opt.ChooseFrame.UIStroke.Transparency = 0.999
+                    opt.BackgroundTransparency = 0.999
+                end
+            end
+        end
+        
+        optionLabel.Text = (#texts == 0) and "Select Options" or table.concat(texts, ", ")
+        
+        if onSelect then
+            onSelect(DropdownFunc.Value)
+        end
+    end
+    
+    function DropdownFunc:SetValue(val)
+        self:Set(val)
+    end
+    
+    function DropdownFunc:GetValue()
+        return self.Value
+    end
+    
+    function DropdownFunc:SetValues(newList, selecting)
+        newList = newList or {}
+        selecting = selecting or {}
+        if type(selecting) ~= "table" then selecting = {} end
+        DropdownFunc:Clear()
+        
+        for _, opt in ipairs(newList) do
+            DropdownFunc:AddOption(opt)
+        end
+        DropdownFunc.Options = newList
+        DropdownFunc:Set(selecting)
+    end
+    
+    function DropdownFunc:Refresh(newList)
+        self:SetValues(newList, {})
+    end
+    
+    searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        local query = string.lower(searchBox.Text)
+        for _, option in pairs(scrollSelect:GetChildren()) do
+            if option.Name == "Option" and option:FindFirstChild("OptionText") then
+                local text = string.lower(option.OptionText.Text)
+                option.Visible = query == "" or string.find(text, query, 1, true)
+            end
+        end
+        scrollSelect.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+    end)
+    
+    dropdownButton.Activated:Connect(function()
+        self:_showDropdown(dropdownLayoutOrder)
+    end)
+    
+    DropdownFunc:SetValues(items, savedValues)
+    
+    if uniqueId then
+        self.flags[uniqueId] = DropdownFunc
+    end
+    
+    return dropdownFrame
+end
+
+function Library:CreateInput(parent, label, configPath, defaultValue, callback)
+    local frame = new("Frame", {Parent = parent, Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1, ZIndex = 7})
+    
+    new("TextLabel", {
+        Parent = frame,
+        Text = label,
+        Size = UDim2.new(0.52, 0, 1, 0),
+        BackgroundTransparency = 1,
+        TextColor3 = colors.text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.small,
+        ZIndex = 8
+    })
+    
+    local inputBg = new("Frame", {
+        Parent = frame,
+        Size = UDim2.new(0.45, 0, 0, 26),
+        Position = UDim2.new(0.55, 0, 0.5, -13),
+        BackgroundColor3 = colors.bg3,
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        ZIndex = 8
+    })
+    new("UICorner", {Parent = inputBg, CornerRadius = UDim.new(0, 6)})
+    
+    local initialValue = Library.ConfigSystem.Get(configPath, defaultValue)
+    local inputBox = new("TextBox", {
+        Parent = inputBg,
+        Size = UDim2.new(1, -10, 1, 0),
+        Position = UDim2.new(0, 5, 0, 0),
+        BackgroundTransparency = 1,
+        Text = tostring(initialValue),
+        PlaceholderText = "0.00",
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.small,
+        TextColor3 = colors.text,
+        PlaceholderColor3 = colors.textDimmer,
+        TextXAlignment = Enum.TextXAlignment.Center,
+        ClearTextOnFocus = false,
+        ZIndex = 9
+    })
+    
+    local function resolveValue(text)
+        local num = tonumber(text)
+        return num or text
+    end
+
+    inputBox.FocusLost:Connect(function()
+        local rawValue = inputBox.Text
+        local value = resolveValue(rawValue)
+        
+        if configPath then
+            Library.ConfigSystem.Set(configPath, value)
+            MarkDirty()
+        end
+        if callback then callback(value) end
+    end)
+    
+    RegisterCallback(configPath, callback, "input", defaultValue)
+    return frame
+end
+
+function Library:CreateButton(parent, label, callback)
+    local btnFrame = new("Frame", {
+        Parent = parent,
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundColor3 = colors.primary,
+        BackgroundTransparency = 0.15,
+        BorderSizePixel = 0,
+        ZIndex = 8
+    })
+    new("UICorner", {Parent = btnFrame, CornerRadius = UDim.new(0, 7)})
+    
+    local button = new("TextButton", {
+        Parent = btnFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = label,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.normal,
+        TextColor3 = colors.text,
+        AutoButtonColor = false,
+        ZIndex = 9
+    })
+    
+    local clicking = false
+    button.MouseButton1Click:Connect(function()
+        if clicking then return end
+        clicking = true
+        
+        local tweenIn = TweenService:Create(btnFrame, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = 0,
+            Size = UDim2.new(1, -4, 0, 28)
+        })
+        tweenIn:Play()
+        tweenIn.Completed:Wait()
+        
+        pcall(callback)
+        
+        local tweenOut = TweenService:Create(btnFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = 0.15,
+            Size = UDim2.new(1, 0, 0, 30)
+        })
+        tweenOut:Play()
+        tweenOut.Completed:Wait()
+        
+        clicking = false
+    end)
+    return btnFrame
+end
+
+function Library:CreateTextBox(parent, label, placeholder, configPath, defaultValue, callback)
+    local container = new("Frame", {
+        Parent = parent,
+        Size = UDim2.new(1, 0, 0, 50),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 7
+    })
+    
+    new("TextLabel", {
+        Parent = container,
+        Size = UDim2.new(1, 0, 0, 14),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1,
+        Text = label,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.small,
+        TextColor3 = colors.text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 8
+    })
+    
+    local initialValue = configPath and Library.ConfigSystem.Get(configPath, defaultValue) or (defaultValue or "")
+    
+    local textBox = new("TextBox", {
+        Parent = container,
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 0, 0, 18),
+        BackgroundColor3 = colors.bg3,
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
+        Text = tostring(initialValue),
+        PlaceholderText = placeholder or "",
+        Font = Enum.Font.Gotham,
+        TextSize = fontSize.small,
+        TextColor3 = colors.text,
+        PlaceholderColor3 = colors.textDimmer,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
+        ClipsDescendants = true,
+        ClearTextOnFocus = false,
+        ZIndex = 8
+    })
+    new("UICorner", {Parent = textBox, CornerRadius = UDim.new(0, 7)})
+    new("UIPadding", {Parent = textBox, PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8)})
+    
+    local lastValue = initialValue
+    textBox.FocusLost:Connect(function()
+        local value = textBox.Text
+        if value ~= lastValue then
+            lastValue = value
+            if configPath then
+                Library.ConfigSystem.Set(configPath, value)
+                MarkDirty()
+            end
+            if callback then callback(value) end
+        end
+    end)
+    
+    if configPath then RegisterCallback(configPath, callback, "input", defaultValue) end
+    
+    return {Container = container, TextBox = textBox, SetValue = function(v) textBox.Text = tostring(v) lastValue = tostring(v) end}
+end
+
+function Library:Initialize()
+    ExecuteConfigCallbacks()
+    
+    Players.PlayerRemoving:Connect(function(plr)
+        if plr == localPlayer then
+            Library.ConfigSystem.Save()
+        end
+    end)
+end
+
+function Library:LoadConfig(data)
+    if type(data) ~= "table" then return end
+    CurrentConfig = data
+    ExecuteConfigCallbacks()
+    Library.ConfigSystem.Save()
+end
+
+function Library:MakeNotify(config)
+    config = config or {}
+    local title = config.Title or "Notification"
+    local desc = config.Description or ""
+    local content = config.Content or ""
+    local color = config.Color or colors.primary
+    local delay = config.Delay or 3
+    
+    if not self._gui then return end
+    
+    local notif = new("Frame", {
+        Parent = self._gui,
+        Size = UDim2.new(0, 270, 0, 65),
+        Position = UDim2.new(1, -280, 1, -75),
+        BackgroundColor3 = colors.bg2,
+        BackgroundTransparency = 0.05,
+        BorderSizePixel = 0,
+        ZIndex = 200
+    })
+    new("UICorner", {Parent = notif, CornerRadius = UDim.new(0, 8)})
+    
+    local accent = new("Frame", {
+        Parent = notif,
+        Size = UDim2.new(0, 3, 1, -8),
+        Position = UDim2.new(0, 4, 0, 4),
+        BackgroundColor3 = color,
+        BorderSizePixel = 0,
+        ZIndex = 201
+    })
+    new("UICorner", {Parent = accent, CornerRadius = UDim.new(1, 0)})
+    
+    new("TextLabel", {
+        Parent = notif,
+        Text = title,
+        Size = UDim2.new(1, -18, 0, 16),
+        Position = UDim2.new(0, 12, 0, 5),
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.normal,
+        TextColor3 = color,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 201
+    })
+    
+    new("TextLabel", {
+        Parent = notif,
+        Text = desc,
+        Size = UDim2.new(1, -18, 0, 12),
+        Position = UDim2.new(0, 12, 0, 22),
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        TextSize = fontSize.small,
+        TextColor3 = colors.text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 201
+    })
+    
+    new("TextLabel", {
+        Parent = notif,
+        Text = content,
+        Size = UDim2.new(1, -18, 0, 22),
+        Position = UDim2.new(0, 12, 0, 36),
+        BackgroundTransparency = 1,
+        Font = Enum.Font.Gotham,
+        TextSize = fontSize.small,
+        TextColor3 = colors.textDim,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextWrapped = true,
+        ZIndex = 201
+    })
+    
+    task.delay(delay, function()
+        if notif and notif.Parent then
+            notif:Destroy()
+        end
+    end)
+end
+
+function Library:_createConfigTab()
+    local configPage = self:CreatePage("Config", "Configuration", "rbxassetid://70386228443175", 9999)
+
+    local autoSaveSection = self:CreateCategory(configPage, "Auto Save")
+
+    -- AUTO SAVE TOGGLE DEFAULTS TO FALSE
+    self:CreateToggle(
+        autoSaveSection,
+        "Auto Save Config",
+        nil,
+        function(val)
+            _G.AutoSaveEnabled = val
+            self:MakeNotify({
+                Title = "Auto Save",
+                Description = val and "Auto Save diaktifkan" or "Auto Save dinonaktifkan",
+                Delay = 2,
+            })
+        end,
+        true,
+        false -- Changed from true to false
+    )
+
+    local mgmtSection = self:CreateCategory(configPage, "Config Management")
+
+    self:CreateButton(mgmtSection, "Save Config Now", function()
+        local ok = Library.ConfigSystem.Save()
+        self:MakeNotify({
+            Title = "Config",
+            Description = ok and "Config berhasil disimpan!" or "Gagal menyimpan config.",
+            Color = ok and colors.success or Color3.fromRGB(220, 50, 50),
+            Delay = 2,
+        })
+    end)
+
+    local confirmReset = false
+    local confirmThread = nil
+    local resetBtnFrame = self:CreateButton(mgmtSection, "Reset to Default", function()
+        if not confirmReset then
+            confirmReset = true
+            local btn = resetBtnFrame:FindFirstChildWhichIsA("TextButton")
+            if btn then btn.Text = "Klik lagi untuk konfirmasi!" end
+            resetBtnFrame.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
+            if confirmThread then task.cancel(confirmThread) end
+            confirmThread = task.delay(3, function()
+                confirmReset = false
+                if btn then btn.Text = "Reset to Default" end
+                resetBtnFrame.BackgroundColor3 = colors.primary
+            end)
+        else
+            if confirmThread then task.cancel(confirmThread) end
+            confirmReset = false
+            local btn = resetBtnFrame:FindFirstChildWhichIsA("TextButton")
+            if btn then btn.Text = "Reset to Default" end
+            resetBtnFrame.BackgroundColor3 = colors.primary
+            Library.ConfigSystem.Reset()
+            ExecuteConfigCallbacks()
+            self:MakeNotify({
+                Title = "Config",
+                Description = "Semua settingan direset ke default!",
+                Color = Color3.fromRGB(220, 50, 50),
+                Delay = 3,
+            })
+        end
+    end)
+    local confirmDelete = false
+    local confirmDeleteThread = nil
+    local deleteBtnFrame = self:CreateButton(mgmtSection, "Delete Config File", function()
+        if not confirmDelete then
+            confirmDelete = true
+            local btn = deleteBtnFrame:FindFirstChildWhichIsA("TextButton")
+            if btn then btn.Text = "Klik lagi untuk konfirmasi!" end
+            deleteBtnFrame.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+            if confirmDeleteThread then task.cancel(confirmDeleteThread) end
+            confirmDeleteThread = task.delay(3, function()
+                confirmDelete = false
+                if btn then btn.Text = "Delete Config File" end
+                deleteBtnFrame.BackgroundColor3 = colors.primary
+            end)
+        else
+            if confirmDeleteThread then task.cancel(confirmDeleteThread) end
+            confirmDelete = false
+            local btn = deleteBtnFrame:FindFirstChildWhichIsA("TextButton")
+            if btn then btn.Text = "Delete Config File" end
+            deleteBtnFrame.BackgroundColor3 = colors.primary
+            Library.ConfigSystem.Delete()
+            self:MakeNotify({
+                Title = "Config",
+                Description = "File config telah dihapus.",
+                Color = Color3.fromRGB(220, 50, 50),
+                Delay = 2,
+            })
+        end
+    end)
+end
+
+-- SISANYA SAMA SEPERTI ASLINYA...
+-- (Lanjutkan kode AddTab, AddSection, dll dari file asli Anda)
+
+function Library:Window(config)
+    config = config or {}
+    
+    Library.ConfigSystem.Load()
+    
+    self:CreateWindow({
+        Name = "LynxGui",
+        Title = config.Title or "LynX",
+        Subtitle = config.Footer or ""
+    })
+    
+    local WindowObject = {}
+    WindowObject._library = self
+    WindowObject._tabs = {}
+    WindowObject._tabOrder = 0
+    WindowObject._initialized = false
+    
+    task.delay(0.5, function()
+        if not WindowObject._initialized then
+            WindowObject._initialized = true
+            Library:Initialize()
+        end
+    end)
+    
+    function WindowObject:AddTab(tabConfig)
+        tabConfig = tabConfig or {}
+        local tabName = tabConfig.Name or "Tab"
+        local tabIcon = tabConfig.Icon or ""
+        
+        local iconMap = {
+            ["player"] = "rbxassetid://12120698352",
+            ["web"] = "rbxassetid://137601480983962",
+            ["bag"] = "rbxassetid://8601111810",
+            ["shop"] = "rbxassetid://4985385964",
+            ["cart"] = "rbxassetid://128874923961846",
+            ["plug"] = "rbxassetid://137601480983962",
+            ["settings"] = "rbxassetid://70386228443175",
+            ["loop"] = "rbxassetid://122032243989747",
+            ["gps"] = "rbxassetid://78381660144034",
+            ["compas"] = "rbxassetid://125300760963399",
+            ["gamepad"] = "rbxassetid://84173963561612",
+            ["boss"] = "rbxassetid://13132186360",
+            ["scroll"] = "rbxassetid://114127804740858",
+            ["menu"] = "rbxassetid://6340513838",
+            ["crosshair"] = "rbxassetid://12614416478",
+            ["user"] = "rbxassetid://108483430622128",
+            ["stat"] = "rbxassetid://12094445329",
+            ["eyes"] = "rbxassetid://14321059114",
+            ["sword"] = "rbxassetid://82472368671405",
+            ["discord"] = "rbxassetid://94434236999817",
+            ["star"] = "rbxassetid://107005941750079",
+            ["skeleton"] = "rbxassetid://17313330026",
+            ["payment"] = "rbxassetid://18747025078",
+            ["scan"] = "rbxassetid://109869955247116",
+            ["alert"] = "rbxassetid://73186275216515",
+            ["question"] = "rbxassetid://17510196486",
+            ["idea"] = "rbxassetid://16833255748",
+            ["strom"] = "rbxassetid://13321880293",
+            ["water"] = "rbxassetid://100076212630732",
+            ["dcs"] = "rbxassetid://15310731934",
+            ["start"] = "rbxassetid://108886429866687",
+            ["next"] = "rbxassetid://12662718374",
+            ["rod"] = "rbxassetid://103247953194129",
+            ["fish"] = "rbxassetid://97167558235554",
+            ["send"] = "rbxassetid://122775063389583",
+            ["home"] = "rbxassetid://86450224791749",
+        }
+        
+        local iconId = ""
+        if tabIcon and tabIcon ~= "" then
+            iconId = iconMap[tabIcon:lower()] or ""
+        end
+        self._library._tabOrder = (self._library._tabOrder or 0) + 1
+        
+        local page = self._library:CreatePage(tabName, tabName, iconId, self._library._tabOrder)
+
+        local TabObject = {}
+        TabObject._page = page
+        TabObject._library = self._library
+        TabObject._sections = {}
+        
+        function TabObject:AddSection(sectionTitle, isOpen)
+            sectionTitle = sectionTitle or "Section"
+            
+            local category = self._library:CreateCategory(self._page, sectionTitle)
+            
+            local SectionObject = {}
+            SectionObject._container = category
+            SectionObject._library = self._library
+            SectionObject._layoutOrder = 0
+            
+            local function getNextLayoutOrder()
+                SectionObject._layoutOrder = SectionObject._layoutOrder + 1
+                return SectionObject._layoutOrder
+            end
+            
+            function SectionObject:AddToggle(toggleConfig)
+                toggleConfig = toggleConfig or {}
+                local title = toggleConfig.Title or "Toggle"
+                local default = toggleConfig.Default or false
+                local callback = toggleConfig.Callback
+                local noSave = toggleConfig.NoSave or false
+                local configPath = noSave and nil or ("Toggles." .. title:gsub("%s+", "_"))
+                
+                local frame = self._library:CreateToggle(self._container, title, configPath, callback, noSave, default)
+                if frame then frame.LayoutOrder = getNextLayoutOrder() end
+                
+                local toggleObj = {
+                    _value = default,
+                    SetValue = function(self, val)
+                        self._value = val
+                        if callback then callback(val) end
+                    end,
+                    GetValue = function(self)
+                        return self._value
+                    end
+                }
+                return toggleObj
+            end
+            
+            function SectionObject:AddDropdown(dropdownConfig)
+                dropdownConfig = dropdownConfig or {}
+                local title = dropdownConfig.Title or "Dropdown"
+                local options = dropdownConfig.Options or {}
+                local default = dropdownConfig.Default
+                local callback = dropdownConfig.Callback
+                local noSave = dropdownConfig.NoSave or false
+                local isMulti = dropdownConfig.Multi or false
+                local configPath = noSave and nil or ((isMulti and "MultiDropdowns." or "Dropdowns.") .. title:gsub("%s+", "_"))
+                local uniqueId = title:gsub("%s+", "_")
+                
+                if isMulti then
+                    local frame = self._library:CreateMultiDropdown(self._container, title, nil, options, configPath, callback, uniqueId)
+                    if frame then frame.LayoutOrder = getNextLayoutOrder() end
+                    
+                    local dropdownObj = {
+                        _options = options,
+                        SetOptions = function(self, newOptions)
+                            self._options = newOptions
+                            local flagObj = Library.flags[uniqueId]
+                            if flagObj and flagObj.Refresh then
+                                flagObj:Refresh(newOptions)
+                            end
+                        end
+                    }
+                    return dropdownObj
+                end
+                
+                if default and configPath then
+                    local current = Library.ConfigSystem.Get(configPath, nil)
+                    if current == nil then
+                        Library.ConfigSystem.Set(configPath, default)
+                    end
+                end
+                
+                local frame = self._library:CreateDropdown(self._container, title, nil, options, configPath, callback, uniqueId, default)
+                if frame then frame.LayoutOrder = getNextLayoutOrder() end
+                
+                local dropdownObj = {
+                    _options = options,
+                    SetOptions = function(self, newOptions)
+                        self._options = newOptions
+                        local flagObj = Library.flags[uniqueId]
+                        if flagObj and flagObj.Refresh then
+                            flagObj:Refresh(newOptions)
+                        end
+                    end,
+                    GetOptions = function(self)
+                        return self._options
+                    end
+                }
+                return dropdownObj
+            end
+            
+            function SectionObject:AddMultiDropdown(dropdownConfig)
+                dropdownConfig = dropdownConfig or {}
+                local title = dropdownConfig.Title or "Multi Select"
+                local options = dropdownConfig.Options or {}
+                local default = dropdownConfig.Default or {}
+                local callback = dropdownConfig.Callback
+                local noSave = dropdownConfig.NoSave or false
+                local configPath = noSave and nil or ("MultiDropdowns." .. title:gsub("%s+", "_"))
+                local uniqueId = title:gsub("%s+", "_")
+                
+                local frame = self._library:CreateMultiDropdown(self._container, title, nil, options, configPath, callback, uniqueId, default)
+                if frame then frame.LayoutOrder = getNextLayoutOrder() end
+                
+                local dropdownObj = {
+                    _options = options,
+                    SetOptions = function(self, newOptions)
+                        self._options = newOptions
+                        local flagObj = Library.flags[uniqueId]
+                        if flagObj and flagObj.Refresh then
+                            flagObj:Refresh(newOptions)
+                        end
+                    end
+                }
+                return dropdownObj
+            end
+            
+            function SectionObject:AddInput(inputConfig)
+                inputConfig = inputConfig or {}
+                local title = inputConfig.Title or "Input"
+                local default = inputConfig.Default or ""
+                local placeholder = inputConfig.Placeholder or ""
+                local callback = inputConfig.Callback
+                local noSave = inputConfig.NoSave or false
+                local configPath = noSave and nil or ("Inputs." .. title:gsub("%s+", "_"))
+                
+                if placeholder ~= "" then
+                    local textBoxObj = self._library:CreateTextBox(self._container, title, placeholder, configPath, default, callback)
+                    if textBoxObj and textBoxObj.Container then textBoxObj.Container.LayoutOrder = getNextLayoutOrder() end
+                    return {
+                        SetValue = function(self, val)
+                            if textBoxObj and textBoxObj.SetValue then
+                                textBoxObj.SetValue(val)
+                            end
+                        end,
+                        GetValue = function(self)
+                            if textBoxObj and textBoxObj.TextBox then
+                                return textBoxObj.TextBox.Text
+                            end
+                            return default
+                        end
+                    }
+                else
+                    local frame = self._library:CreateInput(self._container, title, configPath, default, callback)
+                    if frame then frame.LayoutOrder = getNextLayoutOrder() end
+                    return {
+                        SetValue = function(self, val)
+                        end
+                    }
+                end
+            end
+            
+            function SectionObject:AddButton(buttonConfig)
+                buttonConfig = buttonConfig or {}
+                local title = buttonConfig.Title or "Button"
+                local callback = buttonConfig.Callback or function() end
+                
+                local frame = self._library:CreateButton(self._container, title, callback)
+                if frame then frame.LayoutOrder = getNextLayoutOrder() end
+            end
+            
+            function SectionObject:AddParagraph(paragraphConfig)
+                paragraphConfig = paragraphConfig or {}
+                local title = paragraphConfig.Title or ""
+                local content = paragraphConfig.Content or ""
+                
+                local frame = new("Frame", {
+                    Parent = self._container,
+                    Size = UDim2.new(1, 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    BackgroundTransparency = 1,
+                    ZIndex = 7,
+                    LayoutOrder = getNextLayoutOrder()
+                })
+                
+                local titleLabel = new("TextLabel", {
+                    Parent = frame,
+                    Name = "TitleLabel",
+                    Text = title,
+                    Size = UDim2.new(1, 0, 0, 14),
+                    Position = UDim2.new(0, 0, 0, 0),
+                    BackgroundTransparency = 1,
+                    Font = Enum.Font.GothamBold,
+                    TextSize = fontSize.small,
+                    TextColor3 = colors.text,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 8
+                })
+                
+                local contentLabel = new("TextLabel", {
+                    Parent = frame,
+                    Name = "ContentLabel",
+                    Text = content,
+                    Size = UDim2.new(1, 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    Position = UDim2.new(0, 0, 0, 16),
+                    BackgroundTransparency = 1,
+                    Font = Enum.Font.Gotham,
+                    TextSize = fontSize.small,
+                    TextColor3 = colors.textDim,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextWrapped = true,
+                    ZIndex = 8
+                })
+                
+                local paragraphObj = {
+                    _frame = frame,
+                    _titleLabel = titleLabel,
+                    _contentLabel = contentLabel,
+                    
+                    SetTitle = function(self, newTitle)
+                        if self._titleLabel then
+                            self._titleLabel.Text = newTitle or ""
+                        end
+                    end,
+                    
+                    SetContent = function(self, newContent)
+                        if self._contentLabel then
+                            self._contentLabel.Text = newContent or ""
+                        end
+                    end,
+                    
+                    GetTitle = function(self)
+                        return self._titleLabel and self._titleLabel.Text or ""
+                    end,
+                    
+                    GetContent = function(self)
+                        return self._contentLabel and self._contentLabel.Text or ""
+                    end
+                }
+                
+                return paragraphObj
+            end
+            
+            table.insert(self._sections, SectionObject)
+            return SectionObject
+        end
+        
+        if self._library._tabOrder == 1 then
+            self._library:SetFirstPage(tabName)
+        end
+        
+        table.insert(self._tabs, TabObject)
+        return TabObject
+    end
+    self:_createConfigTab()
+    return WindowObject
+end
+
+Library.Window = Library.Window
+
+return Library
