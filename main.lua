@@ -694,6 +694,26 @@ QuickTpSection:AddButton({
 -- MAIN TAB
 -- ==========================================
 local WalkSection =  AutoWalking:AddSection("🗻 Auto Walk Mountain")
+local jsonData = [[
+[{"jump":false,"hipHeight":5.85,"rotation":0.03,"moveDirection":{"y":0,"x":-0.02,"z":-0.99},"city":{"y":0,"x":-0.86,"z":-45.99},"position":{"y":25.45,"x":-14.15,"z":8.39},"times":0,"walkSpeed":46,"tool":"","states":"Running"}]
+]] 
+
+-- Variabel Kontrol
+_G.AutoWalkMatcha = false
+local waypoints = {}
+
+-- Fungsi Decode JSON
+local function loadData()
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(jsonData)
+    end)
+    if success then
+        waypoints = result
+        return #waypoints
+    else
+        return 0
+    end
+end
 
 local MountainRoute = {}
 _G.AutoWalkSpeed = 25 
@@ -855,6 +875,89 @@ WalkSection:AddButton({
     end
 })
 
+WalkSection:AddToggle({
+    Title = "Start Matcha Autowalk",
+    Description = "Mengikuti rute presisi dari file JSON",
+    Default = false,
+    Callback = function(v)
+        _G.AutoWalkMatcha = v
+        
+        if v then
+            task.spawn(function()
+                local total = loadData()
+                if total == 0 then 
+                    Library:MakeNotify({ Title = "Error", Content = "Data JSON tidak valid atau kosong!" })
+                    return 
+                end
+
+                Library:MakeNotify({ Title = "MDW HUB", Content = "Memulai Jalur Matcha: " .. total .. " Waypoints" })
+
+                -- 1. Physics Setup (NoClip & PlatformStand agar mulus)
+                local ncLoop = RunService.Stepped:Connect(function()
+                    if _G.AutoWalkMatcha and LocalPlayer.Character then
+                        for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
+                            if p:IsA("BasePart") then p.CanCollide = false end
+                        end
+                    end
+                end)
+
+                local char = LocalPlayer.Character
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                local root = char:FindFirstChild("HumanoidRootPart")
+
+                if hum then hum.PlatformStand = true end 
+
+                -- 2. Loop Mengikuti Jalur
+                for i, data in ipairs(waypoints) do
+                    if not _G.AutoWalkMatcha or hum.Health <= 0 then break end
+
+                    local pos = data.position
+                    local targetCFrame = CFrame.new(pos.x, pos.y, pos.z)
+                    
+                    -- Kecepatan diambil dari data JSON (walkSpeed: 46)
+                    local speed = data.walkSpeed or 30
+                    local distance = (root.Position - targetCFrame.Position).Magnitude
+                    local duration = distance / speed
+
+                    -- Jika dalam data tertulis sedang melompat, buat karakter sedikit menghadap ke atas
+                    local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
+                        CFrame = targetCFrame
+                    })
+                    
+                    tween:Play()
+
+                    -- Deteksi jika titik ini adalah titik lompatan (Optional visual)
+                    if data.jump == true and hum then
+                        hum.Jump = true
+                    end
+
+                    -- Tunggu sampai sampai di titik tersebut (Update sangat cepat karena data waypoint sangat rapat)
+                    local reached = false
+                    local finished = tween.Completed:Connect(function() reached = true end)
+
+                    repeat task.wait() until reached or not _G.AutoWalkMatcha
+                    finished:Disconnect()
+                end
+
+                -- 3. Cleanup
+                if ncLoop then ncLoop:Disconnect() end
+                if hum then hum.PlatformStand = false end
+                _G.AutoWalkMatcha = false
+                Library:MakeNotify({ Title = "Finish", Content = "Tiba di Puncak Matcha!" })
+            end)
+        end
+    end
+})
+
+WalkSection:AddButton({
+    Title = "Stop Autowalk",
+    Callback = function()
+        _G.AutoWalkMatcha = false
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").PlatformStand = false
+        end
+    end
+})
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
