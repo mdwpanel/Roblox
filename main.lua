@@ -718,6 +718,48 @@ QuickTpSection:AddButton({
         end
     end
 })
+
+QuickTpSection:AddSlider({
+    Title = "Hitbox Expander",
+    Min = 2,
+    Max = 20,
+    Default = 2, 
+    Callback = function(v) 
+        hbSize = v 
+    end
+})
+
+QuickTpSection:AddToggle({
+    Title = "Enable Hitbox",
+    Default = false,
+    Callback = function(v)
+        _G.Hitbox = v
+        if v then
+            task.spawn(function()
+                while _G.Hitbox do
+                    for _, p in pairs(game.Players:GetPlayers()) do
+                        if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            local hrp = p.Character.HumanoidRootPart
+                            hrp.Size = Vector3.new(hbSize, hbSize, hbSize)
+                            hrp.Transparency = 0.7
+                            hrp.Color = Color3.new(1, 0, 0)
+                            hrp.CanCollide = false
+                        end
+                    end
+                    task.wait(1)
+                end
+            end)
+        else
+            -- RESET: Mengembalikan ukuran hitbox ke normal saat dimatikan
+            for _, p in pairs(game.Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
+                    p.Character.HumanoidRootPart.Transparency = 1
+                end
+            end
+        end
+    end
+})
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
@@ -1468,50 +1510,6 @@ UtilSection:AddToggle({
     end
 })
 
-local UtilSection = MainTab:AddSection("🛠️ Utilities")
-
-UtilSection:AddSlider({
-    Title = "Hitbox Expander",
-    Min = 2,
-    Max = 20,
-    Default = 2, 
-    Callback = function(v) 
-        hbSize = v 
-    end
-})
-
-UtilSection:AddToggle({
-    Title = "Enable Hitbox",
-    Default = false,
-    Callback = function(v)
-        _G.Hitbox = v
-        if v then
-            task.spawn(function()
-                while _G.Hitbox do
-                    for _, p in pairs(game.Players:GetPlayers()) do
-                        if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                            local hrp = p.Character.HumanoidRootPart
-                            hrp.Size = Vector3.new(hbSize, hbSize, hbSize)
-                            hrp.Transparency = 0.7
-                            hrp.Color = Color3.new(1, 0, 0)
-                            hrp.CanCollide = false
-                        end
-                    end
-                    task.wait(1)
-                end
-            end)
-        else
-            -- RESET: Mengembalikan ukuran hitbox ke normal saat dimatikan
-            for _, p in pairs(game.Players:GetPlayers()) do
-                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
-                    p.Character.HumanoidRootPart.Transparency = 1
-                end
-            end
-        end
-    end
-})
-
 -- ================= SECTION: FIND OBJECTS =================
 local FindSection = GameTab:AddSection("🎯 Find Objects & Debug")
 
@@ -1803,7 +1801,7 @@ ThemeSection:AddDropdown({
         pcall(function() Window:SetTheme(v) end)
     end 
 })
-
+ 
 -- ================= SECTION: KEYBIND =================
 local keybindSection = SettingsTab:AddSection("⌨️ Keybind")
 
@@ -1865,18 +1863,13 @@ end)
 
 -- [[ TAP TO TELEPORT (PC & MOBILE SUPPORT) ]]
 UserInputService.InputBegan:Connect(function(input, processed)
-    if _G.TapTP and not processed then
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if root then
-                local mousePos = UserInputService:GetMouseLocation()
-                local unitRay = Workspace.CurrentCamera:ViewportPointToRay(mousePos.X, mousePos.Y)
-                local raycastResult = Workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000)
-                
-                if raycastResult then
-                    root.CFrame = CFrame.new(raycastResult.Position + Vector3.new(0, 3, 0))
-                end
-            end
+    if processed then return end -- Jangan aktif jika sedang mengetik di chat
+    
+    if _G.TapTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+        local mouse = LocalPlayer:GetMouse()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            -- Teleport ke posisi klik
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.p + Vector3.new(0, 3, 0))
         end
     end
 end)
