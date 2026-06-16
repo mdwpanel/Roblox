@@ -1,13 +1,6 @@
 --[[
-    ▒▒▒▒▒▒▒▒▒▒ ▒▒▒▒▒ ▒▒▒     
-    ▒▒▒▒▒▒▒▒▒▒ ▒▒▒▒▒ ▒▒▒▒     
-    ▒▒▒▒▒▒▒    ▒▒▒▒▒  ▒▒▒▒▒▒▒ 
-    ▒▒▒▒▒▒▒    ▒▒▒▒▒  ▒▒▒▒▒▒▒ 
-    ▒▒▒▒▒▒     ▒▒▒▒▒  ▒▒▒▒▒▒▒▒▒
-    ▒▒▒▒▒     ▒▒▒▒▒  ▒▒▒▒▒▒▒▒▒▒▒
-    
     FCAL HUB - LYNX GUI EDITION
-    Version: 1.0.6 | Library: LynxGUI (Custom)
+    Version: 1.0.8 | FULL FEATURES + TROLL MOUNTAIN
 --]]
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/mdwpanel/Roblox/refs/heads/main/main_ui_modern.lua"))()
@@ -24,6 +17,7 @@ local TweenService = game:GetService("TweenService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local HttpService = game:GetService("HttpService")
 local TextChatService = game:GetService("TextChatService")
+local CoreGui = game:GetService("CoreGui")
 
 -- Global Variables
 local LocalPlayer = Players.LocalPlayer
@@ -66,6 +60,9 @@ _G.Freecam = false
 _G.Spam = false
 _G.ChatLog = false
 _G.GenESP = false
+_G.MenuVisible = true
+_G.AutoWalk = false
+_G.AutoWalkSpeed = 25
 
 local Config = {
     WalkSpeedDefault = 16,
@@ -76,16 +73,8 @@ local Config = {
 }
 
 -- ==========================================
--- FORWARD DECLARATIONS
+-- ANTI-KICK BYPASS
 -- ==========================================
-local ClearESP, UpdateESP, Notify, GetHumanoid, GetRootPart, GetPlayerByName
-local GetAllPlayers, UpdateWalkSpeedUI, UpdateJumpPowerUI, UpdateGravityUI, UpdateFlySpeedUI
-local GetPlayerRole, GetESPColor, IsGenerator, IsGeneratorCompleted, GetGeneratorProgress
-local CreateESPForPlayer, RemoveESPForPlayer, UpdateESPForPlayer, CreateGeneratorESP
-local UpdateGeneratorESP, RemoveAllGeneratorESP, FindAllGenerators, ClearManualHighlights
-local CheckIfKiller
-
--- [[ ANTI-KICK BYPASS ]]
 local mt = getrawmetatable(game) 
 local oldNamecall = mt.__namecall
 setreadonly(mt, false)
@@ -96,25 +85,16 @@ mt.__namecall = newcclosure(function(self, ...)
 end)
 setreadonly(mt, true)
 
-local UIElements = {
-    WalkSpeedSlider = nil,
-    WalkSpeedInput = nil,
-    JumpPowerSlider = nil,
-    JumpPowerInput = nil,
-    GravitySlider = nil,
-    GravityInput = nil,
-    FlySpeedSlider = nil,
-    FlySpeedInput = nil,
-}
-
--- [[ WINDOW CREATION ]]
+-- ==========================================
+-- WINDOW CREATION
+-- ==========================================
 local Window = Library:Window({
     Title = "MDW",
-    Footer = "v1.0.6 | Client Sided"
+    Footer = "v1.0.8 | Client Sided"
 })
 
 -- ==========================================
--- HELPER FUNCTIONS & ESP CORE LOGIC
+-- HELPER FUNCTIONS
 -- ==========================================
 function ClearESP(player)
     if ESP_Objects[player] then
@@ -188,16 +168,6 @@ function UpdateESP()
     end
 end
 
-RunService.RenderStepped:Connect(function()
-    if _G.BoxESP or _G.LineESP then
-        UpdateESP()
-    else
-        for player, _ in pairs(ESP_Objects) do ClearESP(player) end
-    end
-end)
-
-Players.PlayerRemoving:Connect(ClearESP)
-
 function Notify(title, desc, typ)
     Library:MakeNotify({Title = title, Content = desc, Duration = 3})
 end
@@ -234,29 +204,21 @@ function CheckIfKiller(player)
     local char = player.Character
     if not char then return false end
     
-    -- Check for killer attributes
     if player:GetAttribute("Role") and string.lower(player:GetAttribute("Role")):find("killer") then
         return true
     end
-    
-    -- Check for killer team
     if player.Team and string.lower(player.Team.Name):find("killer") then
         return true
     end
-    
-    -- Check for killer tag in character
     if char:FindFirstChild("Role") and char.Role:IsA("StringValue") and string.lower(char.Role.Value):find("killer") then
         return true
     end
-    
-    -- Check for killer model parts (usually killers have unique parts)
     local killerParts = {"Knife", "Weapon", "Blade", "Sword"}
     for _, partName in pairs(killerParts) do
         if char:FindFirstChild(partName) then
             return true
         end
     end
-    
     return false
 end
 
@@ -348,10 +310,6 @@ function GetGeneratorProgress(gen)
     return 0
 end
 
-local ESPConnections = {}
-local GenHighlights = {}
-local CachedCPs = {}
-
 function CreateESPForPlayer(player)
     if player == LocalPlayer or not player.Character then return end
     
@@ -377,93 +335,6 @@ function RemoveESPForPlayer(player)
     end
 end
 
-function UpdateESPForPlayer(player)
-    if not _G.ESP or player == LocalPlayer then return end
-    local character = player.Character
-    if not character then return end
-    
-    local color = GetESPColor(player)
-    local role = GetPlayerRole(player)
-    
-    if ESP_Highlights[player] and ESP_Highlights[player].Parent then
-        ESP_Highlights[player].FillColor = color
-        ESP_Highlights[player].Adornee = character
-    end
-    if ESPLabels[player] and ESPLabels[player].Parent then
-        local label = ESPLabels[player]:FindFirstChild("TextLabel")
-        if label then
-            label.TextColor3 = color
-            label.Text = player.Name .. " [" .. role .. "]"
-        end
-    end
-end
-
-function CreateGeneratorESP(gen)
-    if GenHighlights[gen] then return end
-    local isCompleted = IsGeneratorCompleted(gen)
-    local progress = GetGeneratorProgress(gen)
-    
-    local fillColor = isCompleted and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 170, 0)
-    local hl = Instance.new("Highlight")
-    hl.FillColor = fillColor
-    hl.OutlineColor = Color3.fromRGB(255, 255, 255)
-    hl.FillTransparency = 0.5
-    hl.Adornee = gen
-    hl.Parent = gen
-    
-    local primaryPart = gen:IsA("Model") and gen.PrimaryPart or gen:FindFirstChildWhichIsA("BasePart")
-    local billboard
-    if primaryPart then
-        billboard = Instance.new("BillboardGui", game.CoreGui)
-        billboard.Size = UDim2.new(0, 120, 0, 30)
-        billboard.StudsOffset = Vector3.new(0, 5, 0)
-        billboard.Adornee = primaryPart
-        billboard.AlwaysOnTop = true
-        
-        local label = Instance.new("TextLabel", billboard)
-        label.Name = "GenLabel"
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.BackgroundTransparency = 1
-        label.TextColor3 = fillColor
-        label.TextStrokeTransparency = 0
-        label.TextScaled = true
-        label.Font = Enum.Font.GothamBold
-        label.Text = isCompleted and "✔ COMPLETE" or ("⚡ " .. math.floor(progress) .. "%")
-    end
-    GenHighlights[gen] = {Highlight = hl, Label = billboard, LastCompleted = isCompleted, LastProgress = progress}
-end
-
-function UpdateGeneratorESP()
-    if not _G.GenESP then return end
-    for gen, data in pairs(GenHighlights) do
-        if gen and gen.Parent then
-            local isCompleted = IsGeneratorCompleted(gen)
-            local progress = GetGeneratorProgress(gen)
-            if isCompleted ~= data.LastCompleted or progress ~= data.LastProgress then
-                data.LastCompleted = isCompleted
-                data.LastProgress = progress
-                if data.Highlight then data.Highlight.FillColor = isCompleted and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 170, 0) end
-                if data.Label and data.Label:FindFirstChild("GenLabel") then
-                    data.Label.GenLabel.Text = isCompleted and "✔ COMPLETE" or ("⚡ " .. math.floor(progress) .. "%")
-                    data.Label.GenLabel.TextColor3 = isCompleted and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(255, 170, 0)
-                end
-            end
-        else
-            if data.Highlight then pcall(function() data.Highlight:Destroy() end) end
-            if data.Label then pcall(function() data.Label:Destroy() end) end
-            GenHighlights[gen] = nil
-        end
-    end
-end
-
-function RemoveAllGeneratorESP()
-    for gen, data in pairs(GenHighlights) do
-        if data.Highlight then pcall(function() data.Highlight:Destroy() end) end
-        if data.Label then pcall(function() data.Label:Destroy() end) end
-    end
-    GenHighlights = {}
-end
-
 function FindAllGenerators()
     local generators = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
@@ -472,17 +343,25 @@ function FindAllGenerators()
     return generators
 end
 
-local function SafeRefreshDropdown(dropdown, list)
-    if dropdown and dropdown.Clear then
-        dropdown:Clear()
-        for _, item in pairs(list) do
-            dropdown:Add(item)
+-- ==========================================
+-- GET PLAYER LIST
+-- ==========================================
+local function GetPlayerList()
+    local list = {}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then 
+            table.insert(list, p.Name) 
         end
     end
+    if #list == 0 then 
+        return {"Tidak ada pemain"} 
+    end
+    table.sort(list)
+    return list
 end
 
 -- ==========================================
--- USER INTERFACE TABS SETUP
+-- TABS SETUP
 -- ==========================================
 local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
 local AutoWalking = Window:AddTab({ Name = "AutoWalk", Icon = "player" })
@@ -492,7 +371,7 @@ local ServerTab = Window:AddTab({ Name = "Server", Icon = "web" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 
 -- ==========================================
--- MAIN TAB
+-- MAIN TAB - QUICK ACTIONS
 -- ==========================================
 local QuickSection = MainTab:AddSection("🛠️ Quick Actions")
 
@@ -570,8 +449,11 @@ QuickSection:AddButton({
     end
 })
 
--- [[ PLAYER TELEPORT ]]
+-- ==========================================
+-- PLAYER TELEPORT
+-- ==========================================
 local QuickTpSection = MainTab:AddSection("🚀 Quick Player Teleport")
+local SelectedTarget = ""
 
 QuickTpSection:AddToggle({
     Title = "Auto Pick Up / Interact",
@@ -595,7 +477,6 @@ QuickTpSection:AddToggle({
     end
 })
 
--- [[ TELEPORT ]]
 local TpSection = MainTab:AddSection("🎯 Teleport")
 
 TpSection:AddToggle({
@@ -604,24 +485,6 @@ TpSection:AddToggle({
     Default = false,
     Callback = function(v) _G.TapTP = v end
 })
-
-local SelectedTarget = ""
-
-local function GetPlayerList()
-    local list = {}
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then 
-            table.insert(list, p.Name) 
-        end
-    end
-    
-    if #list == 0 then 
-        return {"Tidak ada pemain"} 
-    end
-    
-    table.sort(list)
-    return list
-end
 
 local PlayerDropdown = QuickTpSection:AddDropdown({
     Title = "Pilih Pemain",
@@ -668,24 +531,15 @@ QuickTpSection:AddButton({
                 local targetHRP = targetChar.HumanoidRootPart
                 
                 myHRP.Anchored = true
-                
-                pcall(function()
-                    LocalPlayer.ReplicationFocus = targetHRP
-                end)
-                
+                pcall(function() LocalPlayer.ReplicationFocus = targetHRP end)
                 myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
-                
                 task.wait(0.5)
-                
                 myHRP.Anchored = false
                 
                 Library:MakeNotify({ Title = "Success", Content = "Berhasil ke " .. SelectedTarget })
             end
         else
-            Library:MakeNotify({ 
-                Title = "Error", 
-                Content = "Gagal! Player terlalu jauh & tidak ter-render oleh game." 
-            })
+            Library:MakeNotify({ Title = "Error", Content = "Gagal! Player terlalu jauh." })
         end
     end
 })
@@ -709,6 +563,994 @@ QuickTpSection:AddButton({
             end
         else
             Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan!" })
+        end
+    end
+})
+
+-- ==========================================
+-- TROLL MOUNTAIN SECTION (FITUR JAHIL)
+-- ==========================================
+local TrollSection = MainTab:AddSection("👿 Troll Mountain")
+
+-- 1. DORONG DARI TEBING
+TrollSection:AddButton({
+    Title = "💨 Dorong dari Tebing",
+    Description = "Dorong player target jatuh dari gunung (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local pushDirection = hrp.CFrame.LookVector * -80
+                hrp.AssemblyLinearVelocity = Vector3.new(
+                    pushDirection.X,
+                    20,
+                    pushDirection.Z
+                )
+                
+                local explosion = Instance.new("Explosion")
+                explosion.Position = hrp.Position
+                explosion.BlastRadius = 5
+                explosion.BlastPressure = 0
+                explosion.Parent = workspace
+                
+                Library:MakeNotify({ 
+                    Title = "💨 Pushed!", 
+                    Content = SelectedTarget .. " didorong dari gunung! (Semua player lihat)" 
+                })
+            end
+        end
+    end
+})
+
+-- 2. LONGSOR BATU
+TrollSection:AddButton({
+    Title = "🪨 Longsor Batu",
+    Description = "Jatuhkan banyak batu ke target (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local pos = hrp.Position
+                local rocks = {}
+                
+                for i = 1, 25 do
+                    local rock = Instance.new("Part")
+                    rock.Size = Vector3.new(
+                        math.random(2, 6),
+                        math.random(2, 6),
+                        math.random(2, 6)
+                    )
+                    rock.Position = pos + Vector3.new(
+                        math.random(-40, 40),
+                        60 + math.random(0, 30),
+                        math.random(-40, 40)
+                    )
+                    rock.BrickColor = BrickColor.new("Medium stone grey")
+                    rock.Material = Enum.Material.Rock 
+                    rock.Anchored = false
+                    rock.Parent = workspace
+                    
+                    local bodyVel = Instance.new("BodyVelocity")
+                    bodyVel.Velocity = Vector3.new(0, -100, 0)
+                    bodyVel.MaxForce = Vector3.new(0, math.huge, 0)
+                    bodyVel.Parent = rock
+                    
+                    table.insert(rocks, rock)
+                end
+                
+                local smoke = Instance.new("Part")
+                smoke.Size = Vector3.new(30, 10, 30)
+                smoke.Position = pos + Vector3.new(0, -5, 0)
+                smoke.BrickColor = BrickColor.new("Medium stone grey")
+                smoke.Transparency = 0.7
+                smoke.Anchored = true
+                smoke.CanCollide = false
+                smoke.Parent = workspace
+                
+                Library:MakeNotify({ 
+                    Title = "🪨 Rockslide!", 
+                    Content = "Longsor menimpa " .. SelectedTarget .. "! (Semua player lihat)" 
+                })
+                
+                task.wait(8)
+                for _, rock in pairs(rocks) do
+                    rock:Destroy()
+                end
+                smoke:Destroy()
+            end
+        end
+    end
+})
+
+-- 3. Lantai Licin
+TrollSection:AddButton({
+    Title = "🧊 Lantai Licin",
+    Description = "Buat lantai es di sekitar target (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local pos = hrp.Position
+                local iceParts = {}
+                
+                for x = -4, 4 do
+                    for z = -4, 4 do
+                        local ice = Instance.new("Part")
+                        ice.Size = Vector3.new(4, 0.5, 4)
+                        ice.Position = pos + Vector3.new(x * 4, -3.5, z * 4)
+                        ice.BrickColor = BrickColor.new("Bright blue")
+                        ice.Material = Enum.Material.Ice
+                        ice.Transparency = 0.3
+                        ice.Anchored = true
+                        ice.Parent = workspace
+                        
+                        ice.CustomPhysicalProperties = PhysicalProperties.new(
+                            0, 0, 0.3, 0, 0
+                        )
+                        
+                        table.insert(iceParts, ice)
+                    end
+                end
+                
+                Library:MakeNotify({ 
+                    Title = "🧊 Ice Floor!", 
+                    Content = "Lantai es di sekitar " .. SelectedTarget .. "! (Semua player lihat)" 
+                })
+                
+                task.wait(6)
+                for _, ice in pairs(iceParts) do
+                    ice:Destroy()
+                end
+            end
+        end
+    end
+})
+
+-- 4. Jebakan Lubang
+TrollSection:AddButton({
+    Title = "🕳️ Jebakan Lubang",
+    Description = "Buat lubang di bawah target (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local pos = hrp.Position
+                
+                local hole = Instance.new("Part")
+                hole.Size = Vector3.new(10, 1, 10)
+                hole.Position = pos + Vector3.new(0, -4, 0)
+                hole.BrickColor = BrickColor.new("Black")
+                hole.Transparency = 0.5
+                hole.Anchored = true
+                hole.CanCollide = false
+                hole.Parent = workspace
+                
+                for i = 1, 5 do
+                    local lightning = Instance.new("Part")
+                    lightning.Size = Vector3.new(0.5, 15, 0.5)
+                    lightning.Position = pos + Vector3.new(
+                        math.random(-5, 5),
+                        8 + math.random(0, 15),
+                        math.random(-5, 5)
+                    )
+                    lightning.BrickColor = BrickColor.new("Bright yellow")
+                    lightning.Anchored = true
+                    lightning.CanCollide = false
+                    lightning.Parent = workspace
+                    
+                    task.wait(0.1)
+                    lightning:Destroy()
+                end
+                
+                hrp.AssemblyLinearVelocity = Vector3.new(0, -150, 0)
+                
+                Library:MakeNotify({ 
+                    Title = "🕳️ Trap!", 
+                    Content = SelectedTarget .. " jatuh ke dalam lubang! (Semua player lihat)" 
+                })
+                
+                task.wait(4)
+                hole:Destroy()
+            end
+        end
+    end
+})
+
+-- 5. Tembok Tak Terlihat
+TrollSection:AddButton({
+    Title = "🧱 Tembok Tak Terlihat",
+    Description = "Pasang tembok di depan target (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local pos = hrp.Position
+                
+                local wall = Instance.new("Part")
+                wall.Size = Vector3.new(25, 12, 1.5)
+                wall.Position = pos + (hrp.CFrame.LookVector * 12) + Vector3.new(0, 3, 0)
+                wall.BrickColor = BrickColor.new("Bright red")
+                wall.Transparency = 0.5
+                wall.Anchored = true
+                wall.CanCollide = true
+                wall.Parent = workspace
+                
+                local explosion = Instance.new("Explosion")
+                explosion.Position = wall.Position
+                explosion.BlastRadius = 3
+                explosion.BlastPressure = 0
+                explosion.Parent = workspace
+                
+                Library:MakeNotify({ 
+                    Title = "🧱 Wall!", 
+                    Content = "Tembok di depan " .. SelectedTarget .. "! (Semua player lihat)" 
+                })
+                
+                task.wait(5)
+                wall:Destroy()
+            end
+        end
+    end
+})
+
+-- 6. Zona Gravitasi
+TrollSection:AddButton({
+    Title = "🌍 Zona Gravitasi",
+    Description = "Tarik target ke bawah dengan kuat (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local pos = hrp.Position
+                
+                local zone = Instance.new("Part")
+                zone.Shape = Enum.PartType.Ball
+                zone.Size = Vector3.new(35, 35, 35)
+                zone.Position = pos
+                zone.BrickColor = BrickColor.new("Bright purple")
+                zone.Transparency = 0.6
+                zone.Anchored = true
+                zone.CanCollide = false
+                zone.Parent = workspace
+                
+                local gravityField = Instance.new("BodyForce")
+                gravityField.Force = Vector3.new(0, -8000, 0)
+                gravityField.Parent = hrp
+                
+                local explosion = Instance.new("Explosion")
+                explosion.Position = pos
+                explosion.BlastRadius = 5
+                explosion.BlastPressure = 0
+                explosion.Parent = workspace
+                
+                Library:MakeNotify({ 
+                    Title = "🌍 Gravity!", 
+                    Content = "Zona gravitasi di sekitar " .. SelectedTarget .. "! (Semua player lihat)" 
+                })
+                
+                task.wait(4)
+                zone:Destroy()
+                gravityField:Destroy()
+            end
+        end
+    end
+})
+
+-- 7. Fling Target
+TrollSection:AddButton({
+    Title = "🚀 Fling Target",
+    Description = "Lempar target terbang tinggi (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.AssemblyLinearVelocity = Vector3.new(
+                    math.random(-100, 100),
+                    math.random(200, 400),
+                    math.random(-100, 100)
+                )
+                hrp.AssemblyAngularVelocity = Vector3.new(
+                    math.random(-20, 20),
+                    math.random(-20, 20),
+                    math.random(-20, 20)
+                )
+                
+                local explosion = Instance.new("Explosion")
+                explosion.Position = hrp.Position
+                explosion.BlastRadius = 5
+                explosion.BlastPressure = 0
+                explosion.Parent = workspace
+                
+                Library:MakeNotify({ 
+                    Title = "🚀 Flinged!", 
+                    Content = SelectedTarget .. " terbang! (Semua player lihat)" 
+                })
+            end
+        end
+    end
+})
+
+-- 8. Guncangan Gunung
+TrollSection:AddButton({
+    Title = "🌋 Guncangan Gunung",
+    Description = "Buat seluruh gunung berguncang (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                for i = 1, 15 do
+                    for _, obj in pairs(workspace:GetDescendants()) do
+                        if obj:IsA("BasePart") and obj.Anchored and obj.Size.X > 5 and obj.Size.Y > 5 then
+                            local randomShake = Vector3.new(
+                                math.random(-8, 8)/10,
+                                math.random(-8, 8)/10,
+                                math.random(-8, 8)/10
+                            )
+                            obj.CFrame = obj.CFrame + randomShake
+                            task.wait(0.03)
+                            obj.CFrame = obj.CFrame - randomShake
+                        end
+                    end
+                    
+                    if i % 3 == 0 then
+                        local smoke = Instance.new("Part")
+                        smoke.Size = Vector3.new(30, 15, 30)
+                        smoke.Position = hrp.Position + Vector3.new(
+                            math.random(-20, 20),
+                            -10,
+                            math.random(-20, 20)
+                        )
+                        smoke.BrickColor = BrickColor.new("Medium stone grey")
+                        smoke.Transparency = 0.8
+                        smoke.Anchored = true
+                        smoke.CanCollide = false
+                        smoke.Parent = workspace
+                        
+                        task.wait(0.2)
+                        smoke:Destroy()
+                    end
+                end
+                
+                Library:MakeNotify({ 
+                    Title = "🌋 Shake!", 
+                    Content = "Gunung berguncang! (Semua player lihat)" 
+                })
+            end
+        end
+    end
+})
+
+-- 9. Kandang Target
+TrollSection:AddButton({
+    Title = "🧱 Kandang Target",
+    Description = "Kurung target di dalam kandang (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local pos = hrp.Position
+                local cageParts = {}
+                
+                local sizes = {
+                    {Vector3.new(12, 6, 0.5), Vector3.new(0, 0, 6)},
+                    {Vector3.new(12, 6, 0.5), Vector3.new(0, 0, -6)},
+                    {Vector3.new(0.5, 6, 12), Vector3.new(6, 0, 0)},
+                    {Vector3.new(0.5, 6, 12), Vector3.new(-6, 0, 0)}
+                }
+                
+                for _, data in pairs(sizes) do
+                    local part = Instance.new("Part")
+                    part.Size = data[1]
+                    part.Position = pos + data[2]
+                    part.Anchored = true
+                    part.BrickColor = BrickColor.new("Bright blue")
+                    part.Transparency = 0.4
+                    part.Material = Enum.Material.Glass
+                    part.Parent = workspace
+                    table.insert(cageParts, part)
+                end
+                
+                local roof = Instance.new("Part")
+                roof.Size = Vector3.new(13, 0.5, 13)
+                roof.Position = pos + Vector3.new(0, 6, 0)
+                roof.Anchored = true
+                roof.BrickColor = BrickColor.new("Bright blue")
+                roof.Transparency = 0.4
+                roof.Material = Enum.Material.Glass
+                roof.Parent = workspace
+                table.insert(cageParts, roof)
+                
+                Library:MakeNotify({ 
+                    Title = "🧱 Caged!", 
+                    Content = SelectedTarget .. " dikurung! (Semua player lihat)" 
+                })
+                
+                task.wait(8)
+                for _, part in pairs(cageParts) do
+                    part:Destroy()
+                end
+            end
+        end
+    end
+})
+
+-- 10. Clone Target
+TrollSection:AddButton({
+    Title = "👥 Clone Target",
+    Description = "Buat clone dari target (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local clone = target.Character:Clone()
+                clone.Parent = workspace
+                clone:SetPrimaryPartCFrame(hrp.CFrame + Vector3.new(8, 0, 8))
+                
+                clone.Name = "Clone_of_" .. target.Name
+                
+                local hum = clone:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.DisplayName = "Clone " .. target.Name
+                end
+                
+                local explosion = Instance.new("Explosion")
+                explosion.Position = clone:GetPivot().Position
+                explosion.BlastRadius = 3
+                explosion.BlastPressure = 0
+                explosion.Parent = workspace
+                
+                Library:MakeNotify({ 
+                    Title = "👥 Cloned!", 
+                    Content = "Clone " .. target.Name .. " muncul! (Semua player lihat)" 
+                })
+                
+                task.wait(10)
+                clone:Destroy()
+            end
+        end
+    end
+})
+
+-- 11. Teleport Balik
+TrollSection:AddButton({
+    Title = "🔄 Teleport Balik",
+    Description = "Kembalikan target ke checkpoint awal (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local lowestCP = nil
+                local lowestY = math.huge
+                
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and 
+                        (obj.Name:lower():find("cp") or obj.Name:lower():find("checkpoint") or 
+                         obj.Name:lower():find("stage") or obj.Name:lower():find("start"))) then
+                        if obj.Position.Y < lowestY then
+                            lowestY = obj.Position.Y
+                            lowestCP = obj
+                        end
+                    end
+                end
+                
+                if lowestCP then
+                    hrp.CFrame = lowestCP.CFrame * CFrame.new(0, 3, 0)
+                    
+                    local explosion = Instance.new("Explosion")
+                    explosion.Position = hrp.Position
+                    explosion.BlastRadius = 5
+                    explosion.BlastPressure = 0
+                    explosion.Parent = workspace
+                    
+                    Library:MakeNotify({ 
+                        Title = "🔄 Sent Back!", 
+                        Content = SelectedTarget .. " dikembalikan ke awal! (Semua player lihat)" 
+                    })
+                end
+            end
+        end
+    end
+})
+
+-- 12. Lompat Paksa
+TrollSection:AddButton({
+    Title = "🦘 Lompat Paksa",
+    Description = "Buat target melompat terus menerus (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hum = target.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                task.spawn(function()
+                    for i = 1, 10 do
+                        if not hum or hum.Health <= 0 then break end
+                        hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                        task.wait(0.3)
+                    end
+                end)
+                
+                for i = 1, 3 do
+                    local explosion = Instance.new("Explosion")
+                    explosion.Position = target.Character.HumanoidRootPart.Position + Vector3.new(0, -2, 0)
+                    explosion.BlastRadius = 3
+                    explosion.BlastPressure = 0
+                    explosion.Parent = workspace
+                    task.wait(0.2)
+                end
+                
+                Library:MakeNotify({ 
+                    Title = "🦘 Forced Jump!", 
+                    Content = SelectedTarget .. " dipaksa melompat! (Semua player lihat)" 
+                })
+            end
+        end
+    end
+})
+
+-- 13. Blind Target
+TrollSection:AddButton({
+    Title = "👁️ Blind Target",
+    Description = "Buat layar target gelap (TERLIHAT DI CLIENT MEREKA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target then
+            local screenGui = Instance.new("ScreenGui")
+            screenGui.Name = "BlindEffect"
+            screenGui.Parent = target.PlayerGui
+            
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(1, 0, 1, 0)
+            frame.BackgroundColor3 = Color3.new(0, 0, 0)
+            frame.BackgroundTransparency = 0
+            frame.Parent = screenGui
+            
+            for i = 1, 10 do
+                frame.BackgroundTransparency = 1 - (i / 10)
+                task.wait(0.05)
+            end
+            
+            Library:MakeNotify({ 
+                Title = "👁️ Blinded!", 
+                Content = SelectedTarget .. " dibutakan! (Hanya dia yang lihat)" 
+            })
+            
+            task.wait(5)
+            
+            for i = 1, 10 do
+                frame.BackgroundTransparency = i / 10
+                task.wait(0.05)
+            end
+            
+            screenGui:Destroy()
+        end
+    end
+})
+
+-- 14. Swap Position
+TrollSection:AddButton({
+    Title = "🔄 Swap Position",
+    Description = "Tukar posisi Anda dengan target (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local targetRoot = target and target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+        
+        if myRoot and targetRoot then
+            local myPos = myRoot.CFrame
+            local targetPos = targetRoot.CFrame
+            
+            myRoot.CFrame = targetPos
+            targetRoot.CFrame = myPos
+            
+            local explosion1 = Instance.new("Explosion")
+            explosion1.Position = myPos.Position
+            explosion1.BlastRadius = 5
+            explosion1.BlastPressure = 0
+            explosion1.Parent = workspace
+            
+            local explosion2 = Instance.new("Explosion")
+            explosion2.Position = targetPos.Position
+            explosion2.BlastRadius = 5
+            explosion2.BlastPressure = 0
+            explosion2.Parent = workspace
+            
+            Library:MakeNotify({ 
+                Title = "🔄 Swapped!", 
+                Content = "Posisi ditukar dengan " .. SelectedTarget .. "! (Semua player lihat)" 
+            })
+        end
+    end
+})
+
+-- 15. Slow Motion
+TrollSection:AddButton({
+    Title = "🐢 Slow Motion",
+    Description = "Buat target bergerak sangat lambat (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hum = target.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                local originalSpeed = hum.WalkSpeed
+                hum.WalkSpeed = 2
+                
+                local slowZone = Instance.new("Part")
+                slowZone.Shape = Enum.PartType.Cylinder
+                slowZone.Size = Vector3.new(15, 0.5, 15)
+                slowZone.Position = target.Character.HumanoidRootPart.Position
+                slowZone.BrickColor = BrickColor.new("Bright blue")
+                slowZone.Transparency = 0.6
+                slowZone.Anchored = true
+                slowZone.CanCollide = false
+                slowZone.Parent = workspace
+                
+                task.spawn(function()
+                    for i = 1, 6 do
+                        slowZone.Transparency = slowZone.Transparency == 0.3 and 0.6 or 0.3
+                        task.wait(0.5)
+                    end
+                end)
+                
+                Library:MakeNotify({ 
+                    Title = "🐢 Slow!", 
+                    Content = SelectedTarget .. " melambat! (Semua player lihat)" 
+                })
+                
+                task.wait(4)
+                hum.WalkSpeed = originalSpeed
+                slowZone:Destroy()
+            end
+        end
+    end
+})
+
+-- 16. Reverse Controls
+TrollSection:AddButton({
+    Title = "🔄 Reverse Controls",
+    Description = "Buat kontrol target terbalik (TERLIHAT CLIENT MEREKA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target then
+            local screenGui = Instance.new("ScreenGui")
+            screenGui.Name = "ReverseEffect"
+            screenGui.Parent = target.PlayerGui
+            
+            local frame = Instance.new("Frame")
+            frame.Size = UDim2.new(0.5, 0, 0.2, 0)
+            frame.Position = UDim2.new(0.25, 0, 0.4, 0)
+            frame.BackgroundColor3 = Color3.new(1, 0, 0)
+            frame.BackgroundTransparency = 0.5
+            frame.Parent = screenGui
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = "⚠️ KONTROL TERBALIK! ⚠️"
+            label.TextColor3 = Color3.new(1, 1, 1)
+            label.TextScaled = true
+            label.Font = Enum.Font.GothamBold
+            label.Parent = frame
+            
+            task.spawn(function()
+                for i = 1, 6 do
+                    frame.BackgroundTransparency = frame.BackgroundTransparency == 0.5 and 0.8 or 0.5
+                    task.wait(0.3)
+                end
+            end)
+            
+            Library:MakeNotify({ 
+                Title = "🔄 Reversed!", 
+                Content = "Kontrol " .. SelectedTarget .. " terbalik! (Hanya dia yang lihat)" 
+            })
+            
+            task.wait(4)
+            screenGui:Destroy()
+        end
+    end
+})
+
+-- 17. Gempa Bumi
+TrollSection:AddButton({
+    Title = "🌍 Gempa Bumi",
+    Description = "Buat gempa yang mengguncang semua player (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local pos = hrp.Position
+                
+                for i = 1, 20 do
+                    for _, player in pairs(Players:GetPlayers()) do
+                        if player ~= LocalPlayer and player.Character then
+                            local pRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                            if pRoot then
+                                local shake = Vector3.new(
+                                    math.random(-3, 3),
+                                    math.random(1, 5),
+                                    math.random(-3, 3)
+                                )
+                                pRoot.CFrame = pRoot.CFrame + shake
+                                task.wait(0.02)
+                                pRoot.CFrame = pRoot.CFrame - shake
+                            end
+                        end
+                    end
+                    
+                    if i % 3 == 0 then
+                        local smoke = Instance.new("Part")
+                        smoke.Size = Vector3.new(40, 5, 40)
+                        smoke.Position = pos + Vector3.new(math.random(-20, 20), -5, math.random(-20, 20))
+                        smoke.BrickColor = BrickColor.new("Medium stone grey")
+                        smoke.Transparency = 0.7
+                        smoke.Anchored = true
+                        smoke.CanCollide = false
+                        smoke.Parent = workspace
+                        task.wait(0.1)
+                        smoke:Destroy()
+                    end
+                end
+                
+                local explosion = Instance.new("Explosion")
+                explosion.Position = pos
+                explosion.BlastRadius = 20
+                explosion.BlastPressure = 0
+                explosion.Parent = workspace
+                
+                Library:MakeNotify({ 
+                    Title = "🌍 Earthquake!", 
+                    Content = "Gempa bumi terjadi! (Semua player lihat)" 
+                })
+            end
+        end
+    end
+})
+
+-- 18. Invisible Target
+TrollSection:AddButton({
+    Title = "👻 Invisible Target",
+    Description = "Buat target menjadi tidak terlihat (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local originalTrans = {}
+            
+            for _, part in pairs(target.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    originalTrans[part] = part.Transparency
+                    part.Transparency = 1
+                end
+            end
+            
+            local highlight = Instance.new("Highlight")
+            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+            highlight.FillTransparency = 0.8
+            highlight.OutlineColor = Color3.new(1, 1, 1)
+            highlight.Adornee = target.Character
+            highlight.Parent = target.Character
+            
+            Library:MakeNotify({ 
+                Title = "👻 Invisible!", 
+                Content = SelectedTarget .. " menghilang! (Semua player lihat)" 
+            })
+            
+            task.wait(5)
+            
+            for part, trans in pairs(originalTrans) do
+                if part and part.Parent then
+                    part.Transparency = trans
+                end
+            end
+            
+            highlight:Destroy()
+        end
+    end
+})
+
+-- 19. Gravity Flip
+TrollSection:AddButton({
+    Title = "🔄 Gravity Flip",
+    Description = "Balik gravitasi target ke atas (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local antiGravity = Instance.new("BodyForce")
+                antiGravity.Force = Vector3.new(0, 5000, 0)
+                antiGravity.Parent = hrp
+                
+                local zone = Instance.new("Part")
+                zone.Shape = Enum.PartType.Ball
+                zone.Size = Vector3.new(20, 20, 20)
+                zone.Position = hrp.Position
+                zone.BrickColor = BrickColor.new("Bright yellow")
+                zone.Transparency = 0.5
+                zone.Anchored = true
+                zone.CanCollide = false
+                zone.Parent = workspace
+                
+                Library:MakeNotify({ 
+                    Title = "🔄 Gravity Flip!", 
+                    Content = "Gravitasi " .. SelectedTarget .. " terbalik! (Semua player lihat)" 
+                })
+                
+                task.wait(4)
+                antiGravity:Destroy()
+                zone:Destroy()
+            end
+        end
+    end
+})
+
+-- 20. Spawn Monster
+TrollSection:AddButton({
+    Title = "👾 Spawn Monster",
+    Description = "Munculkan monster di dekat target (TERLIHAT SEMUA)",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
+            return 
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local monster = Instance.new("Model")
+                monster.Name = "Spawned_Monster"
+                monster.Parent = workspace
+                
+                local body = Instance.new("Part")
+                body.Size = Vector3.new(8, 10, 8)
+                body.Position = hrp.Position + Vector3.new(10, 0, 10)
+                body.BrickColor = BrickColor.new("Bright red")
+                body.Material = Enum.Material.Neon
+                body.Anchored = false
+                body.CanCollide = true
+                body.Parent = monster
+                
+                local head = Instance.new("Part")
+                head.Size = Vector3.new(4, 4, 4)
+                head.Position = body.Position + Vector3.new(0, 7, 0)
+                head.BrickColor = BrickColor.new("Bright yellow")
+                head.Material = Enum.Material.Neon
+                head.Anchored = false
+                head.CanCollide = true
+                head.Parent = monster
+                
+                local hum = Instance.new("Humanoid")
+                hum.Name = "Humanoid"
+                hum.WalkSpeed = 30
+                hum.Parent = monster
+                
+                task.spawn(function()
+                    for i = 1, 20 do
+                        if not monster or not monster.Parent then break end
+                        local mRoot = monster:FindFirstChild("HumanoidRootPart") or body
+                        if mRoot and hrp then
+                            local direction = (hrp.Position - mRoot.Position).Unit
+                            mRoot.CFrame = mRoot.CFrame + (direction * 5)
+                            task.wait(0.1)
+                        end
+                    end
+                    monster:Destroy()
+                end)
+                
+                Library:MakeNotify({ 
+                    Title = "👾 Monster!", 
+                    Content = "Monster muncul di dekat " .. SelectedTarget .. "! (Semua player lihat)" 
+                })
+                
+                task.wait(10)
+                monster:Destroy()
+            end
         end
     end
 })
@@ -807,8 +1649,6 @@ WalkSection:AddToggle({
                         end)
 
                         local targetCFrame = CFrame.new(targetPart.Position + Vector3.new(0, 3, 0)) 
-                        local lookAtCFrame = CFrame.lookAt(root.Position, targetPart.Position)
-
                         local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
                             CFrame = targetCFrame * CFrame.Angles(0, math.rad(root.Orientation.Y), 0)
                         })
@@ -898,7 +1738,7 @@ WalkSection:AddToggle({
         
         if v then
             task.spawn(function()
-                local total = loadWaypoints() 
+                local total = loadWaypoints()
                 if total == 0 then 
                     Library:MakeNotify({ Title = "Error", Content = "Data Waypoint Kosong!" })
                     return 
@@ -1209,10 +2049,10 @@ AntiSection:AddToggle({
     end
 })
 
+-- ==========================================
+-- FLY SECTION
+-- ==========================================
 local FlySection = PlayerTab:AddSection("✈️ Fly Settings")
-
-if not Config then Config = {} end
-Config.FlySpeed = 100
 
 local function CleanupFly(root)
     if root then
@@ -1285,9 +2125,7 @@ end
 
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
-    if _G.Fly then
-        StartFly()
-    end
+    if _G.Fly then StartFly() end
 end)
 
 FlySection:AddInput({ 
@@ -1297,13 +2135,13 @@ FlySection:AddInput({
 })
 
 FlySection:AddToggle({
-    Title = "Fly Mode (Improved)",
+    Title = "Fly Mode",
     Default = false,
     Callback = function(v)
         _G.Fly = v
         if v then
             StartFly()
-            Library:MakeNotify({ Title = "Enabled", Content = "Fly Aktif! Tetap aktif meski Anda mati." })
+            Library:MakeNotify({ Title = "Enabled", Content = "Fly Aktif!" })
         else
             if _G.FlyCon then _G.FlyCon:Disconnect() end
             CleanupFly(GetRootPart())
@@ -1315,7 +2153,7 @@ FlySection:AddToggle({
 })
 
 -- ==========================================
--- GAME TAB
+-- GAME TAB - AUTO CP
 -- ==========================================
 local FarmSection = GameTab:AddSection("🏒 Auto Farming CP")
 local MountainPaths = {}
@@ -1341,14 +2179,14 @@ end
 
 FarmSection:AddToggle({
     Title = "Master Auto CP (Universal)",
-    Description = "Bekerja berdasarkan ketinggian gunung (Semua Map)",
+    Description = "Bekerja berdasarkan ketinggian gunung",
     Default = false,
     Callback = function(v)
         _G.AutoCP = v
         if v then
             task.spawn(function()
                 local total = ScanUniversalCPs()
-                Library:MakeNotify({ Title = "MDW HUB", Content = "Ditemukan " .. total .. " Jalur. Memulai..." })
+                Library:MakeNotify({ Title = "MDW", Content = "Ditemukan " .. total .. " Jalur. Memulai..." })
 
                 while _G.AutoCP do
                     local char = LocalPlayer.Character
@@ -1377,15 +2215,6 @@ FarmSection:AddToggle({
                             root.CFrame = targetPart.CFrame * CFrame.new(0, 3, 0)
                             task.wait(0.2)
                             root.CFrame = targetPart.CFrame
-                            
-                            if firetouchinterest then
-                                pcall(function()
-                                    firetouchinterest(root, targetPart, 0)
-                                    task.wait(0.1)
-                                    firetouchinterest(root, targetPart, 1)
-                                end)
-                            end
-                            
                             task.wait(_G.CPDelay or 2.0)
                         else
                             Library:MakeNotify({ Title = "Selesai", Content = "Sudah mencapai puncak." })
@@ -1424,15 +2253,27 @@ FarmSection:AddButton({
         local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if highestPart and root then
             root.CFrame = highestPart.CFrame + Vector3.new(0, 10, 0)
-            Library:MakeNotify({ Title = "Teleport", Content = "Berhasil ke Puncak Gunung!" })
+            Library:MakeNotify({ Title = "Teleport", Content = "Berhasil ke Puncak!" })
         end
     end
 })
 
+-- ==========================================
+-- GAME TAB - VISUAL ESP
+-- ==========================================
 local VisualSection = GameTab:AddSection("🎭 Visual ESP & Tracking")
 
-VisualSection:AddToggle({ Title = "ESP Box (2D)", Default = false, Callback = function(v) _G.BoxESP = v end })
-VisualSection:AddToggle({ Title = "ESP Tracers (Line)", Default = false, Callback = function(v) _G.LineESP = v end })
+VisualSection:AddToggle({ 
+    Title = "ESP Box (2D)", 
+    Default = false, 
+    Callback = function(v) _G.BoxESP = v end 
+})
+
+VisualSection:AddToggle({ 
+    Title = "ESP Tracers (Line)", 
+    Default = false, 
+    Callback = function(v) _G.LineESP = v end 
+})
 
 VisualSection:AddToggle({
     Title = "ESP Health Bar",
@@ -1607,6 +2448,9 @@ VisualSection:AddToggle({
     end
 })
 
+-- ==========================================
+-- GAME TAB - UTILITIES
+-- ==========================================
 local UtilSection = GameTab:AddSection("🎣 Gameplay Utilities")
 
 UtilSection:AddToggle({
@@ -1691,7 +2535,9 @@ UtilSection:AddToggle({
     end
 })
 
--- ================= SECTION: FIND OBJECTS =================
+-- ==========================================
+-- GAME TAB - FIND OBJECTS
+-- ==========================================
 local FindSection = GameTab:AddSection("🎯 Find Objects & Debug")
 
 FindSection:AddButton({
@@ -1745,11 +2591,11 @@ FindSection:AddButton({
     Callback = function()
         ClearManualHighlights()
         for _, o in pairs(workspace:GetDescendants()) do
-            if o:IsA("Highlight") and (o.Name == "GenESP_Highlight" or o.Parent:IsA("Model")) then
+            if o:IsA("Highlight") then
                 pcall(function() o:Destroy() end)
             end
         end
-        Library:MakeNotify({ Title = "Cleared", Content = "Semua sinar telah dihapus!" })
+        Library:MakeNotify({ Title = "Cleared", Content = "Semua highlight telah dihapus!" })
     end
 })
 
@@ -1771,7 +2617,7 @@ FindSection:AddButton({
 })
 
 -- ==========================================
--- SERVER TAB
+-- SERVER TAB - CHAT
 -- ==========================================
 local ChatSection = ServerTab:AddSection("🌟 Chat Otomatis")
 
@@ -1807,21 +2653,12 @@ ChatSection:AddToggle({
     Default = false,
     Callback = function(v)
         _G.ChatLog = v
-        if v then
-            task.spawn(function()
-                while _G.ChatLog do
-                    for _, chat in pairs(TextChatService.TextChannels:GetDescendants()) do
-                        if chat:IsA("TextMessage") then
-                            print(chat.Text)
-                        end
-                    end
-                    task.wait(1)
-                end
-            end)
-        end
     end
 })
 
+-- ==========================================
+-- SERVER TAB - PROTECTION
+-- ==========================================
 local ProtectSection = ServerTab:AddSection("🛡️ Self-Protection & Security")
 
 ProtectSection:AddToggle({
@@ -1881,7 +2718,9 @@ ProtectSection:AddButton({
     end
 })
 
--- ================= SECTION: ACTIONS =================
+-- ==========================================
+-- SERVER TAB - ACTIONS
+-- ==========================================
 local ActionsSection = ServerTab:AddSection("🔪 Actions")
 
 ActionsSection:AddButton({ 
@@ -1898,44 +2737,21 @@ ActionsSection:AddButton({
     end 
 })
 
--- ================= SECTION: SPECTATE =================local SpectateSection = ServerTab:AddSection("👁️ Spectate")
-
-local function GetSpectatePlayerList()
-    local list = {}
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then 
-            table.insert(list, p.Name) 
-        end
-    end
-    
-    if #list == 0 then 
-        return {"Tidak ada pemain"} 
-    end
-    
-    table.sort(list)
-    return list
-end
+-- ==========================================
+-- SERVER TAB - SPECTATE
+-- ==========================================
+local SpectateSection = ServerTab:AddSection("👁️ Spectate")
 
 local SpectateDropdown = SpectateSection:AddDropdown({ 
     Title = "Pilih Pemain",
-    Description = "Cari atau pilih nama pemain",
-    Options = GetSpectatePlayerList(),
+    Options = GetPlayerList(),
     Callback = function(v) SpecTarget = v end 
 })
-
-local function UpdateSpectateDropdown()
-    local currentPlayers = GetSpectatePlayerList()
-    if SpectateDropdown.SetValues then
-        SpectateDropdown:SetValues(currentPlayers)
-    elseif SpectateDropdown.Refresh then
-        SpectateDropdown:Refresh(currentPlayers, true)
-    end
-end
 
 SpectateSection:AddButton({ 
     Title = "🔄 Refresh Daftar Pemain", 
     Callback = function()
-        UpdateSpectateDropdown()
+        UpdateDropdown()
         Library:MakeNotify({ Title = "MDW", Content = "Daftar pemain telah diperbarui!" })
     end 
 })
@@ -1948,7 +2764,7 @@ SpectateSection:AddButton({
             Workspace.CurrentCamera.CameraSubject = t.Character:FindFirstChildOfClass("Humanoid")
             Library:MakeNotify({ Title = "Spectating", Content = "Menonton: " .. SpecTarget })
         else
-            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan atau tidak memiliki karakter!" })
+            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan!" })
         end
     end
 })
@@ -1992,7 +2808,9 @@ pengaturanSection:AddButton({
     end
 })
 
--- ================= SECTION: THEME =================
+-- ==========================================
+-- SETTINGS - THEME
+-- ==========================================
 local ThemeSection = SettingsTab:AddSection("🎨 Appearance")
 
 ThemeSection:AddDropdown({ 
@@ -2004,21 +2822,123 @@ ThemeSection:AddDropdown({
     end 
 })
 
--- ================= SECTION: KEYBIND =================
+-- ==========================================
+-- SETTINGS - KEYBIND
+-- ==========================================
 local keybindSection = SettingsTab:AddSection("⌨️ Keybind")
 
 keybindSection:AddKeybind({
     Title = "Toggle UI Menu",
     Default = Enum.KeyCode.RightControl,
     Callback = function()
-        local gui = game.CoreGui:FindFirstChild("MDW HUB") or LocalPlayer.PlayerGui:FindFirstChild("MDW HUB")
+        _G.MenuVisible = not _G.MenuVisible
+        
+        local gui = nil
+        
+        for _, child in pairs(CoreGui:GetChildren()) do
+            if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
+                gui = child
+                break
+            end
+        end
+        
+        if not gui then
+            for _, child in pairs(LocalPlayer.PlayerGui:GetChildren()) do
+                if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
+                    gui = child
+                    break
+                end
+            end
+        end
+        
         if gui then
-            gui.Enabled = not gui.Enabled
+            gui.Enabled = _G.MenuVisible
+            Library:MakeNotify({ 
+                Title = "Menu", 
+                Content = _G.MenuVisible and "Menu Ditampilkan" or "Menu Disembunyikan" 
+            })
+        else
+            pcall(function()
+                Window.Visible = _G.MenuVisible
+            end)
         end
     end
 })
 
--- ================= SECTION: EXIT =================
+keybindSection:AddButton({
+    Title = "Show/Hide Menu",
+    Callback = function()
+        _G.MenuVisible = not _G.MenuVisible
+        local gui = nil
+        
+        for _, child in pairs(CoreGui:GetChildren()) do
+            if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
+                gui = child
+                break
+            end
+        end
+        
+        if not gui then
+            for _, child in pairs(LocalPlayer.PlayerGui:GetChildren()) do
+                if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
+                    gui = child
+                    break
+                end
+            end
+        end
+        
+        if gui then
+            gui.Enabled = _G.MenuVisible
+        end
+    end
+})
+
+-- ==========================================
+-- SETTINGS - CLEAR EFFECTS
+-- ==========================================
+local ClearSection = SettingsTab:AddSection("🧹 Clear Effects")
+
+ClearSection:AddButton({
+    Title = "Hapus Semua Efek Visual",
+    Description = "Bersihkan part, highlight, dan efek lainnya",
+    Callback = function()
+        ClearManualHighlights()
+        for _, o in pairs(workspace:GetDescendants()) do
+            if o:IsA("Highlight") then
+                pcall(function() o:Destroy() end)
+            end
+        end
+        
+        local toRemove = {}
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj ~= workspace.Terrain then
+                if obj.Name:find("MDW") or obj.Name:find("Cage") or obj.Name:find("Troll") or 
+                   obj.Name:find("Wall") or obj.Name:find("Ice") or obj.Name:find("Trap") or
+                   obj.Name:find("Clone") or obj.Name:find("Smoke") or obj.Name:find("Rockslide") or
+                   obj.Name:find("AntiVoidPlatform") or obj.Name:find("MDW_SolidAirFloor") or
+                   obj.Name:find("GodLight") or obj.Name:find("Spawned_Monster") then
+                    table.insert(toRemove, obj)
+                end
+            end
+        end
+        
+        for _, obj in pairs(toRemove) do
+            pcall(function() obj:Destroy() end)
+        end
+        
+        for _, obj in pairs(workspace:GetChildren()) do
+            if obj:IsA("Explosion") then
+                pcall(function() obj:Destroy() end)
+            end
+        end
+        
+        Library:MakeNotify({ Title = "Cleared", Content = "Semua efek visual telah dihapus!" })
+    end
+})
+
+-- ==========================================
+-- SETTINGS - EXIT
+-- ==========================================
 local ExitSection = SettingsTab:AddSection("❌ Exit")
 
 ExitSection:AddButton({
@@ -2049,6 +2969,10 @@ ExitSection:AddButton({
         _G.Freecam = false
         _G.Spam = false
         _G.ChatLog = false
+        _G.AirWalk = false
+        _G.AutoWalkJSON = false
+        
+        ClearManualHighlights()
         
         Library:MakeNotify({ Title = "MDW HUB", Content = "Shutdown...", Duration = 2 })
         task.wait(1)
@@ -2057,34 +2981,8 @@ ExitSection:AddButton({
 })
 
 -- ==========================================
--- PERSISTENT REPETITIVE LOOPS
+-- RENDER LOOP FOR ESP
 -- ==========================================
-RunService.Stepped:Connect(function()
-    if _G.NC and LocalPlayer.Character then
-        for _, p in pairs(LocalPlayer.Character:GetChildren()) do 
-            if p:IsA("BasePart") then 
-                p.CanCollide = false 
-            end 
-            for _, child in pairs(p:GetDescendants()) do
-                if child:IsA("BasePart") then child.CanCollide = false end
-            end
-        end
-    end
-end)
-
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    
-    if _G.TapTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-        local root = GetRootPart()
-        if root then  
-            local mouse = LocalPlayer:GetMouse()
-            local targetPos = mouse.Hit.p
-            root.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
-        end
-    end
-end)
-
 RunService.RenderStepped:Connect(function()
     if not (_G.BoxESP or _G.LineESP) then
         for _, obj in pairs(ESP_Objects) do 
@@ -2122,7 +3020,6 @@ RunService.RenderStepped:Connect(function()
                     obj.Box.Position = Vector2.new(pos.X - sizeX / 2, pos.Y - sizeY / 2)
                     obj.Box.Thickness = 1
                     obj.Box.Filled = false
-                    obj.Box.Transparency = 1
                 else
                     obj.Box.Visible = false
                 end
@@ -2133,7 +3030,6 @@ RunService.RenderStepped:Connect(function()
                     obj.Line.From = Vector2.new(Workspace.CurrentCamera.ViewportSize.X / 2, Workspace.CurrentCamera.ViewportSize.Y)
                     obj.Line.To = Vector2.new(pos.X, pos.Y)
                     obj.Line.Thickness = 1
-                    obj.Line.Transparency = 1
                 else
                     obj.Line.Visible = false
                 end
@@ -2149,13 +3045,41 @@ RunService.RenderStepped:Connect(function()
     end 
 end)
 
--- Auto update dropdowns
-Players.PlayerAdded:Connect(UpdateDropdown)
-Players.PlayerRemoving:Connect(UpdateDropdown)
-Players.PlayerAdded:Connect(UpdateSpectateDropdown)
-Players.PlayerRemoving:Connect(UpdateSpectateDropdown)
-Players.PlayerRemoving:Connect(ClearESP)
+-- Click TP
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    
+    if _G.TapTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+        local root = GetRootPart()
+        if root then  
+            local mouse = LocalPlayer:GetMouse()
+            local targetPos = mouse.Hit.p
+            root.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
+        end
+    end
+end)
 
--- Initialize Library
+-- NoClip Loop
+RunService.Stepped:Connect(function()
+    if _G.NC and LocalPlayer.Character then
+        for _, p in pairs(LocalPlayer.Character:GetChildren()) do 
+            if p:IsA("BasePart") then 
+                p.CanCollide = false 
+            end 
+            for _, child in pairs(p:GetDescendants()) do
+                if child:IsA("BasePart") then child.CanCollide = false end
+            end
+        end
+    end
+end)
+
+-- ==========================================
+-- INITIALIZE
+-- ==========================================
 Library:Initialize()
 Library:MakeNotify({ Title = "FCAL HUB", Description = "Script Loaded Successfully!", Duration = 5 })
+
+-- Auto update dropdown
+Players.PlayerAdded:Connect(UpdateDropdown)
+Players.PlayerRemoving:Connect(UpdateDropdown)
+Players.PlayerRemoving:Connect(ClearESP)
