@@ -37,6 +37,7 @@ _G.AutoCP = false
 _G.InfJump = false
 _G.NC = false
 _G.TapTP = false
+_G.AutoInteract = false
 _G.BoxESP = false
 _G.LineESP = false
 _G.ESP = false
@@ -587,17 +588,21 @@ QuickSection:AddButton({
 })
 
 -- [[ TELEPORT ]]
-local TpSection = MainTab:AddSection("🎯 Teleport")
+local TpSection = MainTab:AddSection({"🎯 Teleport"})
 
 TpSection:AddToggle({
     Title = "Tap to Teleport",
     Description = "Klik di layar untuk pindah posisi",
     Default = false,
-    Callback = function(v) _G.TapTP = v end
+    Callback = function(v) 
+        _G.TapTP = v 
+    end
 })
 
--- [[ PLAYER TELEPORT ]]
-local QuickTpSection = MainTab:AddSection("🚀 Quick Player Teleport")
+-- LOGIK: Tap to Teleport (Harus ada listener agar aktif)
+
+-- ================= TAB: PLAYER TELEPORT =================
+local QuickTpSection = MainTab:AddSection({"🚀 Quick Player Teleport"})
 
 QuickTpSection:AddToggle({
     Title = "Auto Pick Up / Interact",
@@ -605,40 +610,39 @@ QuickTpSection:AddToggle({
     Default = false,
     Callback = function(v)
         _G.AutoInteract = v
-        task.spawn(function()
-            while _G.AutoInteract do
-                for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj:IsA("ProximityPrompt") then
-                        -- Cek jarak agar tidak mengambil barang yang terlalu jauh
-                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - obj.Parent:GetModelCFrame().p).Magnitude
-                        if dist < 15 then
-                            fireproximityprompt(obj)
+        if v then
+            task.spawn(function()
+                while _G.AutoInteract do
+                    for _, obj in pairs(Workspace:GetDescendants()) do
+                        if obj:IsA("ProximityPrompt") then
+                            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            if root then
+                                -- Gunakan GetPivot().Position (lebih modern dibanding GetModelCFrame)
+                                local targetPos = obj.Parent:IsA("Model") and obj.Parent:GetPivot().Position or obj.Parent.Position
+                                local dist = (root.Position - targetPos).Magnitude
+                                if dist < 15 then
+                                    fireproximityprompt(obj)
+                                end
+                            end
                         end
                     end
+                    task.wait(0.3) -- Delay agar tidak lag
                 end
-                task.wait(0.5)
-            end
-        end)
+            end)
+        end
     end
 })
-
-local SelectedTarget = ""
 
 -- Fungsi mendapatkan list pemain yang valid
 local function GetPlayerList()
     local list = {}
-    for _, p in pairs(game.Players:GetPlayers()) do
-        if p ~= game.Players.LocalPlayer then 
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then 
             table.insert(list, p.Name) 
         end
     end
-    
-    -- Jika server sepi, berikan teks bantuan agar tidak kosong total
-    if #list == 0 then 
-        return {"Tidak ada pemain"} 
-    end
-    
-    table.sort(list) -- Urutkan nama sesuai abjad agar rapi
+    if #list == 0 then return {"Tidak ada pemain"} end
+    table.sort(list)
     return list
 end
 
@@ -646,30 +650,22 @@ end
 local PlayerDropdown = QuickTpSection:AddDropdown({
     Title = "Pilih Pemain",
     Description = "Cari atau pilih nama pemain",
-    Options = GetPlayerList(), -- Di Redz Library biasanya menggunakan 'Options'
+    Options = GetPlayerList(), -- Di Redz V5 biasanya menggunakan 'Options'
     Default = "",
     Callback = function(v) 
         SelectedTarget = v 
     end
 })
 
--- Fungsi Update Dropdown (Untuk Refresh)
-local function UpdateDropdown()
-    local currentPlayers = GetPlayerList()
-    -- Library Redz/Lucid biasanya menggunakan SetValues atau Refresh
-    if PlayerDropdown.SetValues then
-        PlayerDropdown:SetValues(currentPlayers)
-    elseif PlayerDropdown.Refresh then
-        PlayerDropdown:Refresh(currentPlayers, true)
-    end
-end
-
 -- Tombol Refresh Manual
 QuickTpSection:AddButton({ 
     Title = "🔄 Refresh Daftar Pemain", 
     Callback = function()
-        UpdateDropdown()
-        Library:MakeNotify({ Title = "MDW", Content = "Daftar pemain telah diperbarui!" })
+        local list = GetPlayerList()
+        -- Gunakan pcall agar tidak crash jika method salah
+        pcall(function() PlayerDropdown:SetOptions(list) end)
+        pcall(function() PlayerDropdown:Refresh(list, true) end)
+        Library:MakeNotify({ Title = "MDW", Content = "Daftar pemain diperbarui!" })
     end 
 })
 
@@ -682,39 +678,29 @@ QuickTpSection:AddButton({
             return 
         end
         
-        local target = game.Players:FindFirstChild(SelectedTarget)
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            local myChar = game.Players.LocalPlayer.Character
-            if myChar and myChar:FindFirstChild("HumanoidRootPart") then
-                -- Teleport ke posisi target
-                myChar.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-                Library:MakeNotify({ Title = "Success", Content = "Berhasil ke " .. SelectedTarget })
-            end
+        local target = Players:FindFirstChild(SelectedTarget)
+        local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
+            myRoot.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            Library:MakeNotify({ Title = "Success", Content = "Berhasil ke " .. SelectedTarget })
         else
-            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan/sudah keluar!" })
+            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan!" })
         end
     end
 })
 
 QuickTpSection:AddButton({
     Title = "Bring Player (Visual)",
-    Description = "Membawa target ke posisi Anda (Hanya terlihat di Anda)",
     Callback = function()
-        if SelectedTarget == "" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" }) 
-            return 
-        end
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then return end
+        
         local target = Players:FindFirstChild(SelectedTarget)
         local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         
-        if target and target.Character and myRoot then
-            local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
-            if tRoot then
-                tRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
-                Library:MakeNotify({ Title = "Success", Content = "Membawa " .. SelectedTarget })
-            end
-        else
-            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan!" })
+        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and myRoot then
+            target.Character.HumanoidRootPart.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
+            Library:MakeNotify({ Title = "Success", Content = "Membawa " .. SelectedTarget })
         end
     end
 })
@@ -795,63 +781,53 @@ MoveSection:AddToggle({
 })
 
 local AirPlatform = nil
+local LockedY = 0 -- Variabel untuk mengunci tinggi lantai
 
 MoveSection:AddToggle({
-    Title = "Real Air Walk",
-    Description = "Berjalan di udara seperti di lantai padat",
+    Title = "Real Air Walk (Solid Floor)",
+    Description = "Berjalan di lantai padat (Ketinggian Terkunci)",
     Default = false,
     Callback = function(v)
         _G.AirWalk = v
         
         if v then
-            -- Buat lantai transparan baru
-            AirPlatform = Instance.new("Part")
-            AirPlatform.Name = "MDW_AirFloor"
-            AirPlatform.Size = Vector3.new(6, 1, 6) -- Ukuran lantai di bawah kaki
-            AirPlatform.Transparency = 1 -- 1 = Tidak terlihat, 0.5 jika ingin sedikit terlihat
-            AirPlatform.Anchored = true
-            AirPlatform.CanCollide = true
-            AirPlatform.Parent = workspace
+            local char = game.Players.LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
             
-            task.spawn(function()
-                while _G.AirWalk do
-                    local char = game.Players.LocalPlayer.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    local hum = char and char:FindFirstChildOfClass("Humanoid")
-                    
-                    if root and hum then
-                        -- Lantai selalu berada tepat di bawah kaki (3.5 studs di bawah root)
-                        -- Kita hanya mengambil posisi X dan Z dari pemain, 
-                        -- sedangkan Y (tinggi) mengikuti posisi kaki agar bisa naik/turun jika melompat
-                        local targetPos = root.Position + Vector3.new(0, -3.5, 0)
-                        
-                        -- Jika Anda ingin mengunci ketinggian (tetap datar), gunakan ini:
-                        -- AirPlatform.CFrame = CFrame.new(root.Position.X, targetHeight, root.Position.Z)
-                        
-                        -- Versi dinamis (mengikuti kaki saat melompat/jalan):
-                        AirPlatform.CFrame = CFrame.new(targetPos)
-                        
-                        -- Agar tidak terpeleset, kita buat rotasi lantai tetap datar
-                        AirPlatform.Rotation = Vector3.new(0, 0, 0)
-                    end
-                    task.wait() -- Update sangat cepat (60fps) agar tidak tembus
-                end
+            if root then
+                -- KUNCI KETINGGIAN: Ambil posisi tinggi saat ini
+                LockedY = root.Position.Y - 3.45 
                 
-                -- Hapus lantai saat dimatikan
-                if AirPlatform then
-                    AirPlatform:Destroy()
-                    AirPlatform = nil
-                end
-            end)
-            
-            Library:MakeNotify({ Title = "Air Walk", Content = "Aktif! Sekarang Anda bisa berjalan di langit.", Time = 3 })
+                -- Buat lantai transparan baru yang lebih lebar agar tidak mudah jatuh
+                AirPlatform = Instance.new("Part")
+                AirPlatform.Name = "MDW_SolidAirFloor"
+                AirPlatform.Size = Vector3.new(10, 1, 10) -- Lebih lebar agar mantap
+                AirPlatform.Transparency = 1
+                AirPlatform.Anchored = true
+                AirPlatform.CanCollide = true
+                AirPlatform.Parent = workspace
+                
+                task.spawn(function()
+                    while _G.AirWalk do
+                        local currentRoot = char and char:FindFirstChild("HumanoidRootPart")
+                        if currentRoot and AirPlatform then
+                            -- LANTAI HANYA MENGIKUTI X DAN Z
+                            -- Nilai Y tetap menggunakan LockedY (Ketinggian yang dikunci)
+                            AirPlatform.CFrame = CFrame.new(currentRoot.Position.X, LockedY, currentRoot.Position.Z)
+                        end
+                        task.wait() -- Update sangat cepat untuk kestabilan
+                    end
+                end)
+                
+                Library:MakeNotify({ Title = "Air Walk", Content = "Ketinggian dikunci. Anda bisa berjalan sekarang!", Time = 3 })
+            end
         else
-            -- Matikan fitur
+            -- MATIKAN & HAPUS
             if AirPlatform then
                 AirPlatform:Destroy()
                 AirPlatform = nil
             end
-            Library:MakeNotify({ Title = "Air Walk", Content = "Dimatikan.", Time = 3 })
+            Library:MakeNotify({ Title = "Air Walk", Content = "Fitur Dimatikan.", Time = 3 })
         end
     end
 })
@@ -1026,8 +1002,8 @@ FlySection:AddInput({
 })
 
 FlySection:AddToggle({
-    Title = "Fly Mode",
-    Description = "Bisa naik pake tombol lompat (PC/Mobile)",
+    Title = "Fly Mode (6-Directions)",
+    Description = "Terbang ke arah kamera (PC/Mobile)",
     Default = false,
     Callback = function(v)
         _G.Fly = v
@@ -1044,7 +1020,7 @@ FlySection:AddToggle({
             local bodyVel = Instance.new("BodyVelocity")
             bodyVel.Name = "FlyVel"
             bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bodyVel.Velocity = Vector3.new(0, 0.1, 0)
+            bodyVel.Velocity = Vector3.new(0, 0, 0)
             bodyVel.Parent = root
 
             local bodyGyro = Instance.new("BodyGyro")
@@ -1058,30 +1034,54 @@ FlySection:AddToggle({
                 if _G.Fly and root and root.Parent and hum then
                     local cam = workspace.CurrentCamera
                     local speed = Config.FlySpeed or 100
-                    local moveDir = hum.MoveDirection * speed
                     
-                    -- LOGIKA NAIK (Mendukung Mobile & PC)
-                    -- hum.Jump akan bernilai true saat tombol lompat ditekan di layar HP
-                    local isJumping = UserInputService:IsKeyDown(Enum.KeyCode.Space) or hum.Jump
-                    local isLowering = UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
+                    -- 1. Tentukan Arah Berdasarkan Input PC (Keyboard)
+                    local moveVec = Vector3.new(0,0,0)
                     
-                    local verticalVelocity = 0
-                    if isJumping then
-                        verticalVelocity = speed
-                    elseif isLowering then
-                        verticalVelocity = -speed
+                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                        moveVec = moveVec + cam.CFrame.LookVector
+                    end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                        moveVec = moveVec - cam.CFrame.LookVector
+                    end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                        moveVec = moveVec - cam.CFrame.RightVector
+                    end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                        moveVec = moveVec + cam.CFrame.RightVector
+                    end
+                    
+                    -- 2. Tentukan Arah Berdasarkan Joystick Mobile (Jika PC tidak tekan tombol)
+                    if moveVec.Magnitude == 0 and hum.MoveDirection.Magnitude > 0 then
+                        -- Mengubah arah jalan (2D) menjadi arah kamera (3D)
+                        local joyDir = hum.MoveDirection
+                        moveVec = (cam.CFrame.LookVector * -joyDir.Z) + (cam.CFrame.RightVector * joyDir.X)
+                    end
+                    
+                    -- 3. Logika Naik/Turun (Space & Ctrl)
+                    local verticalVec = Vector3.new(0,0,0)
+                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) or hum.Jump then
+                        verticalVec = Vector3.new(0, 1, 0)
+                    elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                        verticalVec = Vector3.new(0, -1, 0)
                     end
 
-                    bodyVel.Velocity = Vector3.new(moveDir.X, verticalVelocity, moveDir.Z)
+                    -- Gabungkan semua arah dan kalikan dengan kecepatan
+                    local finalVec = moveVec + verticalVec
+                    if finalVec.Magnitude > 0 then
+                        bodyVel.Velocity = finalVec.Unit * speed
+                    else
+                        bodyVel.Velocity = Vector3.new(0, 0, 0)
+                    end
+                    
+                    -- Menjaga karakter tetap menghadap ke depan kamera
                     bodyGyro.CFrame = cam.CFrame
                 else
-                    -- Jika toggle dimatikan atau karakter mati, putus koneksi
                     if _G.FlyCon then _G.FlyCon:Disconnect() end
                 end
             end)
-            Library:MakeNotify({ Title = "Enabled", Content = "Terbang Aktif! Gunakan tombol lompat untuk naik." })
+            Library:MakeNotify({ Title = "Enabled", Content = "Fly 6-Arah Aktif! Maju mengikuti arah pandangan." })
         else
-            -- MATIKAN FLY
             if _G.FlyCon then _G.FlyCon:Disconnect() _G.FlyCon = nil end
             if root then
                 if root:FindFirstChild("FlyVel") then root.FlyVel:Destroy() end
@@ -1095,102 +1095,113 @@ FlySection:AddToggle({
 -- ==========================================
 -- GAME TAB
 -- ==========================================
-local FarmSection = GameTab:AddSection("🏔️ Auto Farming CP")
+local FarmSection = GameTab:AddSection({"🏔️ Master Universal CP v5"})
 
--- Fungsi untuk mendapatkan Stage saat ini dari Leaderstats
-local function GetCurrentStage()
-    local ls = game.Players.LocalPlayer:FindFirstChild("leaderstats")
-    if ls then
-        local st = ls:FindFirstChild("Stage") or ls:FindFirstChild("Checkpoint") or ls:FindFirstChild("Level")
-        return st and st.Value or 0
-    end
-    return 0
-end
+-- Tabel untuk menyimpan data rute gunung
+local MountainRoute = {}
 
--- Fungsi untuk mencari Part Checkpoint berdasarkan angka
-local function FindNextCP(targetNum)
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") or obj:IsA("SpawnLocation") then
-            -- Cari angka di nama objek
-            local num = tonumber(obj.Name:match("%d+"))
-            if num == targetNum then
-                -- Validasi tambahan jika nama mengandung kata kunci umum
-                local n = obj.Name:lower()
-                if n:find("cp") or n:find("stage") or n:find("point") or obj:IsA("SpawnLocation") then
-                    return obj
-                end
-            end
+-- [[ FUNGSI SCANNING ANTI-FREEZE ]]
+local function ScanMountain()
+    MountainRoute = {}
+    local allParts = workspace:GetDescendants()
+    local totalFound = 0
+    
+    for i, obj in pairs(allParts) do
+        -- Kita bagi beban scan agar tidak freeze (setiap 500 objek kita istirahat sebentar)
+        if i % 500 == 0 then task.wait() end
+        
+        -- KRITERIA UNIVERSAL:
+        -- 1. Objek adalah SpawnLocation (Standar Roblox)
+        -- 2. Nama mengandung kata kunci Checkpoint/Stage/Point/Camp
+        if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
+            obj.Name:lower():find("checkpoint") or 
+            obj.Name:lower():find("stage") or 
+            obj.Name:lower():find("camp") or 
+            obj.Name:lower():find("point") or
+            obj.Name:match("^%d+$") -- Nama yang isinya angka saja (misal "1", "2")
+        )) then
+            table.insert(MountainRoute, {Part = obj, Y = obj.Position.Y})
+            totalFound = totalFound + 1
         end
     end
-    return nil
+
+    -- LOGIKA UTAMA: Urutkan semua titik dari yang TERENDAH ke TERTINGGI (Y Axis)
+    table.sort(MountainRoute, function(a, b)
+        return a.Y < b.Y
+    end)
+    
+    return totalFound
 end
 
 FarmSection:AddToggle({
-    Title = "Master Auto CP (Universal)",
-    Description = "Bekerja berdasarkan ketinggian gunung (Semua Map)",
+    Title = "Master Auto CP (Altitude Logic)",
+    Description = "Bekerja di semua map gunung berdasarkan ketinggian",
     Default = false,
     Callback = function(v)
         _G.AutoCP = v
         if v then
             task.spawn(function()
-                Library:MakeNotify({ Title = "Scanning...", Content = "Menganalisa jalur gunung..." })
-                local total = ScanUniversalCPs()
-                Library:MakeNotify({ Title = "Success", Content = "Jalur ditemukan! Memulai pendakian..." })
+                Library:MakeNotify({ Title = "MDW HUB", Content = "Menganalisa rute gunung... Mohon tunggu." })
+                local found = ScanMountain()
+                Library:MakeNotify({ Title = "Success", Content = "Ditemukan " .. found .. " titik pendakian. Memulai..." })
 
                 while _G.AutoCP do
                     local char = game.Players.LocalPlayer.Character
                     local root = char and char:FindFirstChild("HumanoidRootPart")
-                    
-                    if root then
-                        -- Ambil progres saat ini dari Leaderstats (jika ada)
-                        local currentIdx = 0
-                        local ls = game.Players.LocalPlayer:FindFirstChild("leaderstats")
-                        if ls then
-                            local st = ls:FindFirstChild("Checkpoint") or ls:FindFirstChild("Stage") or ls:FindFirstChild("Level")
-                            currentIdx = st and st.Value or 0
-                        end
+                    if not root then task.wait(1) continue end
 
-                        -- Target adalah checkpoint ke (currentIdx + 1) di daftar yang sudah diurutkan
-                        local targetPart = MountainPaths[currentIdx + 1]
-                        
-                        -- Jika tidak ketemu berdasarkan index leaderstats, 
-                        -- cari CP terdekat yang posisinya lebih tinggi dari kita
-                        if not targetPart then
-                            for _, part in pairs(MountainPaths) do
-                                if part.Position.Y > root.Position.Y + 5 then
-                                    targetPart = part
-                                    break
-                                end
-                            end
-                        end
-
-                        if targetPart then
-                            -- Teleportasi
-                            root.CFrame = targetPart.CFrame * CFrame.new(0, 3, 0)
-                            
-                            -- Paksa sistem game mendeteksi sentuhan
-                            if firetouchinterest then
-                                firetouchinterest(root, targetPart, 0)
-                                task.wait(0.1)
-                                firetouchinterest(root, targetPart, 1)
-                            end
-                            
-                            -- Tunggu sebentar agar server memproses
-                            task.wait(_G.CPDelay or 2.0)
-                        else
-                            Library:MakeNotify({ Title = "Selesai", Content = "Sudah mencapai puncak atau jalur habis." })
-                            _G.AutoCP = false
+                    -- Mencari Checkpoint yang tingginya sedikit di atas kita sekarang
+                    local target = nil
+                    for _, cp in pairs(MountainRoute) do
+                        -- Cari CP yang posisinya lebih tinggi dari kita (+ 5 studs)
+                        if cp.Y > root.Position.Y + 5 then
+                            target = cp.Part
                             break
                         end
                     end
-                    task.wait(0.5)
+
+                    if target then
+                        -- Teleportasi 2 tahap (Atas lalu Pas) agar trigger sensor Touch
+                        root.CFrame = target.CFrame * CFrame.new(0, 5, 0)
+                        task.wait(0.3)
+                        root.CFrame = target.CFrame
+                        
+                        -- Force Touch Interest
+                        if firetouchinterest then
+                            firetouchinterest(root, target, 0)
+                            task.wait(0.1)
+                            firetouchinterest(root, target, 1)
+                        end
+
+                        -- Delay per stage (Penting agar tidak di-kick anti-cheat)
+                        task.wait(_G.CPDelay or 2.0)
+                    else
+                        Library:MakeNotify({ Title = "Puncak", Content = "Sudah mencapai titik tertinggi!" })
+                        _G.AutoCP = false
+                        break
+                    end
                 end
             end)
         end
     end
 })
 
-FarmSection:AddInput({ Title = "Delay Pendakian", Default = 2.0, Callback = function(v) _G.CPDelay = tonumber(v) or 2.0 end })
+FarmSection:AddInput({ 
+    Title = "Delay Pendakian", 
+    Default = "2.0", 
+    Callback = function(v) 
+        _G.CPDelay = tonumber(v) or 2.0 
+    end 
+})
+
+FarmSection:AddButton({
+    Title = "Rescan Map",
+    Description = "Klik jika CP tidak terdeteksi",
+    Callback = function()
+        ScanMountain()
+        Library:MakeNotify({ Title = "MDW", Content = "Map telah dipindai ulang!" })
+    end
+})
 
 FarmSection:AddButton({
     Title = "TP to Top of Mountain",
@@ -1823,16 +1834,22 @@ end)
 
 -- [[ TAP TO TELEPORT (PC & MOBILE SUPPORT) ]]
 UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end -- Jangan aktif jika sedang mengetik di chat
-    
-    if _G.TapTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-        local mouse = LocalPlayer:GetMouse()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            -- Teleport ke posisi klik
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.p + Vector3.new(0, 3, 0))
+    if _G.TapTP and not processed then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local mousePos = UserInputService:GetMouseLocation()
+                local ray = Workspace.CurrentCamera:ViewportPointToRay(mousePos.X, mousePos.Y)
+                local raycastResult = Workspace:Raycast(ray.Origin, ray.Direction * 1000)
+                
+                if raycastResult then
+                    root.CFrame = CFrame.new(raycastResult.Position + Vector3.new(0, 3, 0))
+                end
+            end
         end
     end
 end)
+
 
 -- [[ 2D ESP DRAWING LOOP OPTIMIZED ]]
 RunService.RenderStepped:Connect(function()
