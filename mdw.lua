@@ -303,43 +303,6 @@ local ESPHighlights = {}
 local ESPLabels = {}
 local GenHighlights = {}
 local CachedCPs = {}
-local MountainRoute = {}
-_G.AutoWalkSpeed = 25 
-_G.AutoWalk = false
-
-local function GetRoot()
-    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-end
-
--- Fungsi Scan Jalur Gunung (Universal)
-local function ScanMountain()
-    MountainRoute = {}
-    local allParts = workspace:GetDescendants()
-    local count = 0
-    
-    for i, obj in pairs(allParts) do
-        -- Anti-lag: jeda setiap 500 objek agar Delta tidak freeze
-        if i % 500 == 0 then task.wait() end
-        
-        -- Kriteria Checkpoint: SpawnLocation atau Nama (CP, Stage, Camp, Matcha, Point)
-        if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
-            obj.Name:lower():find("cp") or 
-            obj.Name:lower():find("stage") or 
-            obj.Name:lower():find("camp") or 
-            obj.Name:lower():find("matcha") or
-            obj.Name:lower():find("point")
-        )) then
-            table.insert(MountainRoute, {Part = obj, Y = obj.Position.Y})
-            count = count + 1
-        end
-    end
-
-    -- URUTKAN: Dari posisi terendah ke tertinggi (Sumbu Y)
-    table.sort(MountainRoute, function(a, b)
-        return a.Y < b.Y
-    end)
-    return count
-end
 
 local function ScanMapForCPs()
     CachedCPs = {} -- Reset cache
@@ -732,12 +695,52 @@ QuickTpSection:AddButton({
 -- ==========================================
 local WalkSection =  AutoWalking:AddSection("🗻 Auto Walk Mountain")
 
-WalkSection:AddToggle({
+local MountainRoute = {}
+_G.AutoWalkSpeed = 25 
+_G.AutoWalk = false
+
+-- [[ 2. HELPER FUNCTIONS ]]
+local function GetRoot()
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Fungsi Scan Jalur Gunung (Universal)
+local function ScanMountain()
+    MountainRoute = {}
+    local allParts = workspace:GetDescendants()
+    local count = 0
+    
+    for i, obj in pairs(allParts) do
+        -- Anti-lag: jeda setiap 500 objek agar exploit tidak freeze/crash
+        if i % 500 == 0 then task.wait() end
+        
+        -- Kriteria Checkpoint: SpawnLocation atau Nama (CP, Stage, Camp, Matcha, Point)
+        if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
+            obj.Name:lower():find("cp") or 
+            obj.Name:lower():find("stage") or 
+            obj.Name:lower():find("camp") or 
+            obj.Name:lower():find("matcha") or
+            obj.Name:lower():find("point")
+        )) then
+            table.insert(MountainRoute, {Part = obj, Y = obj.Position.Y})
+            count = count + 1
+        end
+    end
+
+    -- URUTKAN: Dari posisi terendah ke tertinggi (Sumbu Y)
+    table.sort(MountainRoute, function(a, b)
+        return a.Y < b.Y
+    end)
+    return count
+end
+
+
+AutoWalking:AddToggle({
     Title = "Start Auto Walk (Matcha/Universal)",
     Description = "Berjalan halus otomatis ke puncak gunung",
     Default = false,
-    Callback = function(v) 
-        _G.AutoWalk = v 
+    Callback = function(v)
+        _G.AutoWalk = v
         if v then
             task.spawn(function()
                 Library:MakeNotify({ Title = "Scanning...", Content = "Mencari rute pendakian terbaik..." })
@@ -781,6 +784,8 @@ WalkSection:AddToggle({
                             CFrame = target.CFrame * CFrame.new(0, 3, 0)
                         })
                         
+                        -- Mengaktifkan anchored supaya tidak jatuh/terganggu physics game saat tween
+                        root.Anchored = true
                         tween:Play()
                         
                         -- Pantau progress jalan
@@ -798,6 +803,7 @@ WalkSection:AddToggle({
                         until reached
                         
                         if connection then connection:Disconnect() end
+                        if GetRoot() then root.Anchored = false end -- Matikan anchored setelah sampai
 
                         -- Simulasi Checkpoint (FireTouchInterest) agar terdaftar di server
                         if firetouchinterest and _G.AutoWalk and GetRoot() then
@@ -811,14 +817,22 @@ WalkSection:AddToggle({
                         _G.AutoWalk = false
                         break
                     end
-                    task.wait(0.5) -- Jeda antar checkpoint agar tidak dianggap lag oleh server
+                    task.wait(0.5) -- Jeda antar checkpoint agar tidak dianggap lag/suspect oleh anti-cheat
                 end
+                
+                -- Memastikan anchored mati saat seluruh perulangan berhenti
+                local root = GetRoot()
+                if root then root.Anchored = false end
             end)
+        else
+            -- Memandulkan fungsi anchored jika player mematikan toggle secara manual
+            local root = GetRoot()
+            if root then root.Anchored = false end
         end
     end
 })
 
-WalkSection:AddSlider({
+AutoWalking:AddSlider({
     Title = "Auto Walk Speed",
     Min = 10,
     Max = 100,
@@ -828,7 +842,8 @@ WalkSection:AddSlider({
     end
 })
 
-WalkSection:AddButton({
+
+AutoWalking:AddButton({
     Title = "Rescan Rute",
     Callback = function()
         local total = ScanMountain()
