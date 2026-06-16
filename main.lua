@@ -718,50 +718,6 @@ QuickTpSection:AddButton({
         end
     end
 })
-
-local UtilSection = MainTab:AddSection("🛠️ Utilities")
-
-UtilSection:AddSlider({
-    Title = "Hitbox Expander",
-    Min = 2,
-    Max = 20,
-    Default = 2, 
-    Callback = function(v) 
-        hbSize = v 
-    end
-})
-
-UtilSection:AddToggle({
-    Title = "Enable Hitbox",
-    Default = false,
-    Callback = function(v)
-        _G.Hitbox = v
-        if v then
-            task.spawn(function()
-                while _G.Hitbox do
-                    for _, p in pairs(game.Players:GetPlayers()) do
-                        if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                            local hrp = p.Character.HumanoidRootPart
-                            hrp.Size = Vector3.new(hbSize, hbSize, hbSize)
-                            hrp.Transparency = 0.7
-                            hrp.Color = Color3.new(1, 0, 0)
-                            hrp.CanCollide = false
-                        end
-                    end
-                    task.wait(1)
-                end
-            end)
-        else
-            -- RESET: Mengembalikan ukuran hitbox ke normal saat dimatikan
-            for _, p in pairs(game.Players:GetPlayers()) do
-                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
-                    p.Character.HumanoidRootPart.Transparency = 1
-                end
-            end
-        end
-    end
-})
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
@@ -1508,6 +1464,50 @@ UtilSection:AddToggle({
             Library:MakeNotify({ Title = "Enabled", Content = "Auto Wiggle Aktif" })
         else
             Library:MakeNotify({ Title = "Disabled", Content = "Auto Wiggle Mati" })
+        end
+    end
+})
+
+local UtilSection = MainTab:AddSection("🛠️ Utilities")
+
+UtilSection:AddSlider({
+    Title = "Hitbox Expander",
+    Min = 2,
+    Max = 20,
+    Default = 2, 
+    Callback = function(v) 
+        hbSize = v 
+    end
+})
+
+UtilSection:AddToggle({
+    Title = "Enable Hitbox",
+    Default = false,
+    Callback = function(v)
+        _G.Hitbox = v
+        if v then
+            task.spawn(function()
+                while _G.Hitbox do
+                    for _, p in pairs(game.Players:GetPlayers()) do
+                        if p ~= game.Players.LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            local hrp = p.Character.HumanoidRootPart
+                            hrp.Size = Vector3.new(hbSize, hbSize, hbSize)
+                            hrp.Transparency = 0.7
+                            hrp.Color = Color3.new(1, 0, 0)
+                            hrp.CanCollide = false
+                        end
+                    end
+                    task.wait(1)
+                end
+            end)
+        else
+            -- RESET: Mengembalikan ukuran hitbox ke normal saat dimatikan
+            for _, p in pairs(game.Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
+                    p.Character.HumanoidRootPart.Transparency = 1
+                end
+            end
         end
     end
 })
