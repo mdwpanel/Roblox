@@ -961,6 +961,81 @@ WalkSection:AddButton({
         Library:MakeNotify({ Title = "Success", Content = "Data diupdate: " .. count .. " koordinat." })
     end
 })
+
+local FollowSection = WalkSection:AddSection({"👥 Follow Player"})
+
+local SelectedToFollow = ""
+_G.FollowActive = false
+
+-- 1. Fungsi untuk mengambil daftar semua pemain di server
+local function GetServerPlayers()
+    local players = {}
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= game.Players.LocalPlayer then
+            table.insert(players, p.Name)
+        end
+    end
+    -- Jika server kosong (hanya Anda sendiri)
+    if #players == 0 then return {"Tidak ada pemain lain"} end
+    return players
+end
+
+-- 2. Membuat Dropdown Daftar Pemain
+local PlayerDropdown = FollowSection:AddDropdown({
+    Title = "Pilih Pemain (Otomatis)",
+    Description = "Daftar pemain di server saat ini",
+    Options = GetServerPlayers(),
+    Default = "",
+    Callback = function(v)
+        SelectedToFollow = v
+    end
+})
+
+-- 3. Tombol Refresh (Jika ada pemain baru masuk tapi belum muncul di daftar)
+FollowSection:AddButton({
+    Title = "🔄 Refresh Daftar Pemain",
+    Callback = function()
+        local list = GetServerPlayers()
+        -- Update opsi di dropdown (Standard RedzLib/Modern UI)
+        pcall(function() PlayerDropdown:SetOptions(list) end)
+        pcall(function() PlayerDropdown:Refresh(list, true) end)
+        Library:MakeNotify({ Title = "Success", Content = "Daftar pemain diperbarui!" })
+    end
+})
+
+-- 4. Toggle untuk Mulai Mengikuti
+FollowSection:AddToggle({
+    Title = "Mulai Mengikuti",
+    Default = false,
+    Callback = function(v)
+        _G.FollowActive = v
+        
+        if v then
+            task.spawn(function()
+                while _G.FollowActive do
+                    local target = game.Players:FindFirstChild(SelectedToFollow)
+                    local char = game.Players.LocalPlayer.Character
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    local root = char and char:FindFirstChild("HumanoidRootPart")
+
+                    if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") and hum and root then
+                        -- Berjalan ke arah pemain tersebut
+                        local targetPos = target.Character.HumanoidRootPart.Position
+                        -- Jarak aman 4 studs agar tidak bertubrukan
+                        hum:MoveTo(targetPos + Vector3.new(3, 0, 3))
+                    end
+                    task.wait(0.1)
+                end
+            end)
+            Library:MakeNotify({ Title = "Follow", Content = "Mengikuti: " .. SelectedToFollow })
+        else
+            -- Berhenti berjalan saat OFF
+            local hum = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum:MoveTo(game.Players.LocalPlayer.Character.HumanoidRootPart.Position) end
+            Library:MakeNotify({ Title = "Follow", Content = "Fitur dimatikan." })
+        end
+    end
+}) 
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
@@ -2089,13 +2164,22 @@ end)
 
 -- [[ TAP TO TELEPORT (PC & MOBILE SUPPORT) ]]
 UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end -- Jangan aktif jika sedang mengetik di chat
+    -- 1. Jangan teleport kalau sedang mengetik di Chat
+    if processed then return end
     
-    if _G.TapTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
-        local mouse = LocalPlayer:GetMouse()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            -- Teleport ke posisi klik
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.p + Vector3.new(0, 3, 0))
+    -- 2. Cek apakah Toggle di menu sedang menyala
+    if _G.TapTP then
+        -- 3. Deteksi Klik Mouse (PC) atau Ketukan Layar (Mobile)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local mouse = LocalPlayer:GetMouse()
+            local character = LocalPlayer.Character
+            local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+            
+            -- 4. Pastikan karakter ada dan lokasi klik valid
+            if rootPart and mouse.Hit then
+                -- Teleport ke lokasi klik (ditambah 3 studs ke atas agar tidak nyangkut di tanah)
+                rootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+            end
         end
     end
 end)
