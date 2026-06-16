@@ -700,9 +700,8 @@ _G.AutoWalkSpeed = 25
 _G.AutoWalk = false
 
 -- [[ 2. HELPER FUNCTIONS ]]
-local function GetRoot()
-    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-end
+local function GetHum() return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") end
+local function GetRoot() return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") end
 
 -- Fungsi Scan Jalur Gunung (Universal)
 local function ScanMountain()
@@ -711,10 +710,8 @@ local function ScanMountain()
     local count = 0
     
     for i, obj in pairs(allParts) do
-        -- Anti-lag: jeda setiap 500 objek agar exploit tidak freeze/crash
-        if i % 500 == 0 then task.wait() end
+        if i % 500 == 0 then task.wait() end -- Anti-lag
         
-        -- Kriteria Checkpoint: SpawnLocation atau Nama (CP, Stage, Camp, Matcha, Point)
         if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
             obj.Name:lower():find("cp") or 
             obj.Name:lower():find("stage") or 
@@ -727,44 +724,51 @@ local function ScanMountain()
         end
     end
 
-    -- URUTKAN: Dari posisi terendah ke tertinggi (Sumbu Y)
     table.sort(MountainRoute, function(a, b)
         return a.Y < b.Y
     end)
     return count
 end
 
-
 WalkSection:AddToggle({
-    Title = "Start Auto Walk (Matcha/Universal)",
-    Description = "Berjalan halus otomatis ke puncak gunung",
+    Title = "Start Auto Walk (Improved)",
+    Description = "Berjalan halus dengan sistem Anti-Stuck",
     Default = false,
     Callback = function(v)
         _G.AutoWalk = v
         if v then
             task.spawn(function()
-                Library:MakeNotify({ Title = "Scanning...", Content = "Mencari rute pendakian terbaik..." })
+                Library:MakeNotify({ Title = "Scanning...", Content = "Menganalisa rute pendakian..." })
                 local total = ScanMountain()
                 
                 if total == 0 then
-                    Library:MakeNotify({ Title = "Error", Content = "Tidak ditemukan Checkpoint di map ini!" })
+                    Library:MakeNotify({ Title = "Error", Content = "Checkpoint tidak ditemukan!" })
                     _G.AutoWalk = false
                     return
                 end
                 
                 Library:MakeNotify({ Title = "Success", Content = "Ditemukan " .. total .. " titik. Memulai..." })
 
+                -- Koneksi NoClip agar tidak tersangkut batu saat jalan
+                local ncConn
+                ncConn = RunService.Stepped:Connect(function()
+                    if _G.AutoWalk and LocalPlayer.Character then
+                        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+                            if part:IsA("BasePart") then part.CanCollide = false end
+                        end
+                    else
+                        ncConn:Disconnect()
+                    end
+                end)
+
                 while _G.AutoWalk do
                     local root = GetRoot()
-                    if not root then 
-                        task.wait(1) -- Tunggu jika karakter sedang mati/respawn
-                        continue 
-                    end
+                    local hum = GetHum()
+                    if not root or not hum then task.wait(1) continue end
 
-                    -- Cari target titik berikutnya yang lebih tinggi dari posisi kita sekarang
+                    -- Cari target titik berikutnya
                     local targetData = nil
                     for _, data in pairs(MountainRoute) do
-                        -- Cari yang tingginya minimal 3 studs di atas kita
                         if data.Y > root.Position.Y + 3 then 
                             targetData = data
                             break
@@ -773,61 +777,51 @@ WalkSection:AddToggle({
 
                     if targetData and targetData.Part then
                         local target = targetData.Part
-                        
-                        -- Hitung durasi berdasarkan jarak agar kecepatan selalu stabil
                         local distance = (root.Position - target.Position).Magnitude
                         local duration = distance / (_G.AutoWalkSpeed or 25)
 
-                        -- Membuat gerakan halus (Tween)
-                        local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                        local tween = TweenService:Create(root, tweenInfo, {
+                        -- Set PlatformStand agar karakter tidak 'berontak' saat ditarik tween
+                        hum.PlatformStand = true
+
+                        local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
                             CFrame = target.CFrame * CFrame.new(0, 3, 0)
                         })
                         
-                        -- Mengaktifkan anchored supaya tidak jatuh/terganggu physics game saat tween
-                        root.Anchored = true
                         tween:Play()
                         
-                        -- Pantau progress jalan
                         local reached = false
                         local connection = tween.Completed:Connect(function() reached = true end)
                         
-                        -- Loop pengecekan saat berjalan
                         repeat 
                             task.wait(0.1)
-                            -- Jika toggle dimatikan di tengah jalan, hentikan gerakan
-                            if not _G.AutoWalk or not GetRoot() then 
+                            if not _G.AutoWalk or hum.Health <= 0 then 
                                 tween:Cancel() 
                                 reached = true 
                             end
                         until reached
                         
                         if connection then connection:Disconnect() end
-                        if GetRoot() then root.Anchored = false end -- Matikan anchored setelah sampai
+                        hum.PlatformStand = false -- Kembalikan ke normal setelah sampai
 
-                        -- Simulasi Checkpoint (FireTouchInterest) agar terdaftar di server
+                        -- Simulasi Checkpoint
                         if firetouchinterest and _G.AutoWalk and GetRoot() then
                             firetouchinterest(root, target, 0)
                             task.wait(0.1)
                             firetouchinterest(root, target, 1)
                         end
                     else
-                        -- Jika tidak ada titik yang lebih tinggi lagi
-                        Library:MakeNotify({ Title = "Selesai", Content = "Anda sudah berada di titik tertinggi map ini!" })
+                        Library:MakeNotify({ Title = "Selesai", Content = "Anda sudah di puncak!" })
                         _G.AutoWalk = false
                         break
                     end
-                    task.wait(0.5) -- Jeda antar checkpoint agar tidak dianggap lag/suspect oleh anti-cheat
+                    task.wait(0.3)
                 end
                 
-                -- Memastikan anchored mati saat seluruh perulangan berhenti
-                local root = GetRoot()
-                if root then root.Anchored = false end
+                -- Cleanup jika mati/off
+                local hum = GetHum()
+                if hum then hum.PlatformStand = false end
+                if ncConn then ncConn:Disconnect() end
             end)
-        else
-            -- Memandulkan fungsi anchored jika player mematikan toggle secara manual
-            local root = GetRoot()
-            if root then root.Anchored = false end
         end
     end
 })
@@ -837,17 +831,14 @@ WalkSection:AddSlider({
     Min = 10,
     Max = 100,
     Default = 25,
-    Callback = function(v)
-        _G.AutoWalkSpeed = v
-    end
+    Callback = function(v) _G.AutoWalkSpeed = v end
 })
-
 
 WalkSection:AddButton({
     Title = "Rescan Rute",
     Callback = function()
         local total = ScanMountain()
-        Library:MakeNotify({ Title = "MDW HUB", Content = "Rute dipindai ulang. Ditemukan: " .. total .. " titik." })
+        Library:MakeNotify({ Title = "MDW HUB", Content = "Rute diperbarui: " .. total .. " titik." })
     end
 })
 
