@@ -47,6 +47,7 @@ _G.AntiVoid = false
 _G.AntiKick = false
 _G.AdminDetect = false
 _G.Hitbox = false
+_G.CPDelay = 2.0 -- Inisialisasi default agar tidak nil
 
 local Config = {
     WalkSpeedDefault = 16,
@@ -805,7 +806,7 @@ MoveSection:AddToggle({
     Callback = function(v)
         _G.AirWalk = v
         
-        if v then 
+        if v then
             local char = game.Players.LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
             
@@ -1004,109 +1005,117 @@ AntiSection:AddToggle({
 
 local FlySection = PlayerTab:AddSection("✈️ Fly Settings")
 
--- Inisialisasi variabel jika belum ada
+-- Inisialisasi variabel
 if not Config then Config = {} end
 Config.FlySpeed = 100
+
+-- Fungsi pembersih gaya fisik
+local function CleanupFly(root)
+    if root then
+        if root:FindFirstChild("FlyVel") then root.FlyVel:Destroy() end
+        if root:FindFirstChild("FlyGyro") then root.FlyGyro:Destroy() end
+    end
+end
+
+-- Fungsi utama Fly (Dibuat terpisah agar bisa dipanggil saat respawn)
+local function StartFly()
+    if not _G.Fly then return end
+    
+    local root = GetRootPart()
+    local hum = GetHumanoid()
+    if not root or not hum then return end
+
+    CleanupFly(root)
+
+    local bodyVel = Instance.new("BodyVelocity")
+    bodyVel.Name = "FlyVel"
+    bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bodyVel.Velocity = Vector3.new(0, 0, 0)
+    bodyVel.Parent = root
+
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.Name = "FlyGyro"
+    bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    bodyGyro.P = 9e4
+    bodyGyro.CFrame = root.CFrame
+    bodyGyro.Parent = root
+
+    -- Menghentikan animasi jatuh agar terlihat seperti melayang tenang
+    hum.PlatformStand = true 
+
+    _G.FlyCon = RunService.RenderStepped:Connect(function()
+        if _G.Fly and root and root.Parent and hum then
+            local cam = workspace.CurrentCamera
+            local speed = Config.FlySpeed or 100
+            local moveVec = Vector3.new(0,0,0)
+            
+            -- Input PC
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + cam.CFrame.RightVector end
+            
+            -- Input Mobile Joystick
+            if moveVec.Magnitude == 0 and hum.MoveDirection.Magnitude > 0 then
+                local joyDir = hum.MoveDirection
+                moveVec = (cam.CFrame.LookVector * -joyDir.Z) + (cam.CFrame.RightVector * joyDir.X)
+            end
+            
+            -- Logika Naik/Turun
+            local yVel = 0
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) or hum.Jump then
+                yVel = speed
+            elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+                yVel = -speed
+            end
+
+            -- Eksekusi Pergerakan
+            local finalVel = (moveVec.Unit * speed)
+            if moveVec.Magnitude == 0 then
+                bodyVel.Velocity = Vector3.new(0, yVel, 0)
+            else
+                bodyVel.Velocity = finalVel + Vector3.new(0, yVel, 0)
+            end
+            
+            bodyGyro.CFrame = cam.CFrame
+        else
+            if _G.FlyCon then _G.FlyCon:Disconnect() end
+            hum.PlatformStand = false
+        end
+    end)
+end
+
+-- Update otomatis saat karakter mati dan hidup kembali
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(0.5) -- Tunggu karakter siap
+    if _G.Fly then
+        StartFly()
+    end
+end)
 
 FlySection:AddInput({ 
     Title = "Fly Speed", 
     Default = 100, 
-    Callback = function(v) 
-        Config.FlySpeed = tonumber(v) or 100 
-    end 
+    Callback = function(v) Config.FlySpeed = tonumber(v) or 100 end 
 })
 
 FlySection:AddToggle({
-    Title = "Fly Mode (6-Directions)",
-    Description = "Terbang ke arah kamera (PC/Mobile)",
+    Title = "Fly Mode (Improved)",
     Default = false,
     Callback = function(v)
         _G.Fly = v
-        local root = GetRootPart()
-        local hum = GetHumanoid()
-        
         if v then
-            if not root or not hum then return end
-
-            -- Hapus gaya lama jika ada
-            if root:FindFirstChild("FlyVel") then root.FlyVel:Destroy() end
-            if root:FindFirstChild("FlyGyro") then root.FlyGyro:Destroy() end
-
-            local bodyVel = Instance.new("BodyVelocity")
-            bodyVel.Name = "FlyVel"
-            bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bodyVel.Velocity = Vector3.new(0, 0, 0)
-            bodyVel.Parent = root
-
-            local bodyGyro = Instance.new("BodyGyro")
-            bodyGyro.Name = "FlyGyro"
-            bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-            bodyGyro.P = 9e4
-            bodyGyro.CFrame = root.CFrame
-            bodyGyro.Parent = root
-
-            _G.FlyCon = RunService.RenderStepped:Connect(function()
-                if _G.Fly and root and root.Parent and hum then
-                    local cam = workspace.CurrentCamera
-                    local speed = Config.FlySpeed or 100
-                    
-                    -- 1. Tentukan Arah Berdasarkan Input PC (Keyboard)
-                    local moveVec = Vector3.new(0,0,0)
-                    
-                    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                        moveVec = moveVec + cam.CFrame.LookVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                        moveVec = moveVec - cam.CFrame.LookVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                        moveVec = moveVec - cam.CFrame.RightVector
-                    end
-                    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                        moveVec = moveVec + cam.CFrame.RightVector
-                    end
-                    
-                    -- 2. Tentukan Arah Berdasarkan Joystick Mobile (Jika PC tidak tekan tombol)
-                    if moveVec.Magnitude == 0 and hum.MoveDirection.Magnitude > 0 then
-                        -- Mengubah arah jalan (2D) menjadi arah kamera (3D)
-                        local joyDir = hum.MoveDirection
-                        moveVec = (cam.CFrame.LookVector * -joyDir.Z) + (cam.CFrame.RightVector * joyDir.X)
-                    end
-                    
-                    -- 3. Logika Naik/Turun (Space & Ctrl)
-                    local verticalVec = Vector3.new(0,0,0)
-                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) or hum.Jump then
-                        verticalVec = Vector3.new(0, 1, 0)
-                    elseif UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                        verticalVec = Vector3.new(0, -1, 0)
-                    end
-
-                    -- Gabungkan semua arah dan kalikan dengan kecepatan
-                    local finalVec = moveVec + verticalVec
-                    if finalVec.Magnitude > 0 then
-                        bodyVel.Velocity = finalVec.Unit * speed
-                    else
-                        bodyVel.Velocity = Vector3.new(0, 0, 0)
-                    end
-                    
-                    -- Menjaga karakter tetap menghadap ke depan kamera
-                    bodyGyro.CFrame = cam.CFrame
-                else
-                    if _G.FlyCon then _G.FlyCon:Disconnect() end
-                end
-            end)
-            Library:MakeNotify({ Title = "Enabled", Content = "Fly 6-Arah Aktif! Maju mengikuti arah pandangan." })
+            StartFly()
+            Library:MakeNotify({ Title = "Enabled", Content = "Fly Aktif! Tetap aktif meski Anda mati." })
         else
-            if _G.FlyCon then _G.FlyCon:Disconnect() _G.FlyCon = nil end
-            if root then
-                if root:FindFirstChild("FlyVel") then root.FlyVel:Destroy() end
-                if root:FindFirstChild("FlyGyro") then root.FlyGyro:Destroy() end
-            end
-            Library:MakeNotify({ Title = "Disabled", Content = "Fly Dimatikan" })
+            if _G.FlyCon then _G.FlyCon:Disconnect() end
+            CleanupFly(GetRootPart())
+            local hum = GetHumanoid()
+            if hum then hum.PlatformStand = false end
+            Library:MakeNotify({ Title = "Disabled", Content = "Fly Mati" })
         end
     end
-})
-
+}) 
 -- ==========================================
 -- GAME TAB
 -- ==========================================
@@ -1122,25 +1131,23 @@ local function ScanMountain()
     local totalFound = 0
     
     for i, obj in pairs(allParts) do
-        -- Kita bagi beban scan agar tidak freeze (setiap 500 objek kita istirahat sebentar)
+        -- Anti-freeze: istirahat setiap 500 objek
         if i % 500 == 0 then task.wait() end
         
-        -- KRITERIA UNIVERSAL:
-        -- 1. Objek adalah SpawnLocation (Standar Roblox)
-        -- 2. Nama mengandung kata kunci Checkpoint/Stage/Point/Camp
+        -- Kriteria Universal
         if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
             obj.Name:lower():find("checkpoint") or 
             obj.Name:lower():find("stage") or 
             obj.Name:lower():find("camp") or 
             obj.Name:lower():find("point") or
-            obj.Name:match("^%d+$") -- Nama yang isinya angka saja (misal "1", "2")
+            obj.Name:match("^%d+$")
         )) then
             table.insert(MountainRoute, {Part = obj, Y = obj.Position.Y})
             totalFound = totalFound + 1
         end
     end
 
-    -- LOGIKA UTAMA: Urutkan semua titik dari yang TERENDAH ke TERTINGGI (Y Axis)
+    -- Urutkan berdasarkan ketinggian (Y)
     table.sort(MountainRoute, function(a, b)
         return a.Y < b.Y
     end)
