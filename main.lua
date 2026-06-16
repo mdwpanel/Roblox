@@ -597,7 +597,7 @@ local function GetTargetCharacter()
 end
 
 local function GetTargetRoot(target)
-    if not target or not  then return nil end
+    if not target or not target.Character then return nil end
     return target.Character:FindFirstChild("HumanoidRootPart")
 end
 
@@ -605,7 +605,7 @@ local function GetTargetHumanoid(target)
     if not target or not target.Character then return nil end
     return target.Character:FindFirstChildOfClass("Humanoid")
 end
- 
+
 -- 1. DORONG DARI TEBING (FIXED)
 TrollSection:AddButton({
     Title = "💨 Dorong dari Tebing",
