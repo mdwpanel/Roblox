@@ -17,7 +17,7 @@ local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
-local UserInputService = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService") 
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -559,6 +559,31 @@ QuickSection:AddButton({
 })
 
 -- [[ PLAYER TELEPORT ]]
+local QuickTpSection = MainTab:AddSection("🚀 Quick Player Teleport")
+
+QuickTpSection:AddToggle({
+    Title = "Auto Pick Up / Interact",
+    Description = "Otomatis ambil item/oksigen terdekat",
+    Default = false,
+    Callback = function(v)
+        _G.AutoInteract = v
+        task.spawn(function()
+            while _G.AutoInteract do
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") then
+                        -- Cek jarak agar tidak mengambil barang yang terlalu jauh
+                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - obj.Parent:GetModelCFrame().p).Magnitude
+                        if dist < 15 then
+                            fireproximityprompt(obj)
+                        end
+                    end
+                end
+                task.wait(0.5)
+            end
+        end)
+    end
+})
+
 -- [[ TELEPORT ]]
 local TpSection = MainTab:AddSection("🎯 Teleport")
 
@@ -603,7 +628,6 @@ local PlayerDropdown = QuickTpSection:AddDropdown({
 -- Fungsi Update Dropdown (Untuk Refresh)
 local function UpdateDropdown()
     local currentPlayers = GetPlayerList()
-    -- Library Redz/Lucid biasanya menggunakan SetValues atau Refresh
     if PlayerDropdown.SetValues then
         PlayerDropdown:SetValues(currentPlayers)
     elseif PlayerDropdown.Refresh then
@@ -620,10 +644,9 @@ QuickTpSection:AddButton({
     end 
 })
 
--- Tombol Teleport
+-- Tombol Teleport (SUDAH DIPERBAIKI UNTUK JARAK JAUH)
 QuickTpSection:AddButton({
     Title = "Teleport Sekarang",
-    Description = "Teleport ke pemain (Mendukung Jarak Jauh)",
     Callback = function()
         if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
             Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
@@ -631,41 +654,43 @@ QuickTpSection:AddButton({
         end
         
         local target = game.Players:FindFirstChild(SelectedTarget)
-        local myChar = game.Players.LocalPlayer.Character
-        local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-
-        if target and myRoot then
-            -- LOGIKA UNTUK JARAK JAUH (StreamingEnabled Bypass)
-            -- Kita mencoba mengambil posisi target melalui 'Pivot' karena lebih stabil
-            local targetPos = nil
-            
-            if target.Character and target.Character:GetPivot() then
-                targetPos = target.Character:GetPivot()
-            end
-
-            if targetPos then
-                -- Teleportasi Utama
-                myRoot.CFrame = targetPos * CFrame.new(0, 0, 3)
-                Library:MakeNotify({ Title = "Success", Content = "Berhasil ke " .. SelectedTarget })
-            else
-                -- Jika karakter target belum di-load (jarak sangat jauh)
-                Library:MakeNotify({ 
-                    Title = "Streaming Error", 
-                    Content = "Karakter target terlalu jauh dan belum dimuat oleh sistem Roblox. Coba lagi dalam 1-2 detik.",
-                    Time = 5
-                })
+        -- Cadangan: Jika tidak ketemu di game.Players, cari model karakternya langsung di Workspace
+        local targetChar = (target and target.Character) or workspace:FindFirstChild(SelectedTarget)
+        
+        if targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
+            local myChar = game.Players.LocalPlayer.Character
+            if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+                local myHRP = myChar.HumanoidRootPart
+                local targetHRP = targetChar.HumanoidRootPart
                 
-                -- Opsi Tambahan: Mencoba memaksa load area target (hanya bekerja di beberapa executor)
-                if target.Character == nil then
-                    -- Beritahu user untuk mencoba refresh
-                    UpdateDropdown()
-                end
+                -- [PERBAIKAN 1] Kunci posisi karakter kita agar tidak jatuh ke void saat map belum nge-load
+                myHRP.Anchored = true
+                
+                -- [PERBAIKAN 2] Paksa kamera/game untuk fokus memuat area sekitar target (Bypass StreamingEnabled ringan)
+                pcall(function()
+                    game.Players.LocalPlayer.ReplicationFocus = targetHRP
+                end)
+                
+                -- Lakukan teleportasi
+                myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
+                
+                -- [PERBAIKAN 3] Beri jeda 0.5 detik agar map di tujuan selesai memuat (render)
+                task.wait(0.5)
+                
+                -- Lepaskan kunci posisi setelah map aman
+                myHRP.Anchored = false
+                
+                Library:MakeNotify({ Title = "Success", Content = "Berhasil ke " .. SelectedTarget })
             end
         else
-            Library:MakeNotify({ Title = "Error", Content = "Karakter Anda atau Target tidak siap!" })
+            -- Jika StreamingEnabled di game tersebut sangat ketat, posisi player jauh mutlak tidak bisa dibaca dari Client
+            Library:MakeNotify({ 
+                Title = "Error", 
+                Content = "Gagal! Player terlalu jauh & tidak ter-render oleh game." 
+            })
         end
     end
-})
+}) 
 
 QuickTpSection:AddButton({
     Title = "Bring Player (Visual)",
@@ -1943,23 +1968,48 @@ ActionsSection:AddButton({
 -- ================= SECTION: SPECTATE =================
 local SpectateSection = ServerTab:AddSection("👁️ Spectate")
 
+local function GetPlayerList()
+    local list = {}
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= game.Players.LocalPlayer then 
+            table.insert(list, p.Name) 
+        end
+    end
+    
+    -- Jika server sepi, berikan teks bantuan agar tidak kosong total
+    if #list == 0 then 
+        return {"Tidak ada pemain"} 
+    end
+    
+    table.sort(list) -- Urutkan nama sesuai abjad agar rapi
+    return list
+end
+
 local SpectateDropdown = SpectateSection:AddDropdown({ 
-    Title = "Select Player", 
-    Default = "",  
-    Options = {}, 
+    Title = "Pilih Pemain",
+    Description = "Cari atau pilih nama pemain",
+    Options = GetPlayerList(), -- Di Redz Library biasanya menggunakan 'Options'
     Callback = function(v) SpecTarget = v end 
 })
 
-SpectateSection:AddButton({
-    Title = "Refresh Daftar Pemain",
-    Callback = function()
-        local list = {}
-        for _, p in pairs(Players:GetPlayers()) do 
-            if p ~= LocalPlayer then table.insert(list, p.Name) end 
-        end
-        SafeRefreshDropdown(SpectateDropdown, list)
+local function UpdateDropdown()
+    local currentPlayers = GetPlayerList()
+    if SpectateDropdown.SetValues then
+        SpectateDropdown:SetValues(currentPlayers)
+    elseif SpectateDropdown.Refresh then
+        SpectateDropdown:Refresh(currentPlayers, true)
     end
+end
+
+-- Tombol Refresh Manual
+SpectateSection:AddButton({ 
+    Title = "🔄 Refresh Daftar Pemain", 
+    Callback = function()
+        UpdateDropdown()
+        Library:MakeNotify({ Title = "MDW", Content = "Daftar pemain telah diperbarui!" })
+    end 
 })
+
 
 SpectateSection:AddButton({
     Title = "Mulai Spectate",
@@ -1971,7 +2021,7 @@ SpectateSection:AddButton({
         end
     end
 })
-
+ 
 SpectateSection:AddButton({ 
     Title = "Stop Spectating", 
     Callback = function() 
@@ -2088,31 +2138,36 @@ end)
 
 -- [[ TAP TO TELEPORT (PC & MOBILE SUPPORT) ]]
 UserInputService.InputBegan:Connect(function(input, processed)
-    -- Jangan teleport jika sedang klik menu atau ketik chat
+    -- 1. Jangan teleport jika sedang klik tombol UI atau sedang mengetik di Chat
     if processed then return end
     
+    -- 2. Cek apakah fitur aktif
     if _G.TapTP then
-        -- Deteksi Klik Kiri (PC) atau Sentuhan (Mobile)
+        -- 3. Deteksi Klik Kiri (PC) atau Sentuhan (Mobile)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local char = LocalPlayer.Character
-            local root = char and char:FindFirstChild("HumanoidRootPart")
             
-            if root then
-                -- Membuat garis (Ray) dari kamera ke arah klik
-                local mousePos = input.Position
-                local unitRay = Workspace.CurrentCamera:ViewportPointToRay(mousePos.X, mousePos.Y)
-                
-                -- Deteksi benda apa yang diklik
-                local raycastParams = RaycastParams.new()
-                raycastParams.FilterDescendantsInstances = {char}
-                raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-                
-                local result = Workspace:Raycast(unitRay.Origin, unitRay.Direction * 2000, raycastParams)
-                
-                if result then
-                    -- Teleport ke posisi benda yang kena klik + naik 3 studs agar tidak nyangkut
-                    root.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0))
-                end
+            local character = LocalPlayer.Character
+            if not character then return end
+             
+            local root = character:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            
+            -- 4. Mengambil posisi mouse/sentuhan yang lebih akurat
+            -- Kita gunakan GetMouseLocation untuk mendapatkan koordinat layar yang tepat
+            local mousePos = UserInputService:GetMouseLocation()
+            local unitRay = Workspace.CurrentCamera:ViewportPointToRay(mousePos.X, mousePos.Y)
+            
+            -- 5. Raycast untuk mencari titik koordinat di dunia game
+            local raycastParams = RaycastParams.new()
+            raycastParams.FilterDescendantsInstances = {character} -- Abaikan karakter sendiri
+            raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+            
+            local result = Workspace:Raycast(unitRay.Origin, unitRay.Direction * 5000, raycastParams)
+            
+            if result then
+                -- 6. Teleport ke titik tersebut
+                -- Ditambah Vector3(0, 3, 0) agar kaki tidak masuk ke dalam lantai
+                root.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0))
             end
         end
     end
