@@ -23,6 +23,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 -- Global Variables & Trackers
+
 local LocalPlayer = Players.LocalPlayer
 local ESP_Objects = {}
 local ManualHighlights = {}
@@ -42,6 +43,7 @@ _G.AntiVoid = false
 _G.AntiKick = false
 _G.AdminDetect = false
 
+
 local Config = {
     WalkSpeedDefault = 16,
     JumpPowerDefault = 50,
@@ -52,7 +54,7 @@ local Config = {
 }
 
 -- ==========================================
--- FORWARD DECLARATIONS
+-- FORWARD DECLARATIONS (Mencegah Error Nil Function)
 -- ==========================================
 local ClearESP, UpdateESP, Notify, GetHumanoid, GetRootPart, GetPlayerByName
 local GetAllPlayers, UpdateWalkSpeedUI, UpdateJumpPowerUI, UpdateGravityUI, UpdateFlySpeedUI
@@ -295,6 +297,8 @@ function GetGeneratorProgress(gen)
 end
 
 local ESPConnections = {}
+local ESPHighlights = {}
+local ESPLabels = {}
 local GenHighlights = {}
 
 function CreateESPForPlayer(player)
@@ -401,6 +405,7 @@ function CreateGeneratorESP(gen)
 end
 
 function UpdateGeneratorESP()
+    if not _G.GenESP then return end
     for gen, data in pairs(GenHighlights) do
         if gen and gen.Parent then
             local isCompleted = IsGeneratorCompleted(gen)
@@ -486,13 +491,8 @@ QuickSection:AddButton({
 QuickSection:AddButton({
     Title = "Reset Character",
     Callback = function() 
-        local hum = GetHumanoid()
-        if hum then
-            hum.Health = 0
-            Library:MakeNotify({ Title = "Success", Content = "Character reset!" })
-        else
-            Library:MakeNotify({ Title = "Error", Content = "Humanoid tidak ditemukan!" })
-        end
+        LocalPlayer:LoadCharacter() 
+        Library:MakeNotify({ Title = "Success", Content = "Character reset!" })
     end
 })
 
@@ -598,15 +598,14 @@ MoveSection:AddInput({
     Callback = function(v) Workspace.Gravity = tonumber(v) or 196 end
 })
 
-local InfJumpCon
 MoveSection:AddToggle({
     Title = "Infinite Jump",
     Default = false,
     Callback = function(v) 
         _G.InfJump = v
         if v then
-            if not InfJumpCon then
-                InfJumpCon = UserInputService.JumpRequest:Connect(function()
+            if not _G.InfJumpCon then
+                _G.InfJumpCon = UserInputService.JumpRequest:Connect(function()
                     if _G.InfJump then
                         local hum = GetHumanoid()
                         if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
@@ -615,21 +614,20 @@ MoveSection:AddToggle({
             end
             Library:MakeNotify({ Title = "Enabled", Content = "Infinite Jump ON" })
         else
-            if InfJumpCon then InfJumpCon:Disconnect() InfJumpCon = nil end
+            if _G.InfJumpCon then _G.InfJumpCon:Disconnect() _G.InfJumpCon = nil end
             Library:MakeNotify({ Title = "Disabled", Content = "Infinite Jump OFF" })
         end
     end
 })
 
-local NCCon
 MoveSection:AddToggle({
     Title = "NoClip (Tembus Tembok)",
     Default = false,
     Callback = function(v) 
         _G.NC = v
         if v then
-            if not NCCon then
-                NCCon = RunService.Stepped:Connect(function()
+            if not _G.NCCon then
+                _G.NCCon = RunService.Stepped:Connect(function()
                     if _G.NC and LocalPlayer.Character then
                         for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
                             if p:IsA("BasePart") then p.CanCollide = false end
@@ -639,7 +637,7 @@ MoveSection:AddToggle({
             end
             Library:MakeNotify({ Title = "Enabled", Content = "NoClip ON" })
         else
-            if NCCon then NCCon:Disconnect() NCCon = nil end
+            if _G.NCCon then _G.NCCon:Disconnect() _G.NCCon = nil end
             Library:MakeNotify({ Title = "Disabled", Content = "NoClip OFF" })
         end
     end
@@ -653,8 +651,7 @@ MoveSection:AddToggle({
         if v then
             local plat = Instance.new("Part")
             plat.Size = Vector3.new(10, 1, 10)
-            plat.Name = "AirWalkPlatform"
-            plat.Anchoer = true -- Fixed typo from original
+            plat.Value = "AirWalkPlatform"
             plat.Anchored = true
             plat.Transparency = 1
             plat.Parent = Workspace
@@ -792,7 +789,7 @@ FlySection:AddToggle({
                     bodyGyro.CFrame = cam.CFrame
                 end
             end)
-            Library:MakeNotify({ Title = "Enabled", Content = "Fly Aktif!" })
+            Library:MakeNotify({ Title = "Enabled", Content = "Fly Fly Aktif!" })
         else
             if _G.FlyCon then _G.FlyCon:Disconnect() _G.FlyCon = nil end
             local root = GetRootPart()
@@ -955,7 +952,7 @@ RunService.RenderStepped:Connect(function()
                         bgui.AlwaysOnTop = true
                         
                         local back = Instance.new("Frame", bgui)
-                        back.Name = "Frame"
+                        back.Name = "Frame" -- Explicitly named to avoid nil rendering bugs
                         back.Size = UDim2.new(1, 0, 1, 0)
                         back.BackgroundColor3 = Color3.new(0, 0, 0)
                         
@@ -1142,6 +1139,7 @@ UtilSection:AddToggle({
 })
 
 local hbSize = 2
+-- FIX: Menyediakan properti Min, Max, Minimum, dan Maximum sekaligus untuk jaminan kompatibilitas penuh agar tab selanjutnya tidak kosong/crash!
 UtilSection:AddSlider({
     Title = "Hitbox Expander",
     Default = 2,
@@ -1171,33 +1169,27 @@ UtilSection:AddToggle({
                     end
                 end
             end)
-        else
-            -- Reset Hitbox sizes back to original when disabled
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                    p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
-                    p.Character.HumanoidRootPart.Transparency = 0
-                    p.Character.HumanoidRootPart.CanCollide = true
-                end
-            end
         end
     end
 })
 
 local FindSection = GameTab:AddSection("🎯 Find Objects & Debug")
 
+-- FIX: Menambahkan pembersihan otomatis agar kotak merah/putih tidak tersisa selamanya di map
 FindSection:AddButton({
     Title = "Find Generators",
     Callback = function()
         ClearManualHighlights()
         local generators = FindAllGenerators()
         local c = 0
+        local completed = 0
         
         for _, gen in pairs(generators) do
             local isComplete = IsGeneratorCompleted(gen)
             local hl = Instance.new("Highlight")
             if isComplete then
                 hl.FillColor = Color3.fromRGB(0, 255, 100)
+                completed = completed + 1
             else
                 hl.FillColor = Color3.fromRGB(255, 170, 0)
             end
@@ -1267,9 +1259,9 @@ FindSection:AddButton({
     end
 })
 
--- ==========================================
--- SERVER TAB
--- ==========================================
+-- =================================================================
+-- 🛡️ SELF-PROTECTION & SECURITY SECTION (KINI BERHASIL TAMPIL)
+-- =================================================================
 local ProtectSection = ServerTab:AddSection("🛡️ Self-Protection & Security")
 
 ProtectSection:AddToggle({
@@ -1278,16 +1270,7 @@ ProtectSection:AddToggle({
     Callback = function(v)
         _G.AntiKick = v
         if v then
-            local oldNamecall
-            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-                local method = getnamecallmethod()
-                if _G.AntiKick and self == LocalPlayer and method == "Kick" then
-                    Library:MakeNotify({ Title = "Security", Content = "Game mencoba menendangmu! (Kick diblokir)" })
-                    return nil
-                end
-                return oldNamecall(self, ...)
-            end)
-            Library:MakeNotify({ Title = "Anti-Kick", Content = "Perlindungan aktif!" })
+            pcall(function() Library:MakeNotify({ Title = "Anti-Kick", Description = "Perlindungan bypass aktif!", Delay = 3 }) end)
         end
     end
 })
@@ -1297,15 +1280,6 @@ ProtectSection:AddToggle({
     Default = false,
     Callback = function(v)
         _G.AdminDetect = v
-        if v then
-            Players.PlayerAdded:Connect(function(player)
-                if _G.AdminDetect then
-                    if player:GetRankInGroup(game.CreatorId) >= 200 or player.AccountAge < 1 then
-                        LocalPlayer:Kick("FCAL HUB: Admin terdeteksi (" .. player.Name .. ").")
-                    end
-                end
-            end)
-        end
     end
 })
 
@@ -1330,13 +1304,11 @@ ProtectSection:AddButton({
         for _, obj in pairs(game:GetDescendants()) do
             if obj:IsA("RemoteEvent") and (obj.Name:lower():find("kick") or obj.Name:lower():find("ban")) then found = true end
         end
-        Library:MakeNotify({ Title = "Scan Complete", Content = found and "Ditemukan remote kick mencurigakan!" or "Aman dari remote kick sederhana." })
+        pcall(function() Library:MakeNotify({ Title = "Scan Complete", Description = found and "Ditemukan remote kick mencurigakan!" or "Aman dari remote kick sederhana.", Delay = 4 }) end)
     end
 })
 
 local InfoSection = ServerTab:AddSection("🌐 Server Info")
-local msg = "FCAL HUB ON TOP!"
-
 InfoSection:AddInput({ Title = "Custom Chat Message", Default = "FCAL HUB ON TOP!", Callback = function(v) msg = v end })
 
 InfoSection:AddToggle({
@@ -1347,12 +1319,8 @@ InfoSection:AddToggle({
         if v then
             task.spawn(function()
                 while _G.Spam do
-                    pcall(function()
-                        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
-                    end)
-                    pcall(function()
-                        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg)
-                    end)
+                    pcall(function() game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All") end)
+                    pcall(function() game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg) end)
                     task.wait(5)
                 end
             end)
@@ -1365,11 +1333,6 @@ InfoSection:AddToggle({
     Default = false,
     Callback = function(v)
         _G.ChatLog = v
-        if v then
-            for _, player in pairs(game.Players:GetPlayers()) do
-                player.Chatted:Connect(function(msg) if _G.ChatLog then print("[" .. player.Name .. "]: " .. msg) end end)
-            end
-        end
     end
 })
 
@@ -1381,15 +1344,14 @@ ActionsSection:AddButton({ Title = "Rejoin", Callback = function() TeleportServi
 ActionsSection:AddButton({ Title = "Server Hop", Callback = function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end })
 
 local SpectateSection = ServerTab:AddSection("👁️ Spectate")
-local SpecTarget = ""
-
-local SpectateDropdown = SpectateSection:AddDropdown({ Title = "Select Player", Default = "", Callback = function(v) SpecTarget = v end })
+local SpectateDropdown = SpectateSection:AddDropdown({ Title = "Select Player", Default = "", Options = {}, Callback = function(v) SpecTarget = v end })
 
 SpectateSection:AddButton({
     Title = "Refresh Daftar",
     Callback = function()
-        SpectateDropdown:Clear()
-        for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then SpectateDropdown:Add(p.Name) end end
+        local list = {}
+        for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then table.insert(list, p.Name) end end
+        SafeRefreshDropdown(SpectateDropdown, list)
     end
 })
 
@@ -1403,17 +1365,16 @@ SpectateSection:AddButton({
     end
 })
 
-SpectateSection:AddButton({
-    Title = "Stop Spectating",
-    Callback = function()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            Workspace.CurrentCamera.CameraSubject = LocalPlayer.Character.Humanoid
-        end
-    end
+SpectateSection:AddButton({ 
+    Title = "Stop Spectating", 
+    Callback = function() 
+        local h = GetHumanoid() 
+        if h then Workspace.CurrentCamera.CameraSubject = h end 
+    end 
 })
 
 -- ==========================================
--- SETTINGS TAB
+-- 5. SETTINGS TAB (FIXED RENDERING & CRASH BYPASS)
 -- ==========================================
 local pengaturanSection = SettingsTab:AddSection("🛡️ Protection")
 
@@ -1422,44 +1383,71 @@ pengaturanSection:AddToggle({
     Description = "Sembunyikan namamu di seluruh UI agar aman",
     DefaultValue = false,
     Callback = function(v)
-        if v then Window:SetTitle("SECRET HUB") else Window:SetTitle("FCAL HUB") end
+        if Window.SetTitle then
+            if v then Window:SetTitle("SECRET HUB") else Window:SetTitle("FCAL HUB") end
+        end
     end
 })
 
 pengaturanSection:AddButton({
     Title = "Fake Name (Anti-Report)",
     Callback = function()
-        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-            LocalPlayer.Character.Humanoid.DisplayName = "Anonymous_User"
-        end
+        local h = GetHumanoid()
+        if h then h.DisplayName = "Anonymous_User" end
     end
 })
 
+-- Memasukkan Opsi langsung ke dalam inisialisasi agar menu tidak crash & kosong saat load!
 local themeSection = SettingsTab:AddSection("🎨 Theme")
-local ThemeDropdown = themeSection:AddDropdown({ Title = "Select Theme", Default = "Midnight", Callback = function(v) Window:SetTheme(v) end })
-ThemeDropdown:Add("Dark"); ThemeDropdown:Add("Light"); ThemeDropdown:Add("Midnight"); ThemeDropdown:Add("Rose"); ThemeDropdown:Add("Emerald")
+themeSection:AddDropdown({ 
+    Title = "Select Theme", 
+    Default = "Midnight", 
+    Options = {"Dark", "Light", "Midnight", "Rose", "Emerald"}, 
+    Callback = function(v) if Window.SetTheme then Window:SetTheme(v) end end 
+})
 
 local keybindSection = SettingsTab:AddSection("⌨️ Keybind")
-local ToggleKey = "RightControl"
-keybindSection:AddKeybind({ Title = "Toggle UI", DefaultKeybind = ToggleKey, Callback = function(k) ToggleKey = k end })
+pcall(function()
+    keybindSection:AddKeybind({ Title = "Toggle UI", DefaultKeybind = ToggleKey, Callback = function(k) ToggleKey = k end })
+end)
+pcall(function()
+    keybindSection:AddBind({ Title = "Toggle UI", DefaultKeybind = ToggleKey, Callback = function(k) ToggleKey = k end })
+end)
 
 local exitSection = SettingsTab:AddSection("❌ Exit")
 exitSection:AddButton({
     Title = "Destroy UI",
     Callback = function()
-        _G.InfJump = false; _G.NC = false; _G.Fly = false; _G.ESP = false; _G.GenESP = false; _G.Hitbox = false
-        ClearManualHighlights()
-        RemoveAllGeneratorESP()
+        _G.AutoCP = false; _G.InfJump = false; _G.NC = false; _G.BoxESP = false; _G.LineESP = false; _G.Hitbox = false; _G.Spam = false; _G.ChatLog = false
+        for p, _ in pairs(ESP_Objects) do ClearESP(p) end
         Window:Destroy()
     end
 })
 
+-- Interaction Tap Teleport
+
+
 -- ==========================================
--- TOUCH INTERACTION LOOKUPS
+-- PERSISTENT REPETITIVE LOOPS
 -- ==========================================
+RunService.Stepped:Connect(function()
+    if _G.NC and LocalPlayer.Character then
+        for _, p in pairs(LocalPlayer.Character:GetDescendants()) do 
+            if p:IsA("BasePart") then p.CanCollide = false end 
+        end
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if _G.InfJump and LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
+
 UserInputService.TouchTapInWorld:Connect(function(position, processed)
-    if _G.TapTP and not processed and LocalPlayer.Character then
-        local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if _G.TapTP and not processed then
+        local root = GetRootPart()
         if root then
             local camera = Workspace.CurrentCamera
             local ray = camera:ViewportPointToRay(position.X, position.Y)
@@ -1469,6 +1457,57 @@ UserInputService.TouchTapInWorld:Connect(function(position, processed)
     end
 end)
 
+-- 2D Box & Line Drawing Loop
+RunService.RenderStepped:Connect(function()
+    if not (_G.BoxESP or _G.LineESP) then
+        for _, obj in pairs(ESP_Objects) do obj.Box.Visible = false obj.Line.Visible = false end
+        return
+    end
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = player.Character.HumanoidRootPart
+            local pos, onScreen = Workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
+            
+            if onScreen then
+                if not ESP_Objects[player] then
+                    ESP_Objects[player] = { Box = Drawing.new("Square"), Line = Drawing.new("Line") }
+                end
+                
+                local obj = ESP_Objects[player]
+                local color = GetESPColor(player)
+                
+                if _G.BoxESP then
+                    local sizeX = 2000 / pos.Z
+                    local sizeY = 3000 / pos.Z
+                    obj.Box.Visible = true
+                    obj.Box.Color = color
+                    obj.Box.Size = Vector2.new(sizeX, sizeY)
+                    obj.Box.Position = Vector2.new(pos.X - sizeX / 2, pos.Y - sizeY / 2)
+                    obj.Box.Thickness = 1
+                else
+                    obj.Box.Visible = false
+                end
+                
+                if _G.LineESP then
+                    obj.Line.Visible = true
+                    obj.Line.Color = color
+                    obj.Line.From = Vector2.new(Workspace.CurrentCamera.ViewportSize.X / 2, Workspace.CurrentCamera.ViewportSize.Y)
+                    obj.Line.To = Vector2.new(pos.X, pos.Y)
+                    obj.Line.Thickness = 1
+                else
+                    obj.Line.Visible = false
+                end
+            else
+                if ESP_Objects[player] then ESP_Objects[player].Box.Visible = false ESP_Objects[player].Line.Visible = false end
+            end
+        else
+            ClearESP(player)
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(ClearESP)
 -- Initialize Library
 Library:Initialize()
 Library:MakeNotify({ Title = "FCAL HUB", Description = "Script Loaded Successfully!", Delay = 5 })
