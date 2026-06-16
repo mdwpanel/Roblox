@@ -1648,7 +1648,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
         end
     end
 end)
- 
+
 local ProtectSection = ServerTab:AddSection({"🛡️ Self-Protection & Security"})
 
 ProtectSection:AddToggle({ Title = "Anti-Kick Protection", Default = false, Callback = function(v) _G.AntiKick = v end })
@@ -1775,18 +1775,18 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 -- [[ TAP TO TELEPORT (PC & MOBILE SUPPORT) ]]
-UserInputService.InputBegan:Connect(function(position, processed)
-    if _G.TapTP and not processed then
-        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            local camera = Workspace.CurrentCamera
-            local ray = camera:ViewportPointToRay(position.X, position.Y)
-            local result = Workspace:Raycast(ray.Origin, ray.Direction * 1000)
-            if result then root.CFrame = CFrame.new(result.Position + Vector3.new(0, 3, 0)) end
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end -- Jangan aktif jika sedang mengetik di chat
+    
+    if _G.TapTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+        local mouse = LocalPlayer:GetMouse()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            -- Teleport ke posisi klik
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.p + Vector3.new(0, 3, 0))
         end
     end
 end)
- 
+
 -- [[ 2D ESP DRAWING LOOP OPTIMIZED ]]
 RunService.RenderStepped:Connect(function()
     if not (_G.BoxESP or _G.LineESP) then
