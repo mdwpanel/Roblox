@@ -30,6 +30,9 @@ local msg = "FCAL HUB ON TOP!"
 local SpecTarget = ""
 local hbSize = 2
 
+_G.AutoCPAll = false
+_G.CPScanDelay = 1.0
+_G.CPTeleportDelay = 0.5
 _G.AutoCP = false
 _G.InfJump = false
 _G.NC = false
@@ -49,7 +52,7 @@ _G.Fly = false
 _G.AirWalk = false
 _G.AutoWalkJSON = false
 _G.WalkingAntiVoid = false
-_G.AntiFreeze = false
+_G.AntiFreeze = false 
 _G.Wiggle = false
 _G.KillerWarn = false
 _G.AutoSkillMobile = false
@@ -1644,85 +1647,312 @@ FlySection:AddToggle({
 -- ==========================================
 -- GAME TAB - AUTO CP
 -- ==========================================
-local FarmSection = GameTab:AddSection("🏒 Auto Farming CP")
-local MountainPaths = {}
-
-local function ScanUniversalCPs()
-    MountainPaths = {}
-    local count = 0
+local function ScanAllCheckpoints()
+    local checkpoints = {}
+    
+    -- Scan seluruh workspace
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
-            obj.Name:lower():find("checkpoint") or 
-            obj.Name:lower():find("stage") or 
-            obj.Name:lower():find("point")
-        )) then
-            table.insert(MountainPaths, obj)
-            count = count + 1
+        local found = false
+        local name = obj.Name:lower()
+        local isSpawn = obj:IsA("SpawnLocation")
+        local isPart = obj:IsA("BasePart")
+        
+        -- KRITERIA CHECKPOINT
+        if isSpawn or isPart then
+            -- Cek nama
+            if name:find("cp") or name:find("checkpoint") or 
+               name:find("stage") or name:find("point") or 
+               name:find("start") or name:find("finish") or
+               name:find("level") or name:find("zone") or
+               name:find("spawn") or name:find("respawn") then
+                found = true
+            end
+            
+            -- Cek atribut
+            if obj:GetAttribute("Checkpoint") or 
+               obj:GetAttribute("CP") or 
+               obj:GetAttribute("Stage") then
+                found = true
+            end
+            
+            -- Cek ukuran (spawn location biasanya besar)
+            if isSpawn then
+                found = true
+            end
+            
+            if found and obj.Position.Y > -100 then
+                -- Ambil angka dari nama
+                local num = tonumber(obj.Name:match("%d+")) or 0
+                table.insert(checkpoints, {
+                    Part = obj,
+                    Y = obj.Position.Y,
+                    Number = num,
+                    Name = obj.Name,
+                    Position = obj.Position
+                })
+            end
         end
     end
-    table.sort(MountainPaths, function(a, b)
-        return a.Position.Y < b.Position.Y
+    
+    -- Urutkan berdasarkan ketinggian (Y)
+    table.sort(checkpoints, function(a, b)
+        return a.Y < b.Y
     end)
-    return count
+    
+    return checkpoints
 end
 
+-- ==========================================
+-- TAB AUTO CP
+-- ==========================================
+local FarmSection = GameTab:AddSection("🏔️ Auto CP All Mountain")
+
 FarmSection:AddToggle({
-    Title = "Master Auto CP (Universal)",
-    Description = "Bekerja berdasarkan ketinggian gunung",
+    Title = "Auto CP All Mountain",
+    Description = "Otomatis teleport ke semua checkpoint (Universal)",
     Default = false,
     Callback = function(v)
-        _G.AutoCP = v
+        _G.AutoCPAll = v
+        
         if v then
             task.spawn(function()
-                local total = ScanUniversalCPs()
-                Library:MakeNotify({ Title = "MDW", Content = "Ditemukan " .. total .. " Jalur. Memulai..." })
-
-                while _G.AutoCP do
-                    local char = LocalPlayer.Character
-                    local root = char and char:FindFirstChild("HumanoidRootPart")
-                    
-                    if root then
-                        local currentIdx = 0
-                        local ls = LocalPlayer:FindFirstChild("leaderstats")
-                        if ls then
-                            local st = ls:FindFirstChild("Checkpoint") or ls:FindFirstChild("Stage") or ls:FindFirstChild("Level")
-                            currentIdx = st and st.Value or 0
-                        end
-
-                        local targetPart = MountainPaths[currentIdx + 1]
-                        
-                        if not targetPart then
-                            for _, part in pairs(MountainPaths) do
-                                if part.Position.Y > root.Position.Y + 5 then
-                                    targetPart = part
-                                    break
-                                end
-                            end
-                        end
-
-                        if targetPart then
-                            root.CFrame = targetPart.CFrame * CFrame.new(0, 3, 0)
-                            task.wait(0.2)
-                            root.CFrame = targetPart.CFrame
-                            task.wait(_G.CPDelay or 2.0)
-                        else
-                            Library:MakeNotify({ Title = "Selesai", Content = "Sudah mencapai puncak." })
-                            _G.AutoCP = false
-                            break
-                        end
-                    end
-                    task.wait(0.5)
+                -- SCAN CHECKPOINT
+                local cps = ScanAllCheckpoints()
+                
+                if #cps == 0 then
+                    Library:MakeNotify({ 
+                        Title = "⚠️ Error", 
+                        Content = "Tidak ada checkpoint ditemukan di map ini!", 
+                        Duration = 5 
+                    })
+                    _G.AutoCPAll = false
+                    return
                 end
+                
+                Library:MakeNotify({ 
+                    Title = "🏔️ Auto CP", 
+                    Content = "Ditemukan " .. #cps .. " checkpoint! Memulai...", 
+                    Duration = 3 
+                })
+                
+                local currentCP = 0
+                local char = LocalPlayer.Character
+                local root = char and char:FindFirstChild("HumanoidRootPart")
+                
+                if not root then
+                    Library:MakeNotify({ 
+                        Title = "⚠️ Error", 
+                        Content = "Karakter tidak ditemukan!", 
+                        Duration = 3 
+                    })
+                    _G.AutoCPAll = false
+                    return
+                end
+                
+                -- LOOP KE SEMUA CHECKPOINT
+                for i, cp in ipairs(cps) do
+                    if not _G.AutoCPAll then break end
+                    
+                    -- Cek apakah masih hidup
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if not hum or hum.Health <= 0 then
+                        Library:MakeNotify({ 
+                            Title = "💀 Mati", 
+                            Content = "Karakter mati, berhenti...", 
+                            Duration = 3 
+                        })
+                        break
+                    end
+                    
+                    -- Update root
+                    root = char:FindFirstChild("HumanoidRootPart")
+                    if not root then
+                        Library:MakeNotify({ 
+                            Title = "⚠️ Error", 
+                            Content = "RootPart hilang!", 
+                            Duration = 3 
+                        })
+                        break
+                    end
+                    
+                    -- Teleport ke checkpoint
+                    local targetPos = cp.Part.CFrame * CFrame.new(0, 3, 0)
+                    root.CFrame = targetPos
+                    
+                    -- Simulasi sentuh (agar game mendeteksi)
+                    pcall(function()
+                        if firetouchinterest then
+                            firetouchinterest(root, cp.Part, 0)
+                            task.wait(0.1)
+                            firetouchinterest(root, cp.Part, 1)
+                        end
+                    end)
+                    
+                    currentCP = i
+                    
+                    -- Notifikasi
+                    Library:MakeNotify({ 
+                        Title = "✅ CP " .. i, 
+                        Content = cp.Name .. " (Y: " .. math.floor(cp.Y) .. ")", 
+                        Duration = 2 
+                    })
+                    
+                    -- Delay
+                    task.wait(_G.CPTeleportDelay or 0.5)
+                end
+                
+                -- SELESAI
+                if _G.AutoCPAll then
+                    Library:MakeNotify({ 
+                        Title = "🏆 Selesai!", 
+                        Content = "Berhasil melewati " .. currentCP .. " checkpoint!", 
+                        Duration = 5 
+                    })
+                end
+                
+                _G.AutoCPAll = false
             end)
+        else
+            Library:MakeNotify({ 
+                Title = "⏹️ Berhenti", 
+                Content = "Auto CP dimatikan", 
+                Duration = 2 
+            })
         end
     end
 })
 
+-- DELAY SETTINGS
 FarmSection:AddInput({
-    Title = "Delay Pendakian",
-    Default = "2.0", 
+    Title = "Delay Antar CP (detik)",
+    Description = "Jeda antara teleport ke checkpoint berikutnya",
+    Default = "0.5",
     Callback = function(v)
-        _G.CPDelay = tonumber(v) or 2.0
+        _G.CPTeleportDelay = tonumber(v) or 0.5
+    end
+})
+
+-- ==========================================
+-- TOMBOL MANUAL
+-- ==========================================
+FarmSection:AddButton({
+    Title = "🔍 Scan Checkpoint Sekarang",
+    Callback = function()
+        local cps = ScanAllCheckpoints()
+        
+        if #cps == 0 then
+            Library:MakeNotify({ 
+                Title = "❌ Tidak Ada", 
+                Content = "Tidak ada checkpoint ditemukan!", 
+                Duration = 3 
+            })
+            return
+        end
+        
+        -- Tampilkan daftar
+        local msg = "Ditemukan " .. #cps .. " checkpoint:\n"
+        for i, cp in ipairs(cps) do
+            if i <= 10 then
+                msg = msg .. i .. ". " .. cp.Name .. " (Y: " .. math.floor(cp.Y) .. ")\n"
+            end
+        end
+        if #cps > 10 then
+            msg = msg .. "... dan " .. (#cps - 10) .. " lainnya"
+        end
+        
+        Library:MakeNotify({ 
+            Title = "🔍 Hasil Scan", 
+            Content = msg, 
+            Duration = 8 
+        })
+    end
+})
+
+FarmSection:AddButton({
+    Title = "🏔️ TP ke Puncak",
+    Callback = function()
+        local cps = ScanAllCheckpoints()
+        
+        if #cps == 0 then
+            Library:MakeNotify({ 
+                Title = "❌ Error", 
+                Content = "Tidak ada checkpoint ditemukan!", 
+                Duration = 3 
+            })
+            return
+        end
+        
+        -- Ambil checkpoint tertinggi
+        local highest = cps[#cps]
+        local root = GetRootPart()
+        
+        if root and highest then
+            root.CFrame = highest.Part.CFrame * CFrame.new(0, 5, 0)
+            Library:MakeNotify({ 
+                Title = "🏔️ Puncak!", 
+                Content = "TP ke " .. highest.Name .. " (Y: " .. math.floor(highest.Y) .. ")", 
+                Duration = 3 
+            })
+        end
+    end
+})
+
+FarmSection:AddButton({
+    Title = "🏔️ TP ke Checkpoint Tertentu",
+    Callback = function()
+        -- Scan dulu
+        local cps = ScanAllCheckpoints()
+        
+        if #cps == 0 then
+            Library:MakeNotify({ 
+                Title = "❌ Error", 
+                Content = "Tidak ada checkpoint ditemukan!", 
+                Duration = 3 
+            })
+            return
+        end
+        
+        -- Tampilkan pilihan di console
+        print("=== DAFTAR CHECKPOINT ===")
+        for i, cp in ipairs(cps) do
+            print(i .. ". " .. cp.Name .. " (Y: " .. math.floor(cp.Y) .. ")")
+        end
+        print("============================")
+        print("Ketik: /tp [nomor] di chat")
+        print("Contoh: /tp 5")
+        
+        Library:MakeNotify({ 
+            Title = "📝 Instruksi", 
+            Content = "Cek console (F9) untuk daftar CP. Ketik /tp [nomor] di chat", 
+            Duration = 5 
+        })
+        
+        -- Listener chat
+        local connection
+        connection = Players:GetPlayers()[1].Chatted:Connect(function(msg)
+            if msg:lower():sub(1, 4) == "/tp " then
+                local num = tonumber(msg:match("%d+"))
+                if num and num >= 1 and num <= #cps then
+                    local target = cps[num]
+                    local root = GetRootPart()
+                    if root then
+                        root.CFrame = target.Part.CFrame * CFrame.new(0, 5, 0)
+                        Library:MakeNotify({ 
+                            Title = "✅ TP!", 
+                            Content = "Ke " .. target.Name, 
+                            Duration = 3 
+                        })
+                    end
+                else
+                    Library:MakeNotify({ 
+                        Title = "❌ Error", 
+                        Content = "Nomor tidak valid! (1-" .. #cps .. ")", 
+                        Duration = 3 
+                    })
+                end
+                connection:Disconnect()
+            end
+        end)
     end
 })
 
