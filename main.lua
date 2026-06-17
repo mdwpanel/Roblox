@@ -1,7 +1,7 @@
 --[[
     FCAL HUB - LYNX GUI EDITION
-    Version: 2.3.0 | ULTIMATE EDITION
-    Dengan Marketplace Skins, Admin Kick & Freeze!
+    Version: 2.2.0 | ULTIMATE EDITION
+    Dengan Skin System Premium & Universal Features
 --]]
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/mdwpanel/Roblox/refs/heads/main/main_ui_modern.lua"))()
@@ -23,7 +23,6 @@ local ContextActionService = game:GetService("ContextActionService")
 local StarterGui = game:GetService("StarterGui")
 local MarketplaceService = game:GetService("MarketplaceService")
 local CollectionService = game:GetService("CollectionService")
-local Debris = game:GetService("Debris")
 
 -- Global Variables
 local LocalPlayer = Players.LocalPlayer
@@ -39,8 +38,6 @@ local SkinData = {}
 local ActiveSkin = nil
 local IsSkinActive = false
 local SkinParts = {}
-local FrozenPlayers = {}
-local AdminList = {}
 
 _G.AutoCPAll = false
 _G.CPTeleportDelay = 0.8
@@ -97,10 +94,6 @@ _G.SpeedHack = false
 _G.SpeedValue = 50
 _G.JumpHack = false
 _G.JumpValue = 100
-_G.AdminKick = false
-_G.AdminFreeze = false
-_G.FreezeRange = 50
-_G.KickRange = 50
 
 local Config = {
     WalkSpeedDefault = 16,
@@ -131,7 +124,7 @@ setreadonly(mt, true)
 -- ==========================================
 local Window = Library:Window({
     Title = "FCAL HUB",
-    Footer = "v2.3.0 | Ultimate Edition"
+    Footer = "v2.2.0 | Ultimate Edition"
 })
 
 -- ==========================================
@@ -406,387 +399,156 @@ function ToggleWallHack(enabled)
 end
 
 -- ==========================================
--- ADMIN KICK & FREEZE FUNCTIONS
+-- PREMIUM SKIN SYSTEM
 -- ==========================================
 
-function KickAdmin(player)
-    if not player or not player.Character then return false end
-    
-    -- Coba kick dengan berbagai metode
-    local success = false
-    
-    -- Method 1: Teleport ke void
-    pcall(function()
-        local root = player.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            root.CFrame = CFrame.new(0, -1000, 0)
-            success = true
-        end
-    end)
-    
-    -- Method 2: Set health ke 0
-    pcall(function()
-        local hum = player.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.Health = 0
-            success = true
-        end
-    end)
-    
-    -- Method 3: Hapus karakter
-    pcall(function()
-        if player.Character then
-            player.Character:Destroy()
-            success = true
-        end
-    end)
-    
-    -- Method 4: Kirim RemoteEvent
-    pcall(function()
-        local remote = ReplicatedStorage:FindFirstChild("RemoteEvent")
-        if remote then
-            remote:FireServer("KickPlayer", player.Name)
-            success = true
-        end
-    end)
-    
-    return success
-end
-
-function FreezeAdmin(player)
-    if not player or not player.Character then return false end
-    
-    -- Cek apakah sudah di-freeze
-    if FrozenPlayers[player] then
-        -- Unfreeze
-        pcall(function()
-            local root = player.Character:FindFirstChild("HumanoidRootPart")
-            if root then
-                root.Anchored = false
-            end
-            local hum = player.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum.PlatformStand = false
-                hum.Sit = false
-            end
-        end)
-        FrozenPlayers[player] = nil
-        return true
-    end
-    
-    -- Freeze
-    local success = false
-    pcall(function()
-        local root = player.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            root.Anchored = true
-            success = true
-        end
-        local hum = player.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.PlatformStand = true
-            hum.Sit = true
-        end
-    end)
-    
-    if success then
-        FrozenPlayers[player] = true
-        
-        -- Buat efek frozen
-        pcall(function()
-            local char = player.Character
-            if char then
-                -- Highlight biru
-                local hl = Instance.new("Highlight")
-                hl.Name = "FrozenHighlight"
-                hl.Adornee = char
-                hl.FillColor = Color3.fromRGB(0, 150, 255)
-                hl.FillTransparency = 0.3
-                hl.OutlineColor = Color3.new(1, 1, 1)
-                hl.Parent = char
-                
-                -- Es di sekitar
-                for _, part in pairs(char:GetChildren()) do
-                    if part:IsA("BasePart") then
-                        local ice = part:Clone()
-                        ice.Name = "IceEffect"
-                        ice.Parent = char
-                        ice.CFrame = part.CFrame
-                        ice.CanCollide = false
-                        ice.Material = Enum.Material.Ice
-                        ice.Transparency = 0.4
-                        ice.Color = Color3.fromRGB(0, 200, 255)
-                        
-                        local weld = Instance.new("Weld")
-                        weld.Part0 = part
-                        weld.Part1 = ice
-                        weld.C0 = part.CFrame:Inverse()
-                        weld.C1 = ice.CFrame:Inverse()
-                        weld.Parent = ice
-                    end
-                end
-            end
-        end)
-    end
-    
-    return success
-end
-
-function DetectAdmins()
-    AdminList = {}
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            -- Cek apakah player adalah admin berdasarkan berbagai indikator
-            local isAdmin = false
-            
-            -- Cek rank di group
-            pcall(function()
-                if player:GetRankInGroup(0) > 0 then
-                    isAdmin = true
-                end
-            end)
-            
-            -- Cek atribut
-            pcall(function()
-                if player:GetAttribute("Admin") == true or player:GetAttribute("Staff") == true then
-                    isAdmin = true
-                end
-            end)
-            
-            -- Cek tag
-            pcall(function()
-                if player:FindFirstChild("AdminTag") or player:FindFirstChild("StaffTag") then
-                    isAdmin = true
-                end
-            end)
-            
-            -- Cek display name
-            local displayName = player.DisplayName:lower()
-            if displayName:find("admin") or displayName:find("staff") or displayName:find("mod") or displayName:find("owner") then
-                isAdmin = true
-            end
-            
-            -- Cek apakah memiliki tool admin
-            pcall(function()
-                if player.Character then
-                    for _, tool in pairs(player.Character:GetChildren()) do
-                        if tool:IsA("Tool") and (tool.Name:lower():find("admin") or tool.Name:lower():find("staff") or tool.Name:lower():find("kick") or tool.Name:lower():find("ban")) then
-                            isAdmin = true
-                        end
-                    end
-                end
-            end)
-            
-            if isAdmin then
-                table.insert(AdminList, player.Name)
-            end
-        end
-    end
-    return AdminList
-end
-
--- ==========================================
--- MARKETPLACE SKINS - COWOK & CEWEK
--- ==========================================
-
--- Daftar skin dari marketplace (Character Skins)
-local CharacterSkins = {
-    -- ===== COWOK (Male Skins) =====
+-- Daftar skin premium
+local PremiumSkins = {
     {
-        Name = "👤 Ganteng",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(255, 200, 150),
-        Material = Enum.Material.SmoothPlastic,
-        Effect = "Glow",
-        Price = 0,
-        Description = "Tampan dengan aura bersinar"
-    },
-    {
-        Name = "⚫ Shadow Ninja",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(20, 20, 30),
-        Material = Enum.Material.SmoothPlastic,
-        Effect = "Shadow",
-        Price = 0,
-        Description = "Ninja bayangan yang misterius"
-    },
-    {
-        Name = "🔥 Fire Knight",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(255, 50, 0),
-        Material = Enum.Material.Neon,
-        Effect = "Fire",
-        Price = 0,
-        Description = "Ksatria api yang perkasa"
-    },
-    {
-        Name = "💀 Dark Reaper",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(40, 0, 40),
-        Material = Enum.Material.SmoothPlastic,
-        Effect = "Shadow",
-        Price = 0,
-        Description = "Pembawa maut dari kegelapan"
-    },
-    {
-        Name = "🦸 Super Hero",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(0, 100, 255),
-        Material = Enum.Material.Neon,
-        Effect = "Aura",
-        Price = 0,
-        Description = "Pahlawan super dengan kekuatan besar"
-    },
-    {
-        Name = "⚔️ Samurai",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(200, 100, 50),
-        Material = Enum.Material.SmoothPlastic,
-        Effect = "Glow",
-        Price = 0,
-        Description = "Pendekar samurai yang tangguh"
-    },
-    {
-        Name = "🧙 Wizard",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(150, 0, 255),
-        Material = Enum.Material.Neon,
-        Effect = "Stars",
-        Price = 0,
-        Description = "Penyihir dengan sihir kuno"
-    },
-    {
-        Name = "🏀 Athlete",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(255, 150, 0),
+        Name = "❌ No Skin",
+        Color = Color3.fromRGB(255,255,255),
+        Type = "None",
         Material = Enum.Material.SmoothPlastic,
         Effect = "None",
-        Price = 0,
-        Description = "Atlet dengan kecepatan luar biasa"
+        Price = 0
     },
     {
-        Name = "🐉 Dragon Warrior",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(200, 0, 0),
+        Name = "🔥 Golden God",
+        Color = Color3.fromRGB(255, 215, 0),
+        Type = "Gold",
+        Material = Enum.Material.Neon,
+        Effect = "Glow",
+        Price = 0,
+        Description = "Berkilau seperti emas murni"
+    },
+    {
+        Name = "🌑 Shadow Reaper",
+        Color = Color3.fromRGB(30, 30, 40),
+        Type = "Dark",
+        Material = Enum.Material.SmoothPlastic,
+        Effect = "Smoke",
+        Price = 0,
+        Description = "Kegelapan yang bergerak"
+    },
+    {
+        Name = "💎 Crystal Blue",
+        Color = Color3.fromRGB(0, 150, 255),
+        Type = "Crystal",
+        Material = Enum.Material.Glass,
+        Effect = "Sparkle",
+        Price = 0,
+        Description = "Seperti kristal biru yang berkilau"
+    },
+    {
+        Name = "🔥 Inferno",
+        Color = Color3.fromRGB(255, 50, 0),
+        Type = "Fire",
         Material = Enum.Material.Neon,
         Effect = "Fire",
         Price = 0,
-        Description = "Prajurit naga dari legenda"
+        Description = "Api yang membara di tubuhmu"
     },
     {
-        Name = "🌙 Moonlight",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(200, 200, 255),
-        Material = Enum.Material.Neon,
-        Effect = "Sparkle",
-        Price = 0,
-        Description = "Bersinar di bawah sinar bulan"
-    },
-    
-    -- ===== CEWEK (Female Skins) =====
-    {
-        Name = "👸 Putri Cantik",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(255, 150, 200),
-        Material = Enum.Material.Neon,
-        Effect = "Petal",
-        Price = 0,
-        Description = "Putri dengan pesona memikat"
-    },
-    {
-        Name = "🌸 Sakura Princess",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(255, 180, 220),
-        Material = Enum.Material.SmoothPlastic,
-        Effect = "Petal",
-        Price = 0,
-        Description = "Putri bunga sakura yang anggun"
-    },
-    {
-        Name = "❄️ Ice Queen",
-        Gender = "Cewek",
+        Name = "❄️ Frost",
         Color = Color3.fromRGB(100, 200, 255),
+        Type = "Ice",
         Material = Enum.Material.Glass,
         Effect = "Snow",
         Price = 0,
-        Description = "Ratu es yang dingin dan anggun"
+        Description = "Dingin seperti es abadi"
     },
     {
-        Name = "🌹 Rose Beauty",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(255, 50, 100),
-        Material = Enum.Material.Neon,
-        Effect = "Petal",
-        Price = 0,
-        Description = "Kecantikan seperti bunga mawar"
-    },
-    {
-        Name = "✨ Fairy",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(200, 150, 255),
-        Material = Enum.Material.Neon,
-        Effect = "Sparkle",
-        Price = 0,
-        Description = "Peri dengan sayap berkilauan"
-    },
-    {
-        Name = "🌌 Galaxy Girl",
-        Gender = "Cewek",
+        Name = "🌌 Galaxy",
         Color = Color3.fromRGB(150, 0, 255),
+        Type = "Galaxy",
         Material = Enum.Material.Neon,
         Effect = "Stars",
         Price = 0,
-        Description = "Gadis dari galaksi lain"
+        Description = "Bawa galaksi ke dalam dirimu"
     },
     {
-        Name = "🦋 Butterfly",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(255, 100, 200),
+        Name = "💚 Emerald",
+        Color = Color3.fromRGB(0, 255, 100),
+        Type = "Emerald",
+        Material = Enum.Material.Neon,
+        Effect = "Glow",
+        Price = 0,
+        Description = "Hijau zamrud yang memukau"
+    },
+    {
+        Name = "❤️ Ruby",
+        Color = Color3.fromRGB(255, 0, 50),
+        Type = "Ruby",
+        Material = Enum.Material.Neon,
+        Effect = "Glow",
+        Price = 0,
+        Description = "Merah delima yang berapi-api"
+    },
+    {
+        Name = "🌈 Rainbow",
+        Color = Color3.fromRGB(255, 0, 255),
+        Type = "Rainbow",
+        Material = Enum.Material.Neon,
+        Effect = "Rainbow",
+        Price = 0,
+        Description = "Pelangi bergerak di tubuhmu"
+    },
+    {
+        Name = "⚡ Storm",
+        Color = Color3.fromRGB(200, 200, 255),
+        Type = "Storm",
+        Material = Enum.Material.Neon,
+        Effect = "Lightning",
+        Price = 0,
+        Description = "Listrik mengalir di tubuhmu"
+    },
+    {
+        Name = "🪐 Void",
+        Color = Color3.fromRGB(20, 0, 40),
+        Type = "Void",
+        Material = Enum.Material.SmoothPlastic,
+        Effect = "Shadow",
+        Price = 0,
+        Description = "Kegelapan total yang menyerap cahaya"
+    },
+    {
+        Name = "🌸 Cherry Blossom",
+        Color = Color3.fromRGB(255, 150, 200),
+        Type = "Sakura",
         Material = Enum.Material.Neon,
         Effect = "Petal",
         Price = 0,
-        Description = "Kupu-kupu dengan warna-warni"
+        Description = "Bunga sakura yang bermekaran"
     },
     {
-        Name = "💎 Diamond Girl",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(200, 230, 255),
-        Material = Enum.Material.DiamondPlate,
-        Effect = "Sparkle",
-        Price = 0,
-        Description = "Berkilau seperti berlian"
-    },
-    {
-        Name = "🌊 Mermaid",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(0, 200, 200),
-        Material = Enum.Material.Neon,
-        Effect = "Sparkle",
-        Price = 0,
-        Description = "Putri duyung dari lautan"
-    },
-    {
-        Name = "💖 Pink Angel",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(255, 100, 180),
+        Name = "🏆 Champion",
+        Color = Color3.fromRGB(255, 200, 50),
+        Type = "Champion",
         Material = Enum.Material.Neon,
         Effect = "Aura",
         Price = 0,
-        Description = "Malaikat dengan aura kasih sayang"
+        Description = "Aura kemenangan yang bersinar"
+    },
+    {
+        Name = "🧊 Diamond",
+        Color = Color3.fromRGB(200, 230, 255),
+        Type = "Diamond",
+        Material = Enum.Material.DiamondPlate,
+        Effect = "Sparkle",
+        Price = 0,
+        Description = "Berlian paling langka dan berharga"
     },
 }
-
--- ==========================================
--- PREMIUM SKIN SYSTEM
--- ==========================================
 
 function CreatePremiumSkin(character)
     if not character then return end
     
     -- Hapus skin lama
-    CleanupSkin()
+    if character:FindFirstChild("MDW_Skin") then
+        character.MDW_Skin:Destroy()
+    end
     
-    if not ActiveSkin or ActiveSkin.Name == "❌ No Skin" then
+    if not ActiveSkin or ActiveSkin.Type == "None" then
         IsSkinActive = false
         return
     end
@@ -802,7 +564,7 @@ function CreatePremiumSkin(character)
     skinData.Value = HttpService:JSONEncode({
         Name = ActiveSkin.Name,
         Color = ActiveSkin.Color,
-        Gender = ActiveSkin.Gender or "Unisex",
+        Type = ActiveSkin.Type,
         Effect = ActiveSkin.Effect
     })
     skinData.Parent = skinFolder
@@ -813,6 +575,7 @@ function CreatePremiumSkin(character)
     for _, partName in pairs(parts) do
         local original = character:FindFirstChild(partName)
         if original and original:IsA("BasePart") then
+            -- Buat part baru sebagai skin
             local skinPart = original:Clone()
             skinPart.Name = "Skin_" .. partName
             skinPart.Parent = skinFolder
@@ -822,7 +585,7 @@ function CreatePremiumSkin(character)
             skinPart.Color = ActiveSkin.Color
             skinPart.Transparency = 0.2
             
-            -- Tambahkan efek
+            -- Tambahkan efek glow
             local glow = Instance.new("ParticleEmitter")
             glow.Name = "GlowEffect"
             glow.Parent = skinPart
@@ -838,7 +601,7 @@ function CreatePremiumSkin(character)
             glow.Lifetime = NumberRange.new(1, 3)
             glow.Size = NumberSequence.new(2)
             
-            -- Efek khusus
+            -- Efek khusus berdasarkan tipe
             if ActiveSkin.Effect == "Fire" then
                 glow.Texture = "rbxassetid://268857015"
                 glow.Rate = 20
@@ -873,6 +636,12 @@ function CreatePremiumSkin(character)
                     ColorSequenceKeypoint.new(1, Color3.fromRGB(255,0,255))
                 })
                 glow.Rate = 20
+            elseif ActiveSkin.Effect == "Lightning" then
+                glow.Texture = "rbxassetid://268857015"
+                glow.Rate = 40
+                glow.SpreadAngle = Vector2.new(360, 360)
+                glow.Speed = NumberRange.new(5, 10)
+                glow.Size = NumberSequence.new(4)
             elseif ActiveSkin.Effect == "Shadow" then
                 glow.Transparency = NumberSequence.new({
                     NumberSequenceKeypoint.new(0, 0.9),
@@ -894,7 +663,7 @@ function CreatePremiumSkin(character)
                 glow.Size = NumberSequence.new(4)
             end
             
-            -- Weld
+            -- Pasang attachment ke original
             local weld = Instance.new("Weld")
             weld.Name = "SkinWeld"
             weld.Part0 = original
@@ -907,7 +676,7 @@ function CreatePremiumSkin(character)
         end
     end
     
-    -- Trail effect
+    -- Tambahkan trail effect
     local rootPart = character:FindFirstChild("HumanoidRootPart")
     if rootPart then
         local trail = Instance.new("Trail")
@@ -925,14 +694,16 @@ function CreatePremiumSkin(character)
         table.insert(SkinParts, trail)
     end
     
+    -- Kirim skin ke semua player
     if _G.SkinPreview then
         SyncSkinToAll(character)
     end
 end
 
 function SyncSkinToAll(character)
-    if not ActiveSkin then return end
+    if not ActiveSkin or ActiveSkin.Type == "None" then return end
     
+    -- Kirim melalui RemoteEvent
     pcall(function()
         local remote = ReplicatedStorage:FindFirstChild("RemoteEvent")
         if remote then
@@ -940,8 +711,34 @@ function SyncSkinToAll(character)
                 Player = LocalPlayer.Name,
                 Color = ActiveSkin.Color,
                 Name = ActiveSkin.Name,
-                Gender = ActiveSkin.Gender or "Unisex",
+                Type = ActiveSkin.Type,
                 Effect = ActiveSkin.Effect
+            })
+        end
+    end)
+    
+    -- Kirim melalui RemoteFunction
+    pcall(function()
+        local remote = ReplicatedStorage:FindFirstChild("RemoteFunction")
+        if remote then
+            remote:InvokeServer("SyncSkin", {
+                Player = LocalPlayer.Name,
+                Color = ActiveSkin.Color,
+                Name = ActiveSkin.Name,
+                Type = ActiveSkin.Type
+            })
+        end
+    end)
+    
+    -- Kirim melalui BindableEvent
+    pcall(function()
+        local bindable = ReplicatedStorage:FindFirstChild("BindableEvent")
+        if bindable then
+            bindable:Fire({
+                Player = LocalPlayer.Name,
+                Color = ActiveSkin.Color,
+                Name = ActiveSkin.Name,
+                Type = ActiveSkin.Type
             })
         end
     end)
@@ -954,18 +751,19 @@ function CleanupSkin()
     SkinParts = {}
     
     local char = LocalPlayer.Character
-    if char then
-        if char:FindFirstChild("MDW_Skin") then
-            pcall(function() char.MDW_Skin:Destroy() end)
-        end
-        for _, obj in pairs(char:GetChildren()) do
-            if obj.Name:find("Skin_") or obj.Name == "IceEffect" or obj.Name == "FrozenHighlight" then
-                pcall(function() obj:Destroy() end)
-            end
-        end
+    if char and char:FindFirstChild("MDW_Skin") then
+        pcall(function() char.MDW_Skin:Destroy() end)
     end
     IsSkinActive = false
 end
+
+-- Auto apply skin
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    if ActiveSkin and ActiveSkin.Type ~= "None" then
+        CreatePremiumSkin(char)
+    end
+end)
 
 -- ==========================================
 -- GET PLAYER LIST
@@ -1059,186 +857,13 @@ local ServerTab = Window:AddTab({ Name = "Server", Icon = "web" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 local SkinTab = Window:AddTab({ Name = "Skins", Icon = "palette" })
 local UniversalTab = Window:AddTab({ Name = "Universal", Icon = "globe" })
-local AdminTab = Window:AddTab({ Name = "Admin", Icon = "shield" })
-
--- ==========================================
--- ADMIN TAB
--- ==========================================
-local AdminSection = AdminTab:AddSection("🛡️ Admin Tools")
-
--- Detect Admins
-AdminSection:AddButton({
-    Title = "🔍 Detect Admins",
-    Description = "Cari admin/staff di server",
-    Callback = function()
-        local admins = DetectAdmins()
-        if #admins > 0 then
-            Library:MakeNotify({ 
-                Title = "👮 Admin Ditemukan!", 
-                Content = "Admin: " .. table.concat(admins, ", "),
-                Duration = 8
-            })
-        else
-            Library:MakeNotify({ 
-                Title = "🔍 Tidak Ada Admin", 
-                Content = "Tidak ada admin/staff terdeteksi",
-                Duration = 3
-            })
-        end
-    end
-})
-
--- Admin List Display
-AdminSection:AddDropdown({
-    Title = "Target Admin",
-    Description = "Pilih admin untuk di-action",
-    Options = function()
-        local admins = DetectAdmins()
-        if #admins == 0 then return {"Tidak ada admin"} end
-        return admins
-    end,
-    Default = "",
-    Callback = function(v)
-        SelectedTarget = v
-    end
-})
-
--- Kick Admin
-AdminSection:AddButton({
-    Title = "👢 Kick Admin",
-    Description = "Kick admin yang terpilih (Visual)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada admin" then
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih admin dulu!" })
-            return
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target then
-            local success = KickAdmin(target)
-            if success then
-                Library:MakeNotify({ 
-                    Title = "👢 KICK!", 
-                    Content = "Admin " .. SelectedTarget .. " di-kick!", 
-                    Duration = 3 
-                })
-            else
-                Library:MakeNotify({ 
-                    Title = "❌ Gagal", 
-                    Content = "Gagal meng-kick admin!", 
-                    Duration = 3 
-                })
-            end
-        else
-            Library:MakeNotify({ Title = "Error", Content = "Admin tidak ditemukan!" })
-        end
-    end
-})
-
--- Freeze/Unfreeze Admin
-AdminSection:AddButton({
-    Title = "❄️ Freeze/Unfreeze Admin",
-    Description = "Bekukan admin yang terpilih",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada admin" then
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih admin dulu!" })
-            return
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target then
-            local isFrozen = FrozenPlayers[target] or false
-            local success = FreezeAdmin(target)
-            if success then
-                Library:MakeNotify({ 
-                    Title = isFrozen and "❄️ UNFREEZE" or "❄️ FREEZE", 
-                    Content = isFrozen and SelectedTarget .. " di-unfreeze!" or SelectedTarget .. " di-freeze!",
-                    Duration = 3 
-                })
-            else
-                Library:MakeNotify({ 
-                    Title = "❌ Gagal", 
-                    Content = "Gagal mem-freeze admin!", 
-                    Duration = 3 
-                })
-            end
-        else
-            Library:MakeNotify({ Title = "Error", Content = "Admin tidak ditemukan!" })
-        end
-    end
-})
-
--- Freeze All Admins
-AdminSection:AddButton({
-    Title = "❄️ Freeze All Admins",
-    Description = "Bekukan semua admin di server",
-    Callback = function()
-        local admins = DetectAdmins()
-        local frozen = 0
-        for _, name in pairs(admins) do
-            local target = Players:FindFirstChild(name)
-            if target and FreezeAdmin(target) then
-                frozen = frozen + 1
-            end
-        end
-        Library:MakeNotify({ 
-            Title = "❄️ Freeze All", 
-            Content = frozen .. " admin di-freeze!",
-            Duration = 3 
-        })
-    end
-})
-
--- Unfreeze All
-AdminSection:AddButton({
-    Title = "🔥 Unfreeze All",
-    Description = "Unfreeze semua admin",
-    Callback = function()
-        local count = 0
-        for player, _ in pairs(FrozenPlayers) do
-            if player and player.Character then
-                pcall(function()
-                    local root = player.Character:FindFirstChild("HumanoidRootPart")
-                    if root then root.Anchored = false end
-                    local hum = player.Character:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        hum.PlatformStand = false
-                        hum.Sit = false
-                    end
-                end)
-                FrozenPlayers[player] = nil
-                count = count + 1
-            end
-        end
-        Library:MakeNotify({ 
-            Title = "🔥 Unfreeze All", 
-            Content = count .. " admin di-unfreeze!",
-            Duration = 3 
-        })
-    end
-})
-
--- Admin Protection
-AdminSection:AddToggle({
-    Title = "🛡️ Anti-Admin Kick",
-    Description = "Cegah admin meng-kick kamu",
-    Default = false,
-    Callback = function(v)
-        _G.AntiKick = v
-        if v then
-            Library:MakeNotify({ Title = "Anti-Admin Kick", Content = "Aktif!" })
-        else
-            Library:MakeNotify({ Title = "Anti-Admin Kick", Content = "Mati!" })
-        end
-    end
-})
 
 -- ==========================================
 -- MAIN TAB - QUICK ACTIONS
 -- ==========================================
 local QuickSection = MainTab:AddSection("⚡ Quick Actions")
 
--- GRAVITY GUN
+-- GRAVITY GUN - FIXED
 QuickSection:AddButton({
     Title = "Get Gravity Gun",
     Description = "Tool untuk menarik dan membawa objek di map",
@@ -3241,61 +2866,36 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 -- ==========================================
--- SKIN TAB - MARKETPLACE SKINS
+-- SKIN TAB - PREMIUM
 -- ==========================================
-local SkinSection = SkinTab:AddSection("👗 Marketplace Skins")
+local SkinSection = SkinTab:AddSection("🎨 Premium Skins")
 
--- Dropdown Gender
-local genderOptions = {"Semua", "Cowok", "Cewek"}
-local selectedGender = "Semua"
-
-SkinSection:AddDropdown({
-    Title = "Filter Gender",
-    Options = genderOptions,
-    Default = "Semua",
-    Callback = function(v)
-        selectedGender = v
-        -- Update skin options based on gender
-        local filtered = {}
-        for _, skin in pairs(CharacterSkins) do
-            if selectedGender == "Semua" or skin.Gender == selectedGender then
-                table.insert(filtered, skin.Name)
-            end
-        end
-        if #filtered == 0 then
-            table.insert(filtered, "Tidak ada skin")
-        end
-        SkinDropdown:SetValues(filtered)
-    end
-})
-
--- Skin dropdown
+-- Dropdown untuk skin
 local skinOptions = {}
-for _, skin in pairs(CharacterSkins) do
+for _, skin in pairs(PremiumSkins) do
     table.insert(skinOptions, skin.Name)
 end
-table.insert(skinOptions, 1, "❌ No Skin")
 
 local SkinDropdown = SkinSection:AddDropdown({
-    Title = "Pilih Skin",
+    Title = "Pilih Skin Premium",
     Options = skinOptions,
     Default = "❌ No Skin",
     Callback = function(v)
-        for _, skin in pairs(CharacterSkins) do
+        for _, skin in pairs(PremiumSkins) do
             if skin.Name == v then
                 ActiveSkin = skin
                 _G.SkinName = skin.Name
                 _G.SkinColor = skin.Color
                 _G.SkinEffect = skin.Effect or "None"
                 
-                if skin.Name == "❌ No Skin" then
+                if skin.Type == "None" then
                     CleanupSkin()
                     Library:MakeNotify({ Title = "Skin", Content = "Skin dihapus!" })
                 else
                     CreatePremiumSkin(LocalPlayer.Character)
                     Library:MakeNotify({ 
-                        Title = "👗 Skin", 
-                        Content = skin.Name .. " (" .. skin.Gender .. ")\n" .. (skin.Description or ""),
+                        Title = "Skin", 
+                        Content = "Skin " .. skin.Name .. " diterapkan!\n" .. (skin.Description or ""),
                         Duration = 4
                     })
                 end
@@ -3305,39 +2905,16 @@ local SkinDropdown = SkinSection:AddDropdown({
     end
 })
 
--- Info skin
-SkinSection:AddButton({
-    Title = "ℹ️ Info Skin Aktif",
-    Description = "Tampilkan informasi skin yang sedang dipakai",
-    Callback = function()
-        if ActiveSkin and ActiveSkin.Name ~= "❌ No Skin" then
-            Library:MakeNotify({ 
-                Title = "👗 Skin Aktif", 
-                Content = string.format(
-                    "Nama: %s\nGender: %s\nEfek: %s\nWarna: %s",
-                    ActiveSkin.Name,
-                    ActiveSkin.Gender or "Unisex",
-                    ActiveSkin.Effect or "None",
-                    tostring(ActiveSkin.Color)
-                ),
-                Duration = 6
-            })
-        else
-            Library:MakeNotify({ Title = "Info", Content = "Tidak ada skin aktif" })
-        end
-    end
-})
-
 SkinSection:AddToggle({
-    Title = "📡 Tampilkan ke Player Lain",
+    Title = "Tampilkan Skin ke Player Lain",
     Description = "Kirim data skin ke semua player di server",
     Default = false,
     Callback = function(v)
         _G.SkinPreview = v
-        if v and ActiveSkin and ActiveSkin.Name ~= "❌ No Skin" then
+        if v and ActiveSkin and ActiveSkin.Type ~= "None" then
             SyncSkinToAll(LocalPlayer.Character)
             Library:MakeNotify({ 
-                Title = "📡 Sync", 
+                Title = "Sync", 
                 Content = "Mengirim skin ke semua player..." 
             })
         end
@@ -3348,22 +2925,24 @@ SkinSection:AddButton({
     Title = "🔄 Refresh Skin",
     Description = "Terapkan ulang skin saat ini",
     Callback = function()
-        if ActiveSkin and ActiveSkin.Name ~= "❌ No Skin" then
+        if ActiveSkin and ActiveSkin.Type ~= "None" then
             CleanupSkin()
             task.wait(0.1)
             CreatePremiumSkin(LocalPlayer.Character)
-            Library:MakeNotify({ Title = "🔄 Refresh", Content = "Skin direfresh!" })
+            Library:MakeNotify({ Title = "Refresh", Content = "Skin direfresh!" })
         end
     end
 })
 
 SkinSection:AddButton({
     Title = "🎲 Random Skin",
-    Description = "Pilih skin secara acak dari marketplace",
+    Description = "Pilih skin secara acak",
     Callback = function()
         local randomSkins = {}
-        for _, skin in pairs(CharacterSkins) do
-            table.insert(randomSkins, skin)
+        for _, skin in pairs(PremiumSkins) do
+            if skin.Type ~= "None" then
+                table.insert(randomSkins, skin)
+            end
         end
         local randomSkin = randomSkins[math.random(1, #randomSkins)]
         if randomSkin then
@@ -3375,8 +2954,8 @@ SkinSection:AddButton({
             task.wait(0.1)
             CreatePremiumSkin(LocalPlayer.Character)
             Library:MakeNotify({ 
-                Title = "🎲 Random", 
-                Content = randomSkin.Name .. " (" .. randomSkin.Gender .. ") diterapkan!", 
+                Title = "🎲 Random Skin", 
+                Content = "Skin " .. randomSkin.Name .. " diterapkan!", 
                 Duration = 3
             })
         end
@@ -3388,15 +2967,15 @@ SkinSection:AddButton({
     Description = "Hapus skin yang sedang aktif",
     Callback = function()
         CleanupSkin()
-        ActiveSkin = nil
-        Library:MakeNotify({ Title = "🧹 Skin", Content = "Skin dihapus!" })
+        ActiveSkin = PremiumSkins[1] -- No Skin
+        Library:MakeNotify({ Title = "Skin", Content = "Skin dihapus!" })
     end
 })
 
--- Auto apply skin
+-- Auto apply skin saat character spawn
 LocalPlayer.CharacterAdded:Connect(function(char)
     task.wait(0.5)
-    if ActiveSkin and ActiveSkin.Name ~= "❌ No Skin" then
+    if ActiveSkin and ActiveSkin.Type ~= "None" then
         CreatePremiumSkin(char)
     end
 end)
@@ -3577,6 +3156,7 @@ UniversalSection:AddToggle({
                 while _G.AutoHeal do
                     local hum = GetHumanoid()
                     if hum and hum.Health < 30 then
+                        -- Cari item penyembuh di sekitar
                         for _, obj in pairs(workspace:GetDescendants()) do
                             if obj:IsA("Tool") and obj.Name:lower():find("heal") or obj.Name:lower():find("med") or obj.Name:lower():find("pot") then
                                 local root = GetRootPart()
@@ -3612,10 +3192,12 @@ UniversalSection:AddToggle({
             task.spawn(function()
                 while _G.AntiAFK do
                     pcall(function()
+                        -- Kirim input palsu
                         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.W, false, game)
                         task.wait(0.01)
                         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.W, false, game)
                         
+                        -- Gerakkan mouse sedikit
                         local pos = UserInputService:GetMouseLocation()
                         VirtualInputManager:SendMouseMoveEvent(pos.X + 1, pos.Y + 1, game)
                     end)
@@ -3725,6 +3307,7 @@ UniversalSection:AddToggle({
                             if obj:IsA("BasePart") and obj.Parent and not obj.Parent:IsA("Character") then
                                 local dist = (root.Position - obj.Position).Magnitude
                                 if dist < 10 then
+                                    -- Coba collect
                                     firetouchinterest(root, obj, 0)
                                     task.wait(0.05)
                                     firetouchinterest(root, obj, 1)
@@ -3786,12 +3369,12 @@ UniversalSection:AddButton({
     Title = "🔄 Reset Lobby (Visual)",
     Description = "Reset semua efek visual di lobby",
     Callback = function()
+        -- Hapus semua efek
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("BasePart") and obj ~= workspace.Terrain then
                 if obj.Name:find("MDW") or obj.Name:find("Cage") or obj.Name:find("Troll") or 
                    obj.Name:find("Wall") or obj.Name:find("Ice") or obj.Name:find("Trap") or
-                   obj.Name:find("Clone") or obj.Name:find("MDW_Skin") or obj.Name:find("Skin_") or
-                   obj.Name:find("IceEffect") or obj.Name:find("FrozenHighlight") then
+                   obj.Name:find("Clone") or obj.Name:find("MDW_Skin") or obj.Name:find("Skin_") then
                     pcall(function() obj:Destroy() end)
                 end
             end
@@ -3800,7 +3383,7 @@ UniversalSection:AddButton({
     end
 })
 
--- 14. AUTO FARM
+-- 14. AUTO FARM (Universal)
 UniversalSection:AddToggle({
     Title = "🌾 Auto Farm",
     Description = "Auto farm untuk berbagai game",
@@ -3811,6 +3394,7 @@ UniversalSection:AddToggle({
             task.spawn(function()
                 while _G.AutoFarm do
                     pcall(function()
+                        -- Cari NPC/musuh di sekitar
                         for _, obj in pairs(workspace:GetDescendants()) do
                             if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
                                 local hum = obj:FindFirstChildOfClass("Humanoid")
@@ -3820,7 +3404,9 @@ UniversalSection:AddToggle({
                                     if root and myRoot then
                                         local dist = (myRoot.Position - root.Position).Magnitude
                                         if dist < 50 then
+                                            -- Teleport ke target
                                             myRoot.CFrame = root.CFrame * CFrame.new(0, 3, 3)
+                                            -- Attack
                                             VirtualInputManager:SendMouseButtonEvent(1, true, game)
                                             task.wait(0.1)
                                             VirtualInputManager:SendMouseButtonEvent(1, false, game)
@@ -3851,7 +3437,7 @@ UniversalSection:AddSlider({
     end
 })
 
--- 15. AIMBOT
+-- 15. AIMBOT (Simple)
 UniversalSection:AddToggle({
     Title = "🎯 Aimbot",
     Description = "Auto aim ke player terdekat",
@@ -3881,6 +3467,7 @@ UniversalSection:AddToggle({
                     end
                     
                     if closest then
+                        -- Arahkan kamera ke target
                         local cam = workspace.CurrentCamera
                         local targetPos = closest.Position + Vector3.new(0, 1.5, 0)
                         local lookAt = CFrame.lookAt(cam.CFrame.p, targetPos)
@@ -3932,8 +3519,7 @@ ClearSection:AddButton({
                    obj.Name:find("Clone") or obj.Name:find("Smoke") or obj.Name:find("Rockslide") or
                    obj.Name:find("AntiVoidPlatform") or obj.Name:find("MDW_SolidAirFloor") or
                    obj.Name:find("GodLight") or obj.Name:find("Spawned_Monster") or
-                   obj.Name:find("MDW_Skin") or obj.Name:find("Skin_") or
-                   obj.Name:find("IceEffect") or obj.Name:find("FrozenHighlight") then
+                   obj.Name:find("MDW_Skin") or obj.Name:find("Skin_") then
                     table.insert(toRemove, obj)
                 end
             end
@@ -4001,8 +3587,6 @@ ExitSection:AddButton({
         _G.AntiAFK = false
         _G.SpeedHack = false
         _G.JumpHack = false
-        _G.AdminKick = false
-        _G.AdminFreeze = false
         
         ToggleWallHack(false)
         ClearManualHighlights()
@@ -4129,8 +3713,8 @@ Library:Initialize()
 ApplyTheme("Midnight")
 
 Library:MakeNotify({ 
-    Title = "FCAL HUB v2.3.0", 
-    Content = "Ultimate Edition Loaded!\nDengan Marketplace Skins & Admin Tools!", 
+    Title = "FCAL HUB v2.2.0", 
+    Content = "Ultimate Edition Loaded!\nDengan Premium Skins & Universal Features", 
     Duration = 5 
 })
 
@@ -4153,4 +3737,4 @@ RunService.Stepped:Connect(function()
     end
 end)
 
-print("FCAL HUB v2.3.0 - Ultimate Edition Loaded!")
+print("FCAL HUB v2.2.0 - Ultimate Edition Loaded!")
