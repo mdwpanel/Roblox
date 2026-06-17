@@ -3043,7 +3043,7 @@ UniversalSection:AddToggle({
 })
 
 -- 2. CAMERA ZOOM
-UniversalSection:AddSlider({
+UniversalSection:AddRangeSlider({
     Title = "📷 Camera Zoom Extender",
     Description = "Perbesar jarak kamera maksimal",
     Minimum = 1,
@@ -3234,7 +3234,7 @@ UniversalSection:AddToggle({
     end
 })
 
-UniversalSection:AddSlider({
+UniversalSection:AddRangeSlider({
     Title = "Speed Value",
     Description = "Atur kecepatan Speed Hack",
     Minimum = 16,
@@ -3274,7 +3274,7 @@ UniversalSection:AddToggle({
     end
 })
 
-UniversalSection:AddSlider({
+UniversalSection:AddRangeSlider({
     Title = "Jump Value",
     Description = "Atur kekuatan Jump Hack",
     Minimum = 50,
@@ -3426,7 +3426,7 @@ UniversalSection:AddToggle({
     end
 })
 
-UniversalSection:AddSlider({
+UniversalSection:AddRangeSlider({
     Title = "Auto Farm Delay",
     Description = "Jeda antar aksi Auto Farm",
     Minimum = 0.1,
@@ -3484,7 +3484,7 @@ UniversalSection:AddToggle({
     end
 })
 
-UniversalSection:AddSlider({
+UniversalSection:AddRangeSlider({
     Title = "Aimbot Range",
     Description = "Jarak maksimal aimbot",
     Minimum = 50,
