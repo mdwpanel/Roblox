@@ -1,6 +1,6 @@
 --[[
     FCAL HUB - LYNX GUI EDITION
-    Version: 1.0.8 | FULL FEATURES + TROLL MOUNTAIN
+    Version: 1.0.9 | FULL FEATURES + TROLL MOUNTAIN + ESP IMPROVED
 --]]
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/mdwpanel/Roblox/refs/heads/main/main_ui_modern.lua"))()
@@ -40,6 +40,7 @@ _G.TapTP = false
 _G.AutoInteract = false
 _G.BoxESP = false
 _G.LineESP = false
+_G.SkeletonESP = false
 _G.ESP = false
 _G.HealthESP = false
 _G.AntiRagdoll = false
@@ -66,6 +67,7 @@ _G.GenESP = false
 _G.MenuVisible = true
 _G.AutoWalk = false
 _G.AutoWalkSpeed = 25
+_G.WallHack = false
 
 local Config = {
     WalkSpeedDefault = 16,
@@ -93,7 +95,7 @@ setreadonly(mt, true)
 -- ==========================================
 local Window = Library:Window({
     Title = "MDW",
-    Footer = "v1.0.8 | Client Sided"
+    Footer = "v1.0.9 | Client Sided"
 })
 
 -- ==========================================
@@ -102,8 +104,16 @@ local Window = Library:Window({
 function ClearESP(player)
     if ESP_Objects[player] then
         for _, obj in pairs(ESP_Objects[player]) do
-            pcall(function() obj.Visible = false end)
-            pcall(function() obj:Remove() end)
+            pcall(function() 
+                if obj.Box then obj.Box.Visible = false end
+                if obj.Line then obj.Line.Visible = false end
+                if obj.Skeleton then 
+                    for _, line in pairs(obj.Skeleton) do
+                        line.Visible = false
+                    end
+                end
+                obj:Remove() 
+            end)
         end
         ESP_Objects[player] = nil
     end
@@ -128,7 +138,8 @@ function UpdateESP()
                     if not ESP_Objects[player] then
                         ESP_Objects[player] = {
                             Box = Drawing.new("Square"),
-                            Line = Drawing.new("Line")
+                            Line = Drawing.new("Line"),
+                            Skeleton = {}
                         }
                     end
 
@@ -158,14 +169,75 @@ function UpdateESP()
                     else
                         objects.Line.Visible = false
                     end
+                    
+                    -- Skeleton ESP
+                    if _G.SkeletonESP then
+                        UpdateSkeletonESP(player, objects)
+                    else
+                        for _, line in pairs(objects.Skeleton) do
+                            line.Visible = false
+                        end
+                    end
                 else
                     if ESP_Objects[player] then
                         ESP_Objects[player].Box.Visible = false
                         ESP_Objects[player].Line.Visible = false
+                        for _, line in pairs(ESP_Objects[player].Skeleton) do
+                            line.Visible = false
+                        end
                     end
                 end
             else
                 ClearESP(player)
+            end
+        end
+    end
+end
+
+function UpdateSkeletonESP(player, objects)
+    local character = player.Character
+    if not character then return end
+    
+    -- Define joints untuk skeleton
+    local joints = {
+        {"Head", "UpperTorso"},
+        {"UpperTorso", "LowerTorso"},
+        {"UpperTorso", "LeftUpperArm"},
+        {"LeftUpperArm", "LeftLowerArm"},
+        {"UpperTorso", "RightUpperArm"},
+        {"RightUpperArm", "RightLowerArm"},
+        {"LowerTorso", "LeftUpperLeg"},
+        {"LeftUpperLeg", "LeftLowerLeg"},
+        {"LowerTorso", "RightUpperLeg"},
+        {"RightUpperLeg", "RightLowerLeg"},
+    }
+    
+    -- Hapus skeleton lines lama jika ada
+    if objects.Skeleton then
+        for _, line in pairs(objects.Skeleton) do
+            pcall(function() line.Visible = false end)
+        end
+        objects.Skeleton = {}
+    end
+    
+    local color = GetESPColor(player)
+    
+    for i, joint in pairs(joints) do
+        local part1 = character:FindFirstChild(joint[1])
+        local part2 = character:FindFirstChild(joint[2])
+        
+        if part1 and part2 and part1:IsA("BasePart") and part2:IsA("BasePart") then
+            local pos1, onScreen1 = Workspace.CurrentCamera:WorldToViewportPoint(part1.Position)
+            local pos2, onScreen2 = Workspace.CurrentCamera:WorldToViewportPoint(part2.Position)
+            
+            if onScreen1 and onScreen2 then
+                local line = Drawing.new("Line")
+                line.Visible = true
+                line.Color = color
+                line.Thickness = 1.5
+                line.From = Vector2.new(pos1.X, pos1.Y)
+                line.To = Vector2.new(pos2.X, pos2.Y)
+                table.insert(objects.Skeleton, line)
             end
         end
     end
@@ -344,6 +416,30 @@ function FindAllGenerators()
         if IsGenerator(obj) then table.insert(generators, obj) end
     end
     return generators
+end
+
+-- ==========================================
+-- WALLHACK FUNCTION
+-- ==========================================
+function ToggleWallHack(enabled)
+    _G.WallHack = enabled
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Material ~= Enum.Material.Neon then
+            if enabled then
+                if not obj:GetAttribute("OriginalTransparency") then
+                    obj:SetAttribute("OriginalTransparency", obj.Transparency)
+                end
+                if obj.Transparency < 0.7 then
+                    obj.Transparency = 0.3
+                end
+            else
+                local orig = obj:GetAttribute("OriginalTransparency")
+                if orig then
+                    obj.Transparency = orig
+                end
+            end
+        end
+    end
 end
 
 -- ==========================================
@@ -571,16 +667,10 @@ QuickTpSection:AddButton({
 })
 
 -- ==========================================
--- TROLL MOUNTAIN SECTION (FITUR JAHIL)
+-- TROLL MOUNTAIN SECTION
 -- ==========================================
--- ==========================================
--- TROLL MOUNTAIN SECTION - SIMPLIFIED & FIXED
--- ==========================================
+local TrollSection = MainTab:AddSection("👿 Troll Mountain")
 
--- PASTIKAN VARIABLE INI ADA
-local SelectedTarget = "" -- Ini harus sama dengan yang di dropdown
-
--- FUNGSI UNTUK MENDAPATKAN TARGET
 local function GetTrollTarget()
     if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
         Library:MakeNotify({ Title = "⚠️ Error", Content = "Pilih pemain dulu di dropdown!", Duration = 3 })
@@ -601,12 +691,6 @@ local function GetTrollTarget()
     return target
 end
 
--- BUAT SECTION TROLL
-local TrollSection = MainTab:AddSection("👿 Troll Mountain")
- 
--- ==========================================
--- FITUR 1: DORONG DARI TEBING
--- ==========================================
 TrollSection:AddButton({
     Title = "💨 Dorong dari Tebing",
     Callback = function()
@@ -619,11 +703,9 @@ TrollSection:AddButton({
             return 
         end
         
-        -- DORONG
         local dir = hrp.CFrame.LookVector * -100
         hrp.AssemblyLinearVelocity = Vector3.new(dir.X, 30, dir.Z)
         
-        -- EFEK LEDAKAN
         local boom = Instance.new("Explosion")
         boom.Position = hrp.Position
         boom.BlastRadius = 5
@@ -634,9 +716,6 @@ TrollSection:AddButton({
     end
 })
 
--- ==========================================
--- FITUR 2: FLING TARGET
--- ==========================================
 TrollSection:AddButton({
     Title = "🚀 Fling Target",
     Callback = function()
@@ -649,14 +728,12 @@ TrollSection:AddButton({
             return 
         end
         
-        -- FLING
         hrp.AssemblyLinearVelocity = Vector3.new(
             math.random(-150, 150),
             math.random(300, 500),
             math.random(-150, 150)
         )
         
-        -- EFEK
         local boom = Instance.new("Explosion")
         boom.Position = hrp.Position
         boom.BlastRadius = 5
@@ -667,9 +744,6 @@ TrollSection:AddButton({
     end
 })
 
--- ==========================================
--- FITUR 3: KANDANG
--- ==========================================
 TrollSection:AddButton({
     Title = "🧱 Kandang Target",
     Callback = function()
@@ -685,7 +759,6 @@ TrollSection:AddButton({
         local pos = hrp.Position
         local parts = {}
         
-        -- DINDING
         local dinding = {
             {Vector3.new(12, 6, 1), Vector3.new(0, 0, 6)},
             {Vector3.new(12, 6, 1), Vector3.new(0, 0, -6)},
@@ -705,7 +778,6 @@ TrollSection:AddButton({
             table.insert(parts, p)
         end
         
-        -- ATAP
         local roof = Instance.new("Part")
         roof.Size = Vector3.new(13, 1, 13)
         roof.Position = pos + Vector3.new(0, 6, 0)
@@ -718,7 +790,6 @@ TrollSection:AddButton({
         
         Library:MakeNotify({ Title = "🧱 KANDANG!", Content = target.Name .. " dikurung!", Duration = 3 })
         
-        -- HAPUS SETELAH 5 DETIK
         task.wait(5)
         for _, p in pairs(parts) do
             pcall(function() p:Destroy() end)
@@ -726,9 +797,6 @@ TrollSection:AddButton({
     end
 })
 
--- ==========================================
--- FITUR 4: LANTAI LICIN
--- ==========================================
 TrollSection:AddButton({
     Title = "🧊 Lantai Licin",
     Callback = function()
@@ -756,7 +824,6 @@ TrollSection:AddButton({
                 ice.CanCollide = true
                 ice.Parent = workspace
                 
-                -- LICIN
                 ice.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0.3, 0, 0)
                 
                 table.insert(ices, ice)
@@ -772,9 +839,6 @@ TrollSection:AddButton({
     end
 })
 
--- ==========================================
--- FITUR 5: LONGSOR BATU
--- ==========================================
 TrollSection:AddButton({
     Title = "🪨 Longsor Batu",
     Callback = function()
@@ -807,7 +871,6 @@ TrollSection:AddButton({
             rock.Anchored = false
             rock.Parent = workspace
             
-            -- JATUH CEPAT
             local bv = Instance.new("BodyVelocity")
             bv.Velocity = Vector3.new(0, -80, 0)
             bv.MaxForce = Vector3.new(0, math.huge, 0)
@@ -825,9 +888,6 @@ TrollSection:AddButton({
     end
 })
 
--- ==========================================
--- FITUR 6: TELEPORT BALIK
--- ==========================================
 TrollSection:AddButton({
     Title = "🔄 Teleport Balik ke Awal",
     Callback = function()
@@ -840,7 +900,6 @@ TrollSection:AddButton({
             return 
         end
         
-        -- CARI CHECKPOINT PALING RENDAH
         local lowest = nil
         local lowY = math.huge
         
@@ -871,9 +930,6 @@ TrollSection:AddButton({
     end
 })
 
--- ==========================================
--- FITUR 7: GEMPA BUMI
--- ==========================================
 TrollSection:AddButton({
     Title = "🌍 Gempa Bumi",
     Callback = function()
@@ -911,9 +967,6 @@ TrollSection:AddButton({
     end
 })
 
--- ==========================================
--- FITUR 8: CLONE TARGET
--- ==========================================
 TrollSection:AddButton({
     Title = "👥 Clone Target",
     Callback = function()
@@ -926,7 +979,6 @@ TrollSection:AddButton({
             return 
         end
         
-        -- CLONE
         local clone = target.Character:Clone()
         clone.Parent = workspace
         clone:SetPrimaryPartCFrame(hrp.CFrame + Vector3.new(10, 0, 10))
@@ -944,9 +996,6 @@ TrollSection:AddButton({
     end
 })
 
--- ==========================================
--- FITUR 9: ZONA GRAVITASI
--- ==========================================
 TrollSection:AddButton({
     Title = "🌍 Zona Gravitasi",
     Callback = function()
@@ -961,7 +1010,6 @@ TrollSection:AddButton({
         
         local pos = hrp.Position
         
-        -- ZONA UNGU
         local zone = Instance.new("Part")
         zone.Shape = Enum.PartType.Ball
         zone.Size = Vector3.new(30, 30, 30)
@@ -972,7 +1020,6 @@ TrollSection:AddButton({
         zone.CanCollide = false
         zone.Parent = workspace
         
-        -- TARIK KE BAWAH
         local gravity = Instance.new("BodyForce")
         gravity.Force = Vector3.new(0, -5000, 0)
         gravity.Parent = hrp
@@ -987,16 +1034,12 @@ TrollSection:AddButton({
     end
 })
 
--- ==========================================
--- FITUR 10: BUTAKAN TARGET
--- ==========================================
 TrollSection:AddButton({
     Title = "👁️ Butakan Target",
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
         
-        -- BUAT GUI DI LAYAR TARGET
         local gui = Instance.new("ScreenGui")
         gui.Name = "BlindEffect"
         gui.Parent = target.PlayerGui
@@ -1014,9 +1057,6 @@ TrollSection:AddButton({
     end
 })
 
--- ==========================================
--- FITUR 11: TEMBOK DI DEPAN
--- ==========================================
 TrollSection:AddButton({
     Title = "🧱 Tembok Depan",
     Callback = function()
@@ -1047,6 +1087,7 @@ TrollSection:AddButton({
         pcall(function() wall:Destroy() end)
     end
 })
+
 -- ==========================================
 -- AUTOWALK TAB
 -- ==========================================
@@ -1651,21 +1692,18 @@ local function ScanAllCheckpoints()
     local checkpoints = {}
     local seen = {}
     
-    -- Cari semua objek di workspace
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("SpawnLocation") then
             local name = obj.Name:lower()
             local pos = obj.Position
             local found = false
             
-            -- SKIP objek yang jelas bukan checkpoint
             if name:find("humanoid") or name:find("player") or 
                name:find("character") or name:find("npc") or
                name:find("particle") or name:find("effect") or
                name:find("attachment") or name:find("handle") then
                 -- Skip
             else
-                -- CEK NAMA CHECKPOINT (LEBIH BANYAK VARIASI)
                 if name:find("cp") or 
                    name:find("checkpoint") or 
                    name:find("stage") or 
@@ -1686,7 +1724,6 @@ local function ScanAllCheckpoints()
                     found = true
                 end
                 
-                -- CEK ATRIBUT
                 if obj:GetAttribute("Checkpoint") or 
                    obj:GetAttribute("CP") or 
                    obj:GetAttribute("Stage") or
@@ -1695,14 +1732,11 @@ local function ScanAllCheckpoints()
                     found = true
                 end
                 
-                -- CEK SPAWN LOCATION (biasanya checkpoint)
                 if obj:IsA("SpawnLocation") then
                     found = true
                 end
                 
-                -- CEK UKURAN (checkpoint biasanya lebih besar)
                 if obj:IsA("BasePart") and obj.Size.X > 5 and obj.Size.Z > 5 then
-                    -- Cek apakah ini checkpoint
                     if name:find("plate") or name:find("floor") or name:find("ground") then
                         found = true
                     end
@@ -1710,10 +1744,8 @@ local function ScanAllCheckpoints()
             end
             
             if found and pos.Y > -50 then
-                -- Ambil nomor dari nama
                 local num = tonumber(obj.Name:match("%d+")) or 0
                 
-                -- Cegah duplikat
                 local key = math.floor(pos.X) .. "_" .. math.floor(pos.Y) .. "_" .. math.floor(pos.Z)
                 if not seen[key] then
                     seen[key] = true
@@ -1730,7 +1762,6 @@ local function ScanAllCheckpoints()
         end
     end
     
-    -- HAPUS DUPLIKAT
     local unique = {}
     for _, cp in pairs(checkpoints) do
         local found = false
@@ -1745,7 +1776,6 @@ local function ScanAllCheckpoints()
         end
     end
     
-    -- URUTKAN BERDASARKAN KETINGGIAN
     table.sort(unique, function(a, b)
         return a.Y < b.Y
     end)
@@ -1758,7 +1788,6 @@ end
 -- ==========================================
 local FarmSection = GameTab:AddSection("🏔️ Auto CP All Mountain")
 
--- TOMBOL HAPUS KOTAK MERAH/PUTIH
 FarmSection:AddButton({
     Title = "🧹 Hapus Kotak Merah/Putih",
     Description = "Bersihkan highlight dan efek visual",
@@ -1772,7 +1801,6 @@ FarmSection:AddButton({
     end
 })
 
--- AUTO CP
 FarmSection:AddToggle({
     Title = "Auto CP All Mountain (Fix)",
     Description = "Teleport otomatis ke semua checkpoint (URUT)",
@@ -1782,7 +1810,6 @@ FarmSection:AddToggle({
         
         if v then
             task.spawn(function()
-                -- SCAN CHECKPOINT
                 local cps = ScanAllCheckpoints()
                 
                 if #cps == 0 then
@@ -1825,7 +1852,6 @@ FarmSection:AddToggle({
                 
                 local currentIndex = 0
                 
-                -- LOOP KE SEMUA CHECKPOINT
                 for i, cp in ipairs(cps) do
                     if not _G.AutoCPAll then 
                         Library:MakeNotify({ 
@@ -1836,7 +1862,6 @@ FarmSection:AddToggle({
                         break 
                     end
                     
-                    -- Update karakter
                     char = LocalPlayer.Character
                     if not char then
                         Library:MakeNotify({ 
@@ -1857,7 +1882,6 @@ FarmSection:AddToggle({
                         break
                     end
                     
-                    -- Cek humanoid
                     local hum = char:FindFirstChildOfClass("Humanoid")
                     if hum and hum.Health <= 0 then
                         Library:MakeNotify({ 
@@ -1868,11 +1892,9 @@ FarmSection:AddToggle({
                         break
                     end
                     
-                    -- TELEPORT KE CHECKPOINT
                     local targetCF = cp.Part.CFrame * CFrame.new(0, 5, 0)
                     root.CFrame = targetCF
                     
-                    -- Simulasi sentuh
                     pcall(function()
                         if firetouchinterest then
                             firetouchinterest(root, cp.Part, 0)
@@ -1883,18 +1905,15 @@ FarmSection:AddToggle({
                     
                     currentIndex = i
                     
-                    -- NOTIFIKASI
                     Library:MakeNotify({ 
                         Title = "✅ CP " .. i .. "/" .. #cps, 
                         Content = cp.Name .. " (Y: " .. math.floor(cp.Y) .. ")", 
                         Duration = 1.5 
                     })
                     
-                    -- DELAY
                     task.wait(_G.CPTeleportDelay or 0.8)
                 end
                 
-                -- SELESAI
                 if _G.AutoCPAll then
                     Library:MakeNotify({ 
                         Title = "🏆 Selesai!", 
@@ -1909,7 +1928,6 @@ FarmSection:AddToggle({
     end
 })
 
--- DELAY SETTINGS
 FarmSection:AddInput({
     Title = "Delay Antar CP (detik)",
     Description = "Jeda antara teleport ke checkpoint berikutnya",
@@ -1919,9 +1937,6 @@ FarmSection:AddInput({
     end
 })
 
--- ==========================================
--- SCAN & INFO
--- ==========================================
 FarmSection:AddButton({
     Title = "🔍 Scan Checkpoint Sekarang",
     Callback = function()
@@ -1937,7 +1952,6 @@ FarmSection:AddButton({
             return
         end
         
-        -- HIGHLIGHT SEMUA CHECKPOINT (BIRU)
         for _, cp in pairs(cps) do
             local hl = Instance.new("Highlight")
             hl.FillColor = Color3.fromRGB(0, 150, 255)
@@ -1947,7 +1961,6 @@ FarmSection:AddButton({
             hl.Parent = cp.Part
         end
         
-        -- TAMPILKAN DAFTAR
         local msg = "Ditemukan " .. #cps .. " checkpoint:\n"
         for i, cp in ipairs(cps) do
             if i <= 15 then
@@ -1966,9 +1979,6 @@ FarmSection:AddButton({
     end
 })
 
--- ==========================================
--- TP MANUAL
--- ==========================================
 FarmSection:AddButton({
     Title = "⬆️ TP ke CP Berikutnya",
     Callback = function()
@@ -1984,7 +1994,6 @@ FarmSection:AddButton({
             return
         end
         
-        -- Cari CP berikutnya
         local nextCP = nil
         local currentY = root.Position.Y
         
@@ -2003,7 +2012,6 @@ FarmSection:AddButton({
                 Duration = 2 
             })
         else
-            -- Cari yang tertinggi
             local highest = cps[#cps]
             if highest then
                 root.CFrame = highest.Part.CFrame * CFrame.new(0, 5, 0)
@@ -2045,9 +2053,6 @@ FarmSection:AddButton({
     end
 })
 
--- ==========================================
--- TP KE CP NOMOR TERTENTU
--- ==========================================
 FarmSection:AddButton({
     Title = "🔢 TP ke CP Nomor Tertentu",
     Callback = function()
@@ -2062,7 +2067,6 @@ FarmSection:AddButton({
             return
         end
         
-        -- Tampilkan di console
         print("=== DAFTAR CHECKPOINT ===")
         for i, cp in ipairs(cps) do
             print(i .. ". " .. cp.Name .. " (Y: " .. math.floor(cp.Y) .. ")")
@@ -2077,7 +2081,6 @@ FarmSection:AddButton({
             Duration = 5 
         })
         
-        -- Listener chat
         local connection
         connection = Players:GetPlayers()[1].Chatted:Connect(function(msg)
             if msg:lower():sub(1, 4) == "/tp " then
@@ -2105,15 +2108,6 @@ FarmSection:AddButton({
         end)
     end
 })
-
--- Tombol khusus untuk membersihkan
-FarmSection:AddButton({
-    Title = "🧹 Hapus Kotak Merah/Putih",
-    Callback = function()
-        ClearAllHighlights()
-    end
-})
-
 
 FarmSection:AddButton({
     Title = "TP to Top of Mountain",
@@ -2151,6 +2145,12 @@ VisualSection:AddToggle({
     Title = "ESP Tracers (Line)", 
     Default = false, 
     Callback = function(v) _G.LineESP = v end 
+})
+
+VisualSection:AddToggle({ 
+    Title = "ESP Skeleton (Bone)", 
+    Default = false, 
+    Callback = function(v) _G.SkeletonESP = v end 
 })
 
 VisualSection:AddToggle({
@@ -2301,7 +2301,7 @@ VisualSection:AddToggle({
             end
         end
     end
-})
+}) 
 
 VisualSection:AddToggle({
     Title = "Fullbright",
@@ -2323,6 +2323,19 @@ VisualSection:AddToggle({
             Lighting.FogEnd = _G.OldFog or 100000
             Lighting.GlobalShadows = _G.OldShadows or true
         end
+    end
+})
+
+VisualSection:AddToggle({
+    Title = "WallHack (See Through Walls)",
+    Description = "Melihat tembus dinding (Transparan)",
+    Default = false,
+    Callback = function(v)
+        ToggleWallHack(v)
+        Library:MakeNotify({ 
+            Title = v and "WallHack ON" or "WallHack OFF", 
+            Content = v and "Dinding menjadi transparan!" or "Dinding kembali normal" 
+        })
     end
 })
 
@@ -2810,6 +2823,11 @@ ClearSection:AddButton({
             end
         end
         
+        -- Matikan WallHack jika aktif
+        if _G.WallHack then
+            ToggleWallHack(false)
+        end
+        
         Library:MakeNotify({ Title = "Cleared", Content = "Semua efek visual telah dihapus!" })
     end
 })
@@ -2833,6 +2851,7 @@ ExitSection:AddButton({
         _G.ESP = false
         _G.BoxESP = false
         _G.LineESP = false
+        _G.SkeletonESP = false
         _G.HealthESP = false
         _G.AntiRagdoll = false
         _G.AntiVoid = false
@@ -2849,6 +2868,10 @@ ExitSection:AddButton({
         _G.ChatLog = false
         _G.AirWalk = false
         _G.AutoWalkJSON = false
+        _G.WallHack = false
+        
+        -- Matikan WallHack
+        ToggleWallHack(false)
         
         ClearManualHighlights()
         
@@ -2862,11 +2885,16 @@ ExitSection:AddButton({
 -- RENDER LOOP FOR ESP
 -- ==========================================
 RunService.RenderStepped:Connect(function()
-    if not (_G.BoxESP or _G.LineESP) then
+    if not (_G.BoxESP or _G.LineESP or _G.SkeletonESP) then
         for _, obj in pairs(ESP_Objects) do 
             pcall(function()
-                obj.Box.Visible = false 
-                obj.Line.Visible = false 
+                if obj.Box then obj.Box.Visible = false end
+                if obj.Line then obj.Line.Visible = false end
+                if obj.Skeleton then
+                    for _, line in pairs(obj.Skeleton) do
+                        line.Visible = false
+                    end
+                end
             end)
         end
         return
@@ -2881,7 +2909,8 @@ RunService.RenderStepped:Connect(function()
                 if not ESP_Objects[player] then
                     ESP_Objects[player] = { 
                         Box = Drawing.new("Square"), 
-                        Line = Drawing.new("Line") 
+                        Line = Drawing.new("Line"),
+                        Skeleton = {}
                     }
                 end
                 
@@ -2911,10 +2940,23 @@ RunService.RenderStepped:Connect(function()
                 else
                     obj.Line.Visible = false
                 end
+                
+                if _G.SkeletonESP then
+                    UpdateSkeletonESP(player, obj)
+                else
+                    for _, line in pairs(obj.Skeleton) do
+                        line.Visible = false
+                    end
+                end
             else
                 if ESP_Objects[player] then 
-                    ESP_Objects[player].Box.Visible = false 
-                    ESP_Objects[player].Line.Visible = false 
+                    if ESP_Objects[player].Box then ESP_Objects[player].Box.Visible = false end
+                    if ESP_Objects[player].Line then ESP_Objects[player].Line.Visible = false end
+                    if ESP_Objects[player].Skeleton then
+                        for _, line in pairs(ESP_Objects[player].Skeleton) do
+                            line.Visible = false
+                        end
+                    end
                 end
             end
         else
