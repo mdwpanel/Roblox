@@ -1,6 +1,6 @@
 --[[
     FCAL HUB - LYNX GUI EDITION
-    Version: 3.0.0 | ULTIMATE OPTIMIZED
+    Version: 3.0.0 | ANTI-ADMIN EDITION
     Dengan ESP Ringan, Anti-Admin & Troll Features
 --]]
 
@@ -27,7 +27,7 @@ local CollectionService = game:GetService("CollectionService")
 -- Global Variables
 local LocalPlayer = Players.LocalPlayer
 local ESP_Highlights = {}
-local ESPLabels = {}
+local ManualHighlights = {}
 local ToggleKey = Enum.KeyCode.RightControl
 local msg = "FCAL HUB ON TOP!"
 local SpecTarget = ""
@@ -35,6 +35,70 @@ local SkinData = {}
 local ActiveSkin = nil
 local IsSkinActive = false
 local SkinParts = {}
+
+_G.AutoCPAll = false
+_G.CPTeleportDelay = 0.8
+_G.CPScanDelay = 1.0
+_G.AutoCP = false
+_G.InfJump = false
+_G.NC = false
+_G.TapTP = false
+_G.AutoInteract = false
+_G.ESP = false
+_G.AntiRagdoll = false
+_G.AntiVoid = false
+_G.AntiKick = true
+_G.AdminDetect = false
+_G.Hitbox = false
+_G.CPDelay = 2.0
+_G.Fly = false
+_G.AirWalk = false
+_G.WalkingAntiVoid = false
+_G.AntiFreeze = true
+_G.Wiggle = false
+_G.KillerWarn = false
+_G.Headlight = false
+_G.XRay = false
+_G.Fullbright = false
+_G.Freecam = false
+_G.Spam = false
+_G.ChatLog = false
+_G.GenESP = false
+_G.MenuVisible = true
+_G.AutoWalk = false
+_G.AutoWalkSpeed = 25
+_G.WallHack = false
+_G.GravityGunActive = false
+_G.ActiveTheme = "Midnight"
+_G.SkinPreview = false
+_G.SkinName = ""
+_G.SkinColor = Color3.fromRGB(255,255,255)
+_G.SkinEffect = "None"
+_G.Aimbot = false
+_G.SilentAim = false
+_G.AutoFarm = false
+_G.AutoClick = false
+_G.AntiAFK = false
+_G.NoStun = false
+_G.AutoHeal = false
+_G.AutoCollect = false
+_G.AutoSell = false
+_G.SpeedHack = false
+_G.SpeedValue = 50
+_G.JumpHack = false
+_G.JumpValue = 100
+_G.AntiAdminTP = true
+
+local Config = {
+    WalkSpeedDefault = 16,
+    JumpPowerDefault = 50,
+    GravityDefault = 196,
+    Theme = "Midnight", 
+    FlySpeed = 100,
+    AimbotSmoothness = 10,
+    AimbotRange = 200,
+    AutoFarmDelay = 0.5,
+}
 
 -- ==========================================
 -- ANTI-KICK BYPASS (SUPERIOR)
@@ -55,9 +119,6 @@ mt.__namecall = newcclosure(function(self, ...)
 end)
 
 -- Block Remote Events yang mencurigakan
-local oldFireServer = nil
-local oldInvokeServer = nil
-
 pcall(function()
     local oldMeta = getrawmetatable(game)
     local oldIndex = oldMeta.__index
@@ -66,7 +127,6 @@ pcall(function()
         if key == "FireServer" and self:IsA("RemoteEvent") then
             return function(_, ...)
                 local args = {...}
-                -- Block kick/ban remotes
                 if type(args[1]) == "string" and (
                     args[1]:lower():find("kick") or 
                     args[1]:lower():find("ban") or 
@@ -76,7 +136,7 @@ pcall(function()
                 ) then
                     return nil
                 end
-                return oldFireServer and oldFireServer(self, ...) or oldNamecall(self, ...)
+                return oldNamecall(self, ...)
             end
         end
         return oldIndex(self, key)
@@ -91,7 +151,6 @@ setreadonly(mt, true)
 local AdminPlayers = {}
 local AdminTools = {}
 
--- Detect admin tools
 function DetectAdminTools()
     AdminTools = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
@@ -107,22 +166,18 @@ function DetectAdminTools()
     return #AdminTools
 end
 
--- Detect admin players
 function DetectAdmins()
     AdminPlayers = {}
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
-            -- Cek tag
             if player:GetAttribute("Admin") or player:GetAttribute("Mod") or 
                player:GetAttribute("Staff") or player:GetAttribute("Owner") then
                 table.insert(AdminPlayers, player)
             end
-            -- Cek team
             if player.Team and (player.Team.Name:lower():find("admin") or 
                 player.Team.Name:lower():find("mod")) then
                 table.insert(AdminPlayers, player)
             end
-            -- Cek character tag
             if player.Character then
                 if player.Character:FindFirstChild("AdminTag") or 
                    player.Character:FindFirstChild("ModTag") then
@@ -139,27 +194,24 @@ local function AntiAdminFreeze()
     task.spawn(function()
         while true do
             task.wait(0.05)
+            if not _G.AntiFreeze then break end
             if LocalPlayer.Character then
                 local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
                 local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 
                 if hum then
-                    -- Reset semua status freeze/stun
                     if hum.PlatformStand then hum.PlatformStand = false end
                     if hum.Sit then hum.Sit = false end
                     hum.AutoRotate = true
                 end
                 
                 if root then
-                    -- Unanchor jika di-anchor
                     if root.Anchored then root.Anchored = false end
-                    -- Reset velocity jika terlalu tinggi (bisa dari fling admin)
                     if root.AssemblyLinearVelocity.Magnitude > 1000 then
                         root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                     end
                 end
                 
-                -- Unfreeze semua part
                 for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
                     if part:IsA("BasePart") and part.Anchored and part ~= root then
                         part.Anchored = false
@@ -175,6 +227,7 @@ local function AntiRagdoll()
     task.spawn(function()
         while true do
             task.wait(0.1)
+            if not _G.AntiRagdoll then break end
             local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             if hum and hum.PlatformStand then
                 hum.PlatformStand = false
@@ -185,31 +238,27 @@ end
 
 -- Anti-Teleport (admin teleport block)
 local function AntiAdminTeleport()
-    local lastPos = Vector3.new(0, 0, 0)
     local positionHistory = {}
     
     task.spawn(function()
         while true do
             task.wait(0.2)
+            if not _G.AntiAdminTP then break end
             local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if root then
                 local currentPos = root.Position
                 table.insert(positionHistory, currentPos)
                 if #positionHistory > 10 then table.remove(positionHistory, 1) end
                 
-                -- Deteksi teleport paksa (perubahan posisi mendadak)
                 if #positionHistory >= 2 then
                     local lastPos = positionHistory[#positionHistory - 1]
                     local dist = (currentPos - lastPos).Magnitude
                     
-                    -- Jika teleport lebih dari 200 studs dan bukan dari player sendiri
                     if dist > 200 and not _G.TapTP and not _G.AutoCPAll then
-                        -- Cek apakah ada admin yang mencoba teleport
                         for _, admin in pairs(AdminPlayers) do
                             if admin.Character then
                                 local adminRoot = admin.Character:FindFirstChild("HumanoidRootPart")
                                 if adminRoot and (adminRoot.Position - lastPos).Magnitude < 50 then
-                                    -- Kembalikan ke posisi sebelumnya
                                     root.CFrame = CFrame.new(lastPos)
                                     Library:MakeNotify({
                                         Title = "🛡️ Anti-Admin",
@@ -233,7 +282,7 @@ AntiRagdoll()
 AntiAdminTeleport()
 
 -- ==========================================
--- ADMIN TROLL FEATURES
+-- ADMIN TROLL FUNCTIONS
 -- ==========================================
 function IsAdmin(player)
     for _, admin in pairs(AdminPlayers) do
@@ -248,7 +297,6 @@ function GetAdminTarget()
         return nil
     end
     
-    -- Prioritaskan yang paling dekat
     local closest = nil
     local minDist = math.huge
     local myRoot = GetRootPart()
@@ -272,29 +320,6 @@ function GetAdminTarget()
 end
 
 -- ==========================================
--- TROLL ADMIN SECTION (NEW)
--- ==========================================
-local function GetTrollTarget()
-    if #AdminPlayers == 0 then
-        Library:MakeNotify({ Title = "⚠️ Error", Content = "Tidak ada admin terdeteksi!", Duration = 3 })
-        return nil
-    end
-    
-    local target = GetAdminTarget()
-    if not target then
-        Library:MakeNotify({ Title = "⚠️ Error", Content = "Tidak ada admin valid!", Duration = 3 })
-        return nil
-    end
-    
-    if not target.Character then
-        Library:MakeNotify({ Title = "⚠️ Error", Content = "Admin tidak memiliki karakter!", Duration = 3 })
-        return nil
-    end
-    
-    return target
-end
-
--- ==========================================
 -- WINDOW CREATION
 -- ==========================================
 local Window = Library:Window({
@@ -303,7 +328,7 @@ local Window = Library:Window({
 })
 
 -- ==========================================
--- HELPER FUNCTIONS (OPTIMIZED)
+-- HELPER FUNCTIONS
 -- ==========================================
 
 function ClearESP()
@@ -419,7 +444,7 @@ function GetPlayerRole(player)
 end
 
 function GetESPColor(player)
-    if IsAdmin(player) then return Color3.fromRGB(255, 0, 255) end -- Admin warna ungu
+    if IsAdmin(player) then return Color3.fromRGB(255, 0, 255) end
     local role = GetPlayerRole(player)
     if role == "Killer" then return Color3.fromRGB(255, 0, 0)
     elseif role == "Survivor" then return Color3.fromRGB(0, 255, 0)
@@ -457,9 +482,6 @@ function GetGeneratorProgress(gen)
     return 0
 end
 
--- ==========================================
--- OPTIMIZED ESP (LIGHTWEIGHT)
--- ==========================================
 function CreateESPForPlayer(player)
     if player == LocalPlayer or not player.Character then return end
     
@@ -798,7 +820,7 @@ function ApplyTheme(themeName)
 end
 
 -- ==========================================
--- TABS SETUP
+-- TABS SETUP (RAPI - TANPA DUPLIKAT)
 -- ==========================================
 local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
 local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
@@ -807,11 +829,11 @@ local ServerTab = Window:AddTab({ Name = "Server", Icon = "web" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 local SkinTab = Window:AddTab({ Name = "Skins", Icon = "palette" })
 local UniversalTab = Window:AddTab({ Name = "Universal", Icon = "globe" })
-local AntiAdminTab = Window:AddTab({ Name = "🛡️ Anti-Admin", Icon = "shield" })
+local AntiAdminTab = Window:AddTab({ Name = "🛡️ Admin", Icon = "shield" })
 local TrollTab = Window:AddTab({ Name = "🎭 Troll", Icon = "skull" })
 
 -- ==========================================
--- MAIN TAB - QUICK ACTIONS
+-- MAIN TAB
 -- ==========================================
 local QuickSection = MainTab:AddSection("⚡ Quick Actions")
 
@@ -1074,43 +1096,6 @@ QuickTpSection:AddButton({
     end
 })
 
-QuickTpSection:AddButton({
-    Title = "Bring Player (Visual)",
-    Description = "Membawa target ke posisi Anda",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" }) 
-            return 
-        end
-        local target = Players:FindFirstChild(SelectedTarget)
-        local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        
-        if target and target.Character and myRoot then
-            local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
-            if tRoot then
-                local origPos = tRoot.Position
-                tRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
-                
-                local hl = Instance.new("Highlight")
-                hl.FillColor = Color3.fromRGB(0, 255, 255)
-                hl.FillTransparency = 0.5
-                hl.Adornee = target.Character
-                hl.Parent = target.Character
-                table.insert(ManualHighlights, hl)
-                
-                Library:MakeNotify({ Title = "Success", Content = "Membawa " .. SelectedTarget })
-                
-                task.wait(3)
-                if tRoot.Parent then
-                    tRoot.CFrame = CFrame.new(origPos)
-                end
-            end
-        else
-            Library:MakeNotify({ Title = "Error", Content = "Pemain tidak ditemukan!" })
-        end
-    end
-})
-
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
@@ -1238,7 +1223,7 @@ local AntiSection = PlayerTab:AddSection("🛡️ Protection Settings")
 
 AntiSection:AddToggle({
     Title = "Anti-Ragdoll / No-Stun",
-    Default = false,
+    Default = true,
     Callback = function(v)
         _G.AntiRagdoll = v
         if v then
@@ -1745,7 +1730,6 @@ VisualSection:AddToggle({
     Callback = function(v)
         _G.ESP = v
         if v then
-            -- Deteksi admin
             DetectAdmins()
             
             for _, p in pairs(Players:GetPlayers()) do
@@ -1766,13 +1750,11 @@ VisualSection:AddToggle({
                 end)
             end
             
-            -- Update admin detection periodically
             if not _G.AdminDetectLoop then
                 _G.AdminDetectLoop = task.spawn(function()
                     while _G.ESP do
                         task.wait(5)
                         DetectAdmins()
-                        -- Update ESP colors for admins
                         for _, p in pairs(Players:GetPlayers()) do
                             if ESP_Highlights[p] and IsAdmin(p) then
                                 ESP_Highlights[p].FillColor = Color3.fromRGB(255, 0, 255)
@@ -2006,7 +1988,7 @@ FindSection:AddButton({
 })
 
 -- ==========================================
--- SERVER TAB - SPECTATE
+-- SERVER TAB
 -- ==========================================
 local SpectateSection = ServerTab:AddSection("👁️ Spectate")
 
@@ -2088,7 +2070,7 @@ ChatSection:AddToggle({
 })
 
 -- ==========================================
--- SETTINGS TAB - THEME
+-- SETTINGS TAB
 -- ==========================================
 local ThemeSection = SettingsTab:AddSection("🎨 Appearance")
 
@@ -2165,7 +2147,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 -- ==========================================
--- SKIN TAB - PREMIUM
+-- SKIN TAB
 -- ==========================================
 local SkinSection = SkinTab:AddSection("🎨 Premium Skins")
 
@@ -2262,11 +2244,10 @@ LocalPlayer.CharacterAdded:Connect(function(char)
 end)
 
 -- ==========================================
--- UNIVERSAL TAB - FEATURES LENGKAP
+-- UNIVERSAL TAB
 -- ==========================================
 local UniversalSection = UniversalTab:AddSection("🌐 Universal Features")
 
--- 1. FPS BOOSTER
 UniversalSection:AddToggle({
     Title = "⚡ FPS Booster",
     Description = "Matikan efek visual untuk meningkatkan FPS",
@@ -2322,7 +2303,6 @@ UniversalSection:AddToggle({
     end
 })
 
--- 2. CAMERA ZOOM
 UniversalSection:AddSlider({
     Title = "📷 Camera Zoom Extender",
     Description = "Perbesar jarak kamera maksimal",
@@ -2340,7 +2320,6 @@ UniversalSection:AddSlider({
     end
 })
 
--- 3. ANTI AFK
 UniversalSection:AddToggle({
     Title = "🔄 Anti AFK",
     Description = "Mencegah kick karena AFK",
@@ -2367,7 +2346,6 @@ UniversalSection:AddToggle({
     end
 })
 
--- 4. SPEED HACK
 UniversalSection:AddToggle({
     Title = "🏃 Speed Hack",
     Description = "Meningkatkan kecepatan berjalan",
@@ -2407,7 +2385,6 @@ UniversalSection:AddSlider({
     end
 })
 
--- 5. JUMP HACK
 UniversalSection:AddToggle({
     Title = "⬆️ Jump Hack",
     Description = "Meningkatkan kekuatan lompat",
@@ -2447,7 +2424,6 @@ UniversalSection:AddSlider({
     end
 })
 
--- 6. AUTO COLLECT
 UniversalSection:AddToggle({
     Title = "📦 Auto Collect",
     Description = "Otomatis mengumpulkan item di sekitar",
@@ -2480,7 +2456,6 @@ UniversalSection:AddToggle({
     end
 })
 
--- 7. SERVER INFO
 UniversalSection:AddButton({
     Title = "📊 Server Info",
     Description = "Tampilkan informasi server",
@@ -2507,7 +2482,6 @@ UniversalSection:AddButton({
     end
 })
 
--- 8. REJOIN
 UniversalSection:AddButton({
     Title = "🔄 Rejoin Server",
     Description = "Bergabung ulang ke server yang sama",
@@ -2520,7 +2494,6 @@ UniversalSection:AddButton({
     end
 })
 
--- 9. RESET LOBBY (Visual)
 UniversalSection:AddButton({
     Title = "🔄 Reset Lobby (Visual)",
     Description = "Reset semua efek visual di lobby",
@@ -2538,7 +2511,6 @@ UniversalSection:AddButton({
     end
 })
 
--- 10. AUTO FARM (Universal)
 UniversalSection:AddToggle({
     Title = "🌾 Auto Farm",
     Description = "Auto farm untuk berbagai game",
@@ -2589,7 +2561,6 @@ UniversalSection:AddSlider({
     end
 })
 
--- 11. AIMBOT (Simple)
 UniversalSection:AddToggle({
     Title = "🎯 Aimbot",
     Description = "Auto aim ke player terdekat",
@@ -2718,10 +2689,8 @@ AntiAdminSection:AddToggle({
 })
 
 -- ==========================================
--- TROLL TAB - JAHILI ADMIN & PLAYER
+-- TROLL TAB - JAHILI ADMIN
 -- ==========================================
-
--- Troll Admin Section
 local TrollAdminSection = TrollTab:AddSection("👑 Jahili Admin")
 
 TrollAdminSection:AddButton({
@@ -2953,7 +2922,9 @@ TrollAdminSection:AddButton({
     end
 })
 
--- Troll Player Section
+-- ==========================================
+-- TROLL TAB - JAHILI PLAYER
+-- ==========================================
 local TrollPlayerSection = TrollTab:AddSection("🎭 Jahili Player Lain")
 
 TrollPlayerSection:AddButton({
@@ -3238,7 +3209,7 @@ ExitSection:AddButton({
 })
 
 -- ==========================================
--- KEYBIND SECTION - QUICK KEYBINDS
+-- KEYBIND SECTION
 -- ==========================================
 local KeybindSection = SettingsTab:AddSection("⌨️ Quick Keybinds")
 
@@ -3350,7 +3321,6 @@ KeybindSection:AddButton({
 Library:Initialize()
 ApplyTheme("Midnight")
 
--- Start admin detection
 DetectAdmins()
 
 Library:MakeNotify({ 
