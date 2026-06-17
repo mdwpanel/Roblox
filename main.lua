@@ -1,7 +1,7 @@
 --[[
     FCAL HUB - LYNX GUI EDITION
-    Version: 2.3.1 | FULL FIXED
-    Semua fitur ditampilkan dengan benar!
+    Version: 2.2.0 | ULTIMATE EDITION
+    Dengan Skin System Premium & Universal Features
 --]]
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/mdwpanel/Roblox/refs/heads/main/main_ui_modern.lua"))()
@@ -23,7 +23,6 @@ local ContextActionService = game:GetService("ContextActionService")
 local StarterGui = game:GetService("StarterGui")
 local MarketplaceService = game:GetService("MarketplaceService")
 local CollectionService = game:GetService("CollectionService")
-local Debris = game:GetService("Debris")
 
 -- Global Variables
 local LocalPlayer = Players.LocalPlayer
@@ -39,8 +38,6 @@ local SkinData = {}
 local ActiveSkin = nil
 local IsSkinActive = false
 local SkinParts = {}
-local FrozenPlayers = {}
-local AdminList = {}
 
 _G.AutoCPAll = false
 _G.CPTeleportDelay = 0.8
@@ -97,10 +94,6 @@ _G.SpeedHack = false
 _G.SpeedValue = 50
 _G.JumpHack = false
 _G.JumpValue = 100
-_G.AdminKick = false
-_G.AdminFreeze = false
-_G.FreezeRange = 50
-_G.KickRange = 50
 
 local Config = {
     WalkSpeedDefault = 16,
@@ -131,7 +124,7 @@ setreadonly(mt, true)
 -- ==========================================
 local Window = Library:Window({
     Title = "FCAL HUB",
-    Footer = "v2.3.1 | Full Fixed"
+    Footer = "v2.2.0 | Ultimate Edition"
 })
 
 -- ==========================================
@@ -406,129 +399,371 @@ function ToggleWallHack(enabled)
 end
 
 -- ==========================================
--- ADMIN KICK & FREEZE FUNCTIONS
+-- PREMIUM SKIN SYSTEM
 -- ==========================================
 
-function KickAdmin(player)
-    if not player or not player.Character then return false end
+-- Daftar skin premium
+local PremiumSkins = {
+    {
+        Name = "❌ No Skin",
+        Color = Color3.fromRGB(255,255,255),
+        Type = "None",
+        Material = Enum.Material.SmoothPlastic,
+        Effect = "None",
+        Price = 0
+    },
+    {
+        Name = "🔥 Golden God",
+        Color = Color3.fromRGB(255, 215, 0),
+        Type = "Gold",
+        Material = Enum.Material.Neon,
+        Effect = "Glow",
+        Price = 0,
+        Description = "Berkilau seperti emas murni"
+    },
+    {
+        Name = "🌑 Shadow Reaper",
+        Color = Color3.fromRGB(30, 30, 40),
+        Type = "Dark",
+        Material = Enum.Material.SmoothPlastic,
+        Effect = "Smoke",
+        Price = 0,
+        Description = "Kegelapan yang bergerak"
+    },
+    {
+        Name = "💎 Crystal Blue",
+        Color = Color3.fromRGB(0, 150, 255),
+        Type = "Crystal",
+        Material = Enum.Material.Glass,
+        Effect = "Sparkle",
+        Price = 0,
+        Description = "Seperti kristal biru yang berkilau"
+    },
+    {
+        Name = "🔥 Inferno",
+        Color = Color3.fromRGB(255, 50, 0),
+        Type = "Fire",
+        Material = Enum.Material.Neon,
+        Effect = "Fire",
+        Price = 0,
+        Description = "Api yang membara di tubuhmu"
+    },
+    {
+        Name = "❄️ Frost",
+        Color = Color3.fromRGB(100, 200, 255),
+        Type = "Ice",
+        Material = Enum.Material.Glass,
+        Effect = "Snow",
+        Price = 0,
+        Description = "Dingin seperti es abadi"
+    },
+    {
+        Name = "🌌 Galaxy",
+        Color = Color3.fromRGB(150, 0, 255),
+        Type = "Galaxy",
+        Material = Enum.Material.Neon,
+        Effect = "Stars",
+        Price = 0,
+        Description = "Bawa galaksi ke dalam dirimu"
+    },
+    {
+        Name = "💚 Emerald",
+        Color = Color3.fromRGB(0, 255, 100),
+        Type = "Emerald",
+        Material = Enum.Material.Neon,
+        Effect = "Glow",
+        Price = 0,
+        Description = "Hijau zamrud yang memukau"
+    },
+    {
+        Name = "❤️ Ruby",
+        Color = Color3.fromRGB(255, 0, 50),
+        Type = "Ruby",
+        Material = Enum.Material.Neon,
+        Effect = "Glow",
+        Price = 0,
+        Description = "Merah delima yang berapi-api"
+    },
+    {
+        Name = "🌈 Rainbow",
+        Color = Color3.fromRGB(255, 0, 255),
+        Type = "Rainbow",
+        Material = Enum.Material.Neon,
+        Effect = "Rainbow",
+        Price = 0,
+        Description = "Pelangi bergerak di tubuhmu"
+    },
+    {
+        Name = "⚡ Storm",
+        Color = Color3.fromRGB(200, 200, 255),
+        Type = "Storm",
+        Material = Enum.Material.Neon,
+        Effect = "Lightning",
+        Price = 0,
+        Description = "Listrik mengalir di tubuhmu"
+    },
+    {
+        Name = "🪐 Void",
+        Color = Color3.fromRGB(20, 0, 40),
+        Type = "Void",
+        Material = Enum.Material.SmoothPlastic,
+        Effect = "Shadow",
+        Price = 0,
+        Description = "Kegelapan total yang menyerap cahaya"
+    },
+    {
+        Name = "🌸 Cherry Blossom",
+        Color = Color3.fromRGB(255, 150, 200),
+        Type = "Sakura",
+        Material = Enum.Material.Neon,
+        Effect = "Petal",
+        Price = 0,
+        Description = "Bunga sakura yang bermekaran"
+    },
+    {
+        Name = "🏆 Champion",
+        Color = Color3.fromRGB(255, 200, 50),
+        Type = "Champion",
+        Material = Enum.Material.Neon,
+        Effect = "Aura",
+        Price = 0,
+        Description = "Aura kemenangan yang bersinar"
+    },
+    {
+        Name = "🧊 Diamond",
+        Color = Color3.fromRGB(200, 230, 255),
+        Type = "Diamond",
+        Material = Enum.Material.DiamondPlate,
+        Effect = "Sparkle",
+        Price = 0,
+        Description = "Berlian paling langka dan berharga"
+    },
+}
+
+function CreatePremiumSkin(character)
+    if not character then return end
     
-    local success = false
+    -- Hapus skin lama
+    if character:FindFirstChild("MDW_Skin") then
+        character.MDW_Skin:Destroy()
+    end
     
-    pcall(function()
-        local root = player.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            root.CFrame = CFrame.new(0, -1000, 0)
-            success = true
+    if not ActiveSkin or ActiveSkin.Type == "None" then
+        IsSkinActive = false
+        return
+    end
+    
+    IsSkinActive = true
+    local skinFolder = Instance.new("Folder")
+    skinFolder.Name = "MDW_Skin"
+    skinFolder.Parent = character
+    
+    -- Simpan data skin
+    local skinData = Instance.new("StringValue")
+    skinData.Name = "SkinData"
+    skinData.Value = HttpService:JSONEncode({
+        Name = ActiveSkin.Name,
+        Color = ActiveSkin.Color,
+        Type = ActiveSkin.Type,
+        Effect = ActiveSkin.Effect
+    })
+    skinData.Parent = skinFolder
+    
+    -- Buat efek untuk setiap bagian tubuh
+    local parts = {"Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg", "HumanoidRootPart"}
+    
+    for _, partName in pairs(parts) do
+        local original = character:FindFirstChild(partName)
+        if original and original:IsA("BasePart") then
+            -- Buat part baru sebagai skin
+            local skinPart = original:Clone()
+            skinPart.Name = "Skin_" .. partName
+            skinPart.Parent = skinFolder
+            skinPart.CFrame = original.CFrame
+            skinPart.CanCollide = false
+            skinPart.Material = ActiveSkin.Material or Enum.Material.Neon
+            skinPart.Color = ActiveSkin.Color
+            skinPart.Transparency = 0.2
+            
+            -- Tambahkan efek glow
+            local glow = Instance.new("ParticleEmitter")
+            glow.Name = "GlowEffect"
+            glow.Parent = skinPart
+            glow.Texture = "rbxassetid://268857015"
+            glow.SpreadAngle = Vector2.new(180, 180)
+            glow.Speed = NumberRange.new(0)
+            glow.Rate = 10
+            glow.Color = ColorSequence.new(ActiveSkin.Color)
+            glow.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.5),
+                NumberSequenceKeypoint.new(1, 1)
+            })
+            glow.Lifetime = NumberRange.new(1, 3)
+            glow.Size = NumberSequence.new(2)
+            
+            -- Efek khusus berdasarkan tipe
+            if ActiveSkin.Effect == "Fire" then
+                glow.Texture = "rbxassetid://268857015"
+                glow.Rate = 20
+                glow.SpreadAngle = Vector2.new(360, 360)
+                glow.Speed = NumberRange.new(1, 3)
+                glow.Size = NumberSequence.new(3)
+            elseif ActiveSkin.Effect == "Snow" then
+                glow.Texture = "rbxassetid://268857015"
+                glow.Rate = 15
+                glow.SpreadAngle = Vector2.new(180, 180)
+                glow.Speed = NumberRange.new(0.5, 1)
+                glow.Size = NumberSequence.new(1)
+            elseif ActiveSkin.Effect == "Sparkle" then
+                glow.Texture = "rbxassetid://268857015"
+                glow.Rate = 25
+                glow.SpreadAngle = Vector2.new(360, 360)
+                glow.Speed = NumberRange.new(0)
+                glow.Size = NumberSequence.new(1)
+            elseif ActiveSkin.Effect == "Stars" then
+                glow.Texture = "rbxassetid://268857015"
+                glow.Rate = 30
+                glow.SpreadAngle = Vector2.new(360, 360)
+                glow.Speed = NumberRange.new(0)
+                glow.Size = NumberSequence.new(0.5)
+            elseif ActiveSkin.Effect == "Rainbow" then
+                glow.Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255,0,0)),
+                    ColorSequenceKeypoint.new(0.2, Color3.fromRGB(255,255,0)),
+                    ColorSequenceKeypoint.new(0.4, Color3.fromRGB(0,255,0)),
+                    ColorSequenceKeypoint.new(0.6, Color3.fromRGB(0,255,255)),
+                    ColorSequenceKeypoint.new(0.8, Color3.fromRGB(0,0,255)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255,0,255))
+                })
+                glow.Rate = 20
+            elseif ActiveSkin.Effect == "Lightning" then
+                glow.Texture = "rbxassetid://268857015"
+                glow.Rate = 40
+                glow.SpreadAngle = Vector2.new(360, 360)
+                glow.Speed = NumberRange.new(5, 10)
+                glow.Size = NumberSequence.new(4)
+            elseif ActiveSkin.Effect == "Shadow" then
+                glow.Transparency = NumberSequence.new({
+                    NumberSequenceKeypoint.new(0, 0.9),
+                    NumberSequenceKeypoint.new(1, 1)
+                })
+                glow.Rate = 5
+                glow.Size = NumberSequence.new(5)
+            elseif ActiveSkin.Effect == "Petal" then
+                glow.Texture = "rbxassetid://268857015"
+                glow.Rate = 15
+                glow.SpreadAngle = Vector2.new(180, 180)
+                glow.Speed = NumberRange.new(0.5, 2)
+                glow.Size = NumberSequence.new(1.5)
+            elseif ActiveSkin.Effect == "Aura" then
+                glow.Texture = "rbxassetid://268857015"
+                glow.Rate = 30
+                glow.SpreadAngle = Vector2.new(360, 360)
+                glow.Speed = NumberRange.new(0)
+                glow.Size = NumberSequence.new(4)
+            end
+            
+            -- Pasang attachment ke original
+            local weld = Instance.new("Weld")
+            weld.Name = "SkinWeld"
+            weld.Part0 = original
+            weld.Part1 = skinPart
+            weld.C0 = original.CFrame:Inverse()
+            weld.C1 = skinPart.CFrame:Inverse()
+            weld.Parent = skinPart
+            
+            table.insert(SkinParts, skinPart)
         end
-    end)
+    end
     
-    pcall(function()
-        local hum = player.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.Health = 0
-            success = true
-        end
-    end)
+    -- Tambahkan trail effect
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if rootPart then
+        local trail = Instance.new("Trail")
+        trail.Name = "SkinTrail"
+        trail.Parent = rootPart
+        trail.Color = ColorSequence.new(ActiveSkin.Color)
+        trail.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.5),
+            NumberSequenceKeypoint.new(1, 1)
+        })
+        trail.Lifetime = 0.5
+        trail.MinLength = 1
+        trail.MaxLength = 5
+        trail.Enabled = true
+        table.insert(SkinParts, trail)
+    end
     
-    pcall(function()
-        if player.Character then
-            player.Character:Destroy()
-            success = true
-        end
-    end)
-    
-    return success
+    -- Kirim skin ke semua player
+    if _G.SkinPreview then
+        SyncSkinToAll(character)
+    end
 end
 
-function FreezeAdmin(player)
-    if not player or not player.Character then return false end
+function SyncSkinToAll(character)
+    if not ActiveSkin or ActiveSkin.Type == "None" then return end
     
-    if FrozenPlayers[player] then
-        pcall(function()
-            local root = player.Character:FindFirstChild("HumanoidRootPart")
-            if root then
-                root.Anchored = false
-            end
-            local hum = player.Character:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum.PlatformStand = false
-                hum.Sit = false
-            end
-        end)
-        FrozenPlayers[player] = nil
-        return true
-    end
-    
-    local success = false
+    -- Kirim melalui RemoteEvent
     pcall(function()
-        local root = player.Character:FindFirstChild("HumanoidRootPart")
-        if root then
-            root.Anchored = true
-            success = true
-        end
-        local hum = player.Character:FindFirstChildOfClass("Humanoid")
-        if hum then
-            hum.PlatformStand = true
-            hum.Sit = true
+        local remote = ReplicatedStorage:FindFirstChild("RemoteEvent")
+        if remote then
+            remote:FireServer("SyncSkin", {
+                Player = LocalPlayer.Name,
+                Color = ActiveSkin.Color,
+                Name = ActiveSkin.Name,
+                Type = ActiveSkin.Type,
+                Effect = ActiveSkin.Effect
+            })
         end
     end)
     
-    if success then
-        FrozenPlayers[player] = true
-        
-        pcall(function()
-            local char = player.Character
-            if char then
-                local hl = Instance.new("Highlight")
-                hl.Name = "FrozenHighlight"
-                hl.Adornee = char
-                hl.FillColor = Color3.fromRGB(0, 150, 255)
-                hl.FillTransparency = 0.3
-                hl.OutlineColor = Color3.new(1, 1, 1)
-                hl.Parent = char
-            end
-        end)
-    end
+    -- Kirim melalui RemoteFunction
+    pcall(function()
+        local remote = ReplicatedStorage:FindFirstChild("RemoteFunction")
+        if remote then
+            remote:InvokeServer("SyncSkin", {
+                Player = LocalPlayer.Name,
+                Color = ActiveSkin.Color,
+                Name = ActiveSkin.Name,
+                Type = ActiveSkin.Type
+            })
+        end
+    end)
     
-    return success
+    -- Kirim melalui BindableEvent
+    pcall(function()
+        local bindable = ReplicatedStorage:FindFirstChild("BindableEvent")
+        if bindable then
+            bindable:Fire({
+                Player = LocalPlayer.Name,
+                Color = ActiveSkin.Color,
+                Name = ActiveSkin.Name,
+                Type = ActiveSkin.Type
+            })
+        end
+    end)
 end
 
-function DetectAdmins()
-    AdminList = {}
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local isAdmin = false
-            
-            pcall(function()
-                if player:GetRankInGroup(0) > 0 then
-                    isAdmin = true
-                end
-            end)
-            
-            pcall(function()
-                if player:GetAttribute("Admin") == true or player:GetAttribute("Staff") == true then
-                    isAdmin = true
-                end
-            end)
-            
-            pcall(function()
-                if player:FindFirstChild("AdminTag") or player:FindFirstChild("StaffTag") then
-                    isAdmin = true
-                end
-            end)
-            
-            local displayName = player.DisplayName:lower()
-            if displayName:find("admin") or displayName:find("staff") or displayName:find("mod") or displayName:find("owner") then
-                isAdmin = true
-            end
-            
-            if isAdmin then
-                table.insert(AdminList, player.Name)
-            end
-        end
+function CleanupSkin()
+    for _, part in pairs(SkinParts) do
+        pcall(function() part:Destroy() end)
     end
-    return AdminList
+    SkinParts = {}
+    
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("MDW_Skin") then
+        pcall(function() char.MDW_Skin:Destroy() end)
+    end
+    IsSkinActive = false
 end
+
+-- Auto apply skin
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    if ActiveSkin and ActiveSkin.Type ~= "None" then
+        CreatePremiumSkin(char)
+    end
+end)
 
 -- ==========================================
 -- GET PLAYER LIST
@@ -622,250 +857,13 @@ local ServerTab = Window:AddTab({ Name = "Server", Icon = "web" })
 local SettingsTab = Window:AddTab({ Name = "Settings", Icon = "settings" })
 local SkinTab = Window:AddTab({ Name = "Skins", Icon = "palette" })
 local UniversalTab = Window:AddTab({ Name = "Universal", Icon = "globe" })
-local AdminTab = Window:AddTab({ Name = "Admin", Icon = "shield" })
 
 -- ==========================================
--- MARKETPLACE SKINS
--- ==========================================
-
-local CharacterSkins = {
-    -- COWOK
-    {
-        Name = "👤 Ganteng",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(255, 200, 150),
-        Material = Enum.Material.SmoothPlastic,
-        Effect = "Glow",
-        Description = "Tampan dengan aura bersinar"
-    },
-    {
-        Name = "⚫ Shadow Ninja",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(20, 20, 30),
-        Material = Enum.Material.SmoothPlastic,
-        Effect = "Shadow",
-        Description = "Ninja bayangan yang misterius"
-    },
-    {
-        Name = "🔥 Fire Knight",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(255, 50, 0),
-        Material = Enum.Material.Neon,
-        Effect = "Fire",
-        Description = "Ksatria api yang perkasa"
-    },
-    {
-        Name = "💀 Dark Reaper",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(40, 0, 40),
-        Material = Enum.Material.SmoothPlastic,
-        Effect = "Shadow",
-        Description = "Pembawa maut dari kegelapan"
-    },
-    {
-        Name = "🦸 Super Hero",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(0, 100, 255),
-        Material = Enum.Material.Neon,
-        Effect = "Aura",
-        Description = "Pahlawan super dengan kekuatan besar"
-    },
-    {
-        Name = "⚔️ Samurai",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(200, 100, 50),
-        Material = Enum.Material.SmoothPlastic,
-        Effect = "Glow",
-        Description = "Pendekar samurai yang tangguh"
-    },
-    {
-        Name = "🧙 Wizard",
-        Gender = "Cowok",
-        Color = Color3.fromRGB(150, 0, 255),
-        Material = Enum.Material.Neon,
-        Effect = "Stars",
-        Description = "Penyihir dengan sihir kuno"
-    },
-    -- CEWEK
-    {
-        Name = "👸 Putri Cantik",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(255, 150, 200),
-        Material = Enum.Material.Neon,
-        Effect = "Petal",
-        Description = "Putri dengan pesona memikat"
-    },
-    {
-        Name = "🌸 Sakura Princess",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(255, 180, 220),
-        Material = Enum.Material.SmoothPlastic,
-        Effect = "Petal",
-        Description = "Putri bunga sakura yang anggun"
-    },
-    {
-        Name = "❄️ Ice Queen",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(100, 200, 255),
-        Material = Enum.Material.Glass,
-        Effect = "Snow",
-        Description = "Ratu es yang dingin dan anggun"
-    },
-    {
-        Name = "🌹 Rose Beauty",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(255, 50, 100),
-        Material = Enum.Material.Neon,
-        Effect = "Petal",
-        Description = "Kecantikan seperti bunga mawar"
-    },
-    {
-        Name = "✨ Fairy",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(200, 150, 255),
-        Material = Enum.Material.Neon,
-        Effect = "Sparkle",
-        Description = "Peri dengan sayap berkilauan"
-    },
-    {
-        Name = "🌌 Galaxy Girl",
-        Gender = "Cewek",
-        Color = Color3.fromRGB(150, 0, 255),
-        Material = Enum.Material.Neon,
-        Effect = "Stars",
-        Description = "Gadis dari galaksi lain"
-    },
-}
-
-function CleanupSkin()
-    for _, part in pairs(SkinParts) do
-        pcall(function() part:Destroy() end)
-    end
-    SkinParts = {}
-    
-    local char = LocalPlayer.Character
-    if char then
-        if char:FindFirstChild("MDW_Skin") then
-            pcall(function() char.MDW_Skin:Destroy() end)
-        end
-    end
-    IsSkinActive = false
-end
-
-function CreatePremiumSkin(character)
-    if not character then return end
-    
-    CleanupSkin()
-    
-    if not ActiveSkin then
-        IsSkinActive = false
-        return
-    end
-    
-    IsSkinActive = true
-    local skinFolder = Instance.new("Folder")
-    skinFolder.Name = "MDW_Skin"
-    skinFolder.Parent = character
-    
-    local skinData = Instance.new("StringValue")
-    skinData.Name = "SkinData"
-    skinData.Value = HttpService:JSONEncode({
-        Name = ActiveSkin.Name,
-        Color = ActiveSkin.Color,
-        Gender = ActiveSkin.Gender or "Unisex",
-        Effect = ActiveSkin.Effect
-    })
-    skinData.Parent = skinFolder
-    
-    local parts = {"Head", "Torso", "LeftArm", "RightArm", "LeftLeg", "RightLeg", "HumanoidRootPart"}
-    
-    for _, partName in pairs(parts) do
-        local original = character:FindFirstChild(partName)
-        if original and original:IsA("BasePart") then
-            local skinPart = original:Clone()
-            skinPart.Name = "Skin_" .. partName
-            skinPart.Parent = skinFolder
-            skinPart.CFrame = original.CFrame
-            skinPart.CanCollide = false
-            skinPart.Material = ActiveSkin.Material or Enum.Material.Neon
-            skinPart.Color = ActiveSkin.Color
-            skinPart.Transparency = 0.2
-            
-            local glow = Instance.new("ParticleEmitter")
-            glow.Name = "GlowEffect"
-            glow.Parent = skinPart
-            glow.Texture = "rbxassetid://268857015"
-            glow.SpreadAngle = Vector2.new(180, 180)
-            glow.Speed = NumberRange.new(0)
-            glow.Rate = 10
-            glow.Color = ColorSequence.new(ActiveSkin.Color)
-            glow.Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 0.5),
-                NumberSequenceKeypoint.new(1, 1)
-            })
-            glow.Lifetime = NumberRange.new(1, 3)
-            glow.Size = NumberSequence.new(2)
-            
-            if ActiveSkin.Effect == "Fire" then
-                glow.Rate = 20
-                glow.SpreadAngle = Vector2.new(360, 360)
-                glow.Speed = NumberRange.new(1, 3)
-                glow.Size = NumberSequence.new(3)
-            elseif ActiveSkin.Effect == "Snow" then
-                glow.Rate = 15
-                glow.SpreadAngle = Vector2.new(180, 180)
-                glow.Speed = NumberRange.new(0.5, 1)
-                glow.Size = NumberSequence.new(1)
-            elseif ActiveSkin.Effect == "Sparkle" then
-                glow.Rate = 25
-                glow.SpreadAngle = Vector2.new(360, 360)
-                glow.Size = NumberSequence.new(1)
-            elseif ActiveSkin.Effect == "Stars" then
-                glow.Rate = 30
-                glow.Size = NumberSequence.new(0.5)
-            elseif ActiveSkin.Effect == "Shadow" then
-                glow.Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0, 0.9),
-                    NumberSequenceKeypoint.new(1, 1)
-                })
-                glow.Rate = 5
-                glow.Size = NumberSequence.new(5)
-            elseif ActiveSkin.Effect == "Petal" then
-                glow.Rate = 15
-                glow.SpreadAngle = Vector2.new(180, 180)
-                glow.Speed = NumberRange.new(0.5, 2)
-                glow.Size = NumberSequence.new(1.5)
-            elseif ActiveSkin.Effect == "Aura" then
-                glow.Rate = 30
-                glow.SpreadAngle = Vector2.new(360, 360)
-                glow.Size = NumberSequence.new(4)
-            end
-            
-            local weld = Instance.new("Weld")
-            weld.Name = "SkinWeld"
-            weld.Part0 = original
-            weld.Part1 = skinPart
-            weld.C0 = original.CFrame:Inverse()
-            weld.C1 = skinPart.CFrame:Inverse()
-            weld.Parent = skinPart
-            
-            table.insert(SkinParts, skinPart)
-        end
-    end
-end
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(0.5)
-    if ActiveSkin then
-        CreatePremiumSkin(char)
-    end
-end)
-
--- ==========================================
--- MAIN TAB
+-- MAIN TAB - QUICK ACTIONS
 -- ==========================================
 local QuickSection = MainTab:AddSection("⚡ Quick Actions")
 
+-- GRAVITY GUN - FIXED
 QuickSection:AddButton({
     Title = "Get Gravity Gun",
     Description = "Tool untuk menarik dan membawa objek di map",
@@ -1007,6 +1005,20 @@ QuickTpSection:AddToggle({
                                     if dist < 15 and obj.Enabled then
                                         fireproximityprompt(obj)
                                         task.wait(0.1)
+                                    end
+                                end
+                            end
+                        end
+                        
+                        local root = GetRootPart()
+                        if root then
+                            for _, obj in pairs(workspace:GetDescendants()) do
+                                if obj:IsA("BasePart") and obj.Parent and not obj.Parent:IsA("Character") then
+                                    local dist = (root.Position - obj.Position).Magnitude
+                                    if dist < 8 and (obj.Name:lower():find("tool") or obj.Name:lower():find("item")) then
+                                        firetouchinterest(root, obj, 0)
+                                        task.wait(0.05)
+                                        firetouchinterest(root, obj, 1)
                                     end
                                 end
                             end
@@ -1646,6 +1658,53 @@ MoveSection:AddToggle({
     end
 })
 
+local AirPlatform = nil
+local LockedY = 0
+
+MoveSection:AddToggle({
+    Title = "Real Air Walk (Solid Floor)",
+    Description = "Berjalan di lantai padat (Ketinggian Terkunci)",
+    Default = false,
+    Callback = function(v)
+        _G.AirWalk = v
+        
+        if v then
+            local char = LocalPlayer.Character
+            local root = char and char:FindFirstChild("HumanoidRootPart")
+            
+            if root then
+                LockedY = root.Position.Y - 3.45 
+                
+                AirPlatform = Instance.new("Part")
+                AirPlatform.Name = "MDW_SolidAirFloor"
+                AirPlatform.Size = Vector3.new(10, 1, 10)
+                AirPlatform.Transparency = 1
+                AirPlatform.Anchored = true
+                AirPlatform.CanCollide = true
+                AirPlatform.Parent = workspace
+                
+                task.spawn(function()
+                    while _G.AirWalk do
+                        local currentRoot = char and char:FindFirstChild("HumanoidRootPart")
+                        if currentRoot and AirPlatform then
+                            AirPlatform.CFrame = CFrame.new(currentRoot.Position.X, LockedY, currentRoot.Position.Z)
+                        end
+                        task.wait()
+                    end
+                end)
+                
+                Library:MakeNotify({ Title = "Air Walk", Content = "Ketinggian dikunci. Anda bisa berjalan sekarang!" })
+            end
+        else
+            if AirPlatform then
+                AirPlatform:Destroy()
+                AirPlatform = nil
+            end
+            Library:MakeNotify({ Title = "Air Walk", Content = "Fitur Dimatikan." })
+        end
+    end
+})
+
 local AntiSection = PlayerTab:AddSection("🛡️ Protection Settings")
 
 AntiSection:AddToggle({
@@ -1664,6 +1723,52 @@ AntiSection:AddToggle({
                     end
                 end
             end)
+        end
+    end
+})
+
+local VoidPart = Instance.new("Part")
+VoidPart.Name = "AntiVoidPlatform"
+VoidPart.Size = Vector3.new(20, 1, 20)
+VoidPart.Transparency = 1
+VoidPart.Anchored = true
+VoidPart.CanCollide = false
+
+AntiSection:AddToggle({
+    Title = "Walking Anti-Void (Air Walk)",
+    Description = "Berjalan di udara saat berada di jurang",
+    Default = false,
+    Callback = function(v)
+        _G.WalkingAntiVoid = v
+        
+        if v then
+            task.spawn(function()
+                local safeHeight = 0
+                local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if root then safeHeight = root.Position.Y - 3.5 end
+
+                while _G.WalkingAntiVoid do
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    
+                    if hrp then
+                        if hrp.Position.Y < (safeHeight - 5) then
+                            VoidPart.Parent = workspace
+                            VoidPart.CanCollide = true
+                            VoidPart.CFrame = CFrame.new(hrp.Position.X, safeHeight, hrp.Position.Z)
+                        else
+                            VoidPart.CanCollide = false
+                            VoidPart.Parent = nil
+                        end
+                    end
+                    task.wait()
+                end
+                VoidPart:Destroy()
+            end)
+            Library:MakeNotify({ Title = "Anti-Void", Content = "Mode Berjalan di Udara Aktif!" })
+        else
+            VoidPart.Parent = nil
+            Library:MakeNotify({ Title = "Anti-Void", Content = "Mode Berjalan di Udara Mati" })
         end
     end
 })
@@ -1723,7 +1828,7 @@ AntiSection:AddToggle({
 })
 
 -- ==========================================
--- FLY SECTION
+-- FLY SECTION - FIXED
 -- ==========================================
 local FlySection = PlayerTab:AddSection("🪁 Fly Settings")
 
@@ -1929,6 +2034,9 @@ local function ScanAllCheckpoints()
     return unique
 end
 
+-- ==========================================
+-- TAB AUTO CP - FIXED
+-- ==========================================
 local FarmSection = GameTab:AddSection("⛰️ Auto CP All Mountain")
 
 FarmSection:AddButton({
@@ -2199,7 +2307,7 @@ FarmSection:AddButton({
 -- ==========================================
 -- GAME TAB - VISUAL ESP
 -- ==========================================
-local VisualSection = GameTab:AddSection("??️ Visual ESP & Tracking")
+local VisualSection = GameTab:AddSection("👁️ Visual ESP & Tracking")
 
 VisualSection:AddToggle({ 
     Title = "ESP Box (2D)", 
@@ -2244,6 +2352,50 @@ VisualSection:AddToggle({
     end
 })
 
+RunService.RenderStepped:Connect(function()
+    if _G.HealthESP then
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+                local head = player.Character.Head
+                local humanoid = player.Character:FindFirstChild("Humanoid")
+                
+                if humanoid and humanoid.Health > 0 then
+                    local gui = head:FindFirstChild("HealthBarGui")
+                    if not gui then
+                        local bgui = Instance.new("BillboardGui", head)
+                        bgui.Name = "HealthBarGui"
+                        bgui.Size = UDim2.new(3, 0, 0.4, 0)
+                        bgui.StudsOffset = Vector3.new(0, 2, 0)
+                        bgui.AlwaysOnTop = true
+                        
+                        local back = Instance.new("Frame", bgui)
+                        back.Name = "Background"
+                        back.Size = UDim2.new(1, 0, 1, 0)
+                        back.BackgroundColor3 = Color3.new(0, 0, 0)
+                        back.BorderSizePixel = 0
+                        
+                        local bar = Instance.new("Frame", back)
+                        bar.Name = "Frame"
+                        bar.BorderSizePixel = 0
+                        bar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+                        bar.BackgroundColor3 = Color3.new(0, 1, 0)
+                    else
+                        local frame = gui:FindFirstChild("Frame")
+                        local bar = frame and frame:FindFirstChild("Bar")
+                        if bar then
+                            local healthPercent = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+                            bar.Size = UDim2.new(healthPercent, 0, 1, 0)
+                            bar.BackgroundColor3 = Color3.fromHSV(healthPercent * 0.3, 1, 1) 
+                        end
+                    end
+                elseif gui then
+                    pcall(function() gui:Destroy() end)
+                end
+            end
+        end
+    end
+end)
+
 VisualSection:AddToggle({
     Title = "ESP Players (Highlight)",
     Default = false,
@@ -2275,6 +2427,87 @@ VisualSection:AddToggle({
         end
     end
 })
+
+RunService.RenderStepped:Connect(function()
+    if not (_G.BoxESP or _G.LineESP or _G.SkeletonESP) then
+        for _, obj in pairs(ESP_Objects) do 
+            pcall(function()
+                if obj.Box then obj.Box.Visible = false end
+                if obj.Line then obj.Line.Visible = false end
+                if obj.Skeleton then
+                    for _, line in pairs(obj.Skeleton) do
+                        line.Visible = false
+                    end
+                end
+            end)
+        end
+        return
+    end
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = player.Character.HumanoidRootPart
+            local pos, onScreen = Workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
+            
+            if onScreen then
+                if not ESP_Objects[player] then
+                    ESP_Objects[player] = { 
+                        Box = Drawing.new("Square"), 
+                        Line = Drawing.new("Line"),
+                        Skeleton = {}
+                    }
+                end
+                
+                local obj = ESP_Objects[player]
+                local color = GetESPColor(player)
+                
+                if _G.BoxESP then
+                    local sizeX = math.clamp(2000 / pos.Z, 10, 500)
+                    local sizeY = math.clamp(3000 / pos.Z, 10, 700)
+                    
+                    obj.Box.Visible = true
+                    obj.Box.Color = color
+                    obj.Box.Size = Vector2.new(sizeX, sizeY)
+                    obj.Box.Position = Vector2.new(pos.X - sizeX / 2, pos.Y - sizeY / 2)
+                    obj.Box.Thickness = 1
+                    obj.Box.Filled = false
+                else
+                    obj.Box.Visible = false
+                end
+                
+                if _G.LineESP then
+                    obj.Line.Visible = true
+                    obj.Line.Color = color
+                    obj.Line.From = Vector2.new(Workspace.CurrentCamera.ViewportSize.X / 2, Workspace.CurrentCamera.ViewportSize.Y)
+                    obj.Line.To = Vector2.new(pos.X, pos.Y)
+                    obj.Line.Thickness = 1
+                else
+                    obj.Line.Visible = false
+                end
+                
+                if _G.SkeletonESP then
+                    UpdateSkeletonESP(player, obj)
+                else
+                    for _, line in pairs(obj.Skeleton) do
+                        line.Visible = false
+                    end
+                end
+            else
+                if ESP_Objects[player] then 
+                    if ESP_Objects[player].Box then ESP_Objects[player].Box.Visible = false end
+                    if ESP_Objects[player].Line then ESP_Objects[player].Line.Visible = false end
+                    if ESP_Objects[player].Skeleton then
+                        for _, line in pairs(ESP_Objects[player].Skeleton) do
+                            line.Visible = false
+                        end
+                    end
+                end
+            end
+        else
+            ClearESP(player)
+        end
+    end 
+end)
 
 VisualSection:AddToggle({
     Title = "Headlight (God Light)",
@@ -2474,7 +2707,7 @@ FindSection:AddButton({
 })
 
 -- ==========================================
--- SERVER TAB
+-- SERVER TAB - SPECTATE
 -- ==========================================
 local SpectateSection = ServerTab:AddSection("👁️ Spectate")
 
@@ -2517,6 +2750,9 @@ SpectateSection:AddButton({
     end 
 })
 
+-- ==========================================
+-- SERVER TAB - CHAT
+-- ==========================================
 local ChatSection = ServerTab:AddSection("💬 Chat Otomatis")
 
 ChatSection:AddInput({ 
@@ -2553,7 +2789,7 @@ ChatSection:AddToggle({
 })
 
 -- ==========================================
--- SETTINGS TAB
+-- SETTINGS TAB - THEME
 -- ==========================================
 local ThemeSection = SettingsTab:AddSection("🎨 Appearance")
 
@@ -2566,6 +2802,9 @@ ThemeSection:AddDropdown({
     end 
 })
 
+-- ==========================================
+-- SETTINGS - KEYBIND
+-- ==========================================
 local keybindSection = SettingsTab:AddSection("⌨️ Keybind")
 
 keybindSection:AddButton({
@@ -2583,12 +2822,25 @@ keybindSection:AddButton({
             end
         end
         
+        if not gui then
+            for _, child in pairs(LocalPlayer.PlayerGui:GetChildren()) do
+                if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") or child.Name:find("FCAL") then
+                    gui = child
+                    break
+                end
+            end
+        end
+        
         if gui then
             gui.Enabled = _G.MenuVisible
             Library:MakeNotify({ 
                 Title = "Menu", 
                 Content = _G.MenuVisible and "Menu Ditampilkan" or "Menu Disembunyikan" 
             })
+        else
+            pcall(function()
+                Window.Visible = _G.MenuVisible
+            end)
         end
     end
 })
@@ -2614,7 +2866,740 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 -- ==========================================
--- KEYBIND SECTION
+-- SKIN TAB - PREMIUM
+-- ==========================================
+local SkinSection = SkinTab:AddSection("🎨 Premium Skins")
+
+-- Dropdown untuk skin
+local skinOptions = {}
+for _, skin in pairs(PremiumSkins) do
+    table.insert(skinOptions, skin.Name)
+end
+
+local SkinDropdown = SkinSection:AddDropdown({
+    Title = "Pilih Skin Premium",
+    Options = skinOptions,
+    Default = "❌ No Skin",
+    Callback = function(v)
+        for _, skin in pairs(PremiumSkins) do
+            if skin.Name == v then
+                ActiveSkin = skin
+                _G.SkinName = skin.Name
+                _G.SkinColor = skin.Color
+                _G.SkinEffect = skin.Effect or "None"
+                
+                if skin.Type == "None" then
+                    CleanupSkin()
+                    Library:MakeNotify({ Title = "Skin", Content = "Skin dihapus!" })
+                else
+                    CreatePremiumSkin(LocalPlayer.Character)
+                    Library:MakeNotify({ 
+                        Title = "Skin", 
+                        Content = "Skin " .. skin.Name .. " diterapkan!\n" .. (skin.Description or ""),
+                        Duration = 4
+                    })
+                end
+                break
+            end
+        end
+    end
+})
+
+SkinSection:AddToggle({
+    Title = "Tampilkan Skin ke Player Lain",
+    Description = "Kirim data skin ke semua player di server",
+    Default = false,
+    Callback = function(v)
+        _G.SkinPreview = v
+        if v and ActiveSkin and ActiveSkin.Type ~= "None" then
+            SyncSkinToAll(LocalPlayer.Character)
+            Library:MakeNotify({ 
+                Title = "Sync", 
+                Content = "Mengirim skin ke semua player..." 
+            })
+        end
+    end
+})
+
+SkinSection:AddButton({
+    Title = "🔄 Refresh Skin",
+    Description = "Terapkan ulang skin saat ini",
+    Callback = function()
+        if ActiveSkin and ActiveSkin.Type ~= "None" then
+            CleanupSkin()
+            task.wait(0.1)
+            CreatePremiumSkin(LocalPlayer.Character)
+            Library:MakeNotify({ Title = "Refresh", Content = "Skin direfresh!" })
+        end
+    end
+})
+
+SkinSection:AddButton({
+    Title = "🎲 Random Skin",
+    Description = "Pilih skin secara acak",
+    Callback = function()
+        local randomSkins = {}
+        for _, skin in pairs(PremiumSkins) do
+            if skin.Type ~= "None" then
+                table.insert(randomSkins, skin)
+            end
+        end
+        local randomSkin = randomSkins[math.random(1, #randomSkins)]
+        if randomSkin then
+            ActiveSkin = randomSkin
+            _G.SkinName = randomSkin.Name
+            _G.SkinColor = randomSkin.Color
+            _G.SkinEffect = randomSkin.Effect or "None"
+            CleanupSkin()
+            task.wait(0.1)
+            CreatePremiumSkin(LocalPlayer.Character)
+            Library:MakeNotify({ 
+                Title = "🎲 Random Skin", 
+                Content = "Skin " .. randomSkin.Name .. " diterapkan!", 
+                Duration = 3
+            })
+        end
+    end
+})
+
+SkinSection:AddButton({
+    Title = "🧹 Hapus Skin",
+    Description = "Hapus skin yang sedang aktif",
+    Callback = function()
+        CleanupSkin()
+        ActiveSkin = PremiumSkins[1] -- No Skin
+        Library:MakeNotify({ Title = "Skin", Content = "Skin dihapus!" })
+    end
+})
+
+-- Auto apply skin saat character spawn
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    if ActiveSkin and ActiveSkin.Type ~= "None" then
+        CreatePremiumSkin(char)
+    end
+end)
+
+-- ==========================================
+-- UNIVERSAL TAB - FEATURES LENGKAP
+-- ==========================================
+
+local UniversalSection = UniversalTab:AddSection("🌐 Universal Features")
+
+-- 1. FPS BOOSTER
+UniversalSection:AddToggle({
+    Title = "⚡ FPS Booster",
+    Description = "Matikan efek visual untuk meningkatkan FPS",
+    Default = false,
+    Callback = function(v)
+        if v then
+            Lighting.GlobalShadows = false
+            Lighting.FogEnd = 1
+            pcall(function()
+                settings().Rendering.QualityLevel = 1
+            end)
+            
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("ParticleEmitter") then
+                    obj.Enabled = false
+                end
+                if obj:IsA("Trail") then
+                    obj.Enabled = false
+                end
+                if obj:IsA("Fire") or obj:IsA("Smoke") then
+                    obj.Enabled = false
+                end
+                if obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("SunRaysEffect") then
+                    obj.Enabled = false
+                end
+            end
+            
+            Library:MakeNotify({ Title = "FPS Booster", Content = "ON - Efek dimatikan" })
+        else
+            Lighting.GlobalShadows = true
+            Lighting.FogEnd = 100000
+            pcall(function()
+                settings().Rendering.QualityLevel = 2
+            end)
+            
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("ParticleEmitter") then
+                    obj.Enabled = true
+                end
+                if obj:IsA("Trail") then
+                    obj.Enabled = true
+                end
+                if obj:IsA("Fire") or obj:IsA("Smoke") then
+                    obj.Enabled = true
+                end
+                if obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("SunRaysEffect") then
+                    obj.Enabled = true
+                end
+            end
+            
+            Library:MakeNotify({ Title = "FPS Booster", Content = "OFF - Efek kembali" })
+        end
+    end
+})
+
+-- 2. CAMERA ZOOM
+UniversalSection:AddSlider({
+    Title = "📷 Camera Zoom Extender",
+    Description = "Perbesar jarak kamera maksimal",
+    Minimum = 1,
+    Maximum = 500,
+    Default = 50,
+    Callback = function(v)
+        pcall(function()
+            local cam = workspace.CurrentCamera
+            if cam then
+                cam.MaxZoomDistance = v
+                Library:MakeNotify({ Title = "Zoom", Content = "Jarak max: " .. v })
+            end
+        end)
+    end
+})
+
+-- 3. HIGHLIGHT ALL PLAYERS
+UniversalSection:AddToggle({
+    Title = "✨ Highlight All Players",
+    Description = "Highlight semua player di server",
+    Default = false,
+    Callback = function(v)
+        if v then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character then
+                    local hl = Instance.new("Highlight")
+                    hl.Name = "UniversalHighlight"
+                    hl.Adornee = p.Character
+                    hl.FillColor = Color3.fromRGB(0, 200, 255)
+                    hl.FillTransparency = 0.3
+                    hl.OutlineColor = Color3.new(1, 1, 1)
+                    hl.Parent = p.Character
+                end
+            end
+            Library:MakeNotify({ Title = "Highlight", Content = "Semua player di-highlight!" })
+        else
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("Highlight") and obj.Name == "UniversalHighlight" then
+                    pcall(function() obj:Destroy() end)
+                end
+            end
+            Library:MakeNotify({ Title = "Highlight", Content = "Highlight dimatikan" })
+        end
+    end
+})
+
+-- 4. TELEPORT TO SPAWN
+UniversalSection:AddButton({
+    Title = "🏠 Teleport to Spawn",
+    Description = "Teleport ke spawn point terdekat",
+    Callback = function()
+        local spawns = {}
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("SpawnLocation") then
+                table.insert(spawns, obj)
+            end
+        end
+        
+        if #spawns > 0 then
+            local nearest = nil
+            local minDist = math.huge
+            local root = GetRootPart()
+            
+            if root then
+                for _, spawn in pairs(spawns) do
+                    local dist = (root.Position - spawn.Position).Magnitude
+                    if dist < minDist then
+                        minDist = dist
+                        nearest = spawn
+                    end
+                end
+            end
+            
+            if nearest then
+                root.CFrame = nearest.CFrame * CFrame.new(0, 5, 0)
+                Library:MakeNotify({ Title = "Spawn", Content = "Teleport ke spawn!" })
+            end
+        else
+            Library:MakeNotify({ Title = "Spawn", Content = "Tidak ada spawn location!" })
+        end
+    end
+})
+
+-- 5. KILL ALL
+UniversalSection:AddButton({
+    Title = "💀 Kill All (Visual)",
+    Description = "Menjatuhkan semua player (efek visual)",
+    Callback = function()
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                local root = p.Character:FindFirstChild("HumanoidRootPart")
+                if root then
+                    root.CFrame = root.CFrame + Vector3.new(0, -100, 0)
+                    Library:MakeNotify({ Title = "Kill", Content = p.Name .. " dijatuhkan!" })
+                end
+            end
+        end
+    end
+})
+
+-- 6. AUTO HEAL
+UniversalSection:AddToggle({
+    Title = "💚 Auto Heal",
+    Description = "Otomatis menyembuhkan saat health rendah",
+    Default = false,
+    Callback = function(v)
+        _G.AutoHeal = v
+        if v then
+            task.spawn(function()
+                while _G.AutoHeal do
+                    local hum = GetHumanoid()
+                    if hum and hum.Health < 30 then
+                        -- Cari item penyembuh di sekitar
+                        for _, obj in pairs(workspace:GetDescendants()) do
+                            if obj:IsA("Tool") and obj.Name:lower():find("heal") or obj.Name:lower():find("med") or obj.Name:lower():find("pot") then
+                                local root = GetRootPart()
+                                if root then
+                                    local dist = (root.Position - obj.Parent:GetPivot().Position).Magnitude
+                                    if dist < 10 then
+                                        firetouchinterest(root, obj, 0)
+                                        task.wait(0.05)
+                                        firetouchinterest(root, obj, 1)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    task.wait(1)
+                end
+            end)
+            Library:MakeNotify({ Title = "Auto Heal", Content = "Aktif!" })
+        else
+            Library:MakeNotify({ Title = "Auto Heal", Content = "Mati!" })
+        end
+    end
+})
+
+-- 7. ANTI AFK
+UniversalSection:AddToggle({
+    Title = "🔄 Anti AFK",
+    Description = "Mencegah kick karena AFK",
+    Default = false,
+    Callback = function(v)
+        _G.AntiAFK = v
+        if v then
+            task.spawn(function()
+                while _G.AntiAFK do
+                    pcall(function()
+                        -- Kirim input palsu
+                        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.W, false, game)
+                        task.wait(0.01)
+                        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.W, false, game)
+                        
+                        -- Gerakkan mouse sedikit
+                        local pos = UserInputService:GetMouseLocation()
+                        VirtualInputManager:SendMouseMoveEvent(pos.X + 1, pos.Y + 1, game)
+                    end)
+                    task.wait(30)
+                end
+            end)
+            Library:MakeNotify({ Title = "Anti AFK", Content = "Aktif!" })
+        else
+            Library:MakeNotify({ Title = "Anti AFK", Content = "Mati!" })
+        end
+    end
+})
+
+-- 8. SPEED HACK
+UniversalSection:AddToggle({
+    Title = "🏃 Speed Hack",
+    Description = "Meningkatkan kecepatan berjalan",
+    Default = false,
+    Callback = function(v)
+        _G.SpeedHack = v
+        if v then
+            local hum = GetHumanoid()
+            if hum then
+                hum.WalkSpeed = _G.SpeedValue
+            end
+            Library:MakeNotify({ Title = "Speed Hack", Content = "Kecepatan: " .. _G.SpeedValue })
+        else
+            local hum = GetHumanoid()
+            if hum then
+                hum.WalkSpeed = 16
+            end
+            Library:MakeNotify({ Title = "Speed Hack", Content = "Mati!" })
+        end
+    end
+})
+
+UniversalSection:AddSlider({
+    Title = "Speed Value",
+    Description = "Atur kecepatan Speed Hack",
+    Minimum = 16,
+    Maximum = 300,
+    Default = 50,
+    Callback = function(v)
+        _G.SpeedValue = v
+        if _G.SpeedHack then
+            local hum = GetHumanoid()
+            if hum then
+                hum.WalkSpeed = v
+            end
+        end
+    end
+})
+
+-- 9. JUMP HACK
+UniversalSection:AddToggle({
+    Title = "⬆️ Jump Hack",
+    Description = "Meningkatkan kekuatan lompat",
+    Default = false,
+    Callback = function(v)
+        _G.JumpHack = v
+        if v then
+            local hum = GetHumanoid()
+            if hum then
+                hum.JumpPower = _G.JumpValue
+            end
+            Library:MakeNotify({ Title = "Jump Hack", Content = "Jump Power: " .. _G.JumpValue })
+        else
+            local hum = GetHumanoid()
+            if hum then
+                hum.JumpPower = 50
+            end
+            Library:MakeNotify({ Title = "Jump Hack", Content = "Mati!" })
+        end
+    end
+})
+
+UniversalSection:AddSlider({
+    Title = "Jump Value",
+    Description = "Atur kekuatan Jump Hack",
+    Minimum = 50,
+    Maximum = 500,
+    Default = 100,
+    Callback = function(v)
+        _G.JumpValue = v
+        if _G.JumpHack then
+            local hum = GetHumanoid()
+            if hum then
+                hum.JumpPower = v
+            end
+        end
+    end
+})
+
+-- 10. AUTO COLLECT
+UniversalSection:AddToggle({
+    Title = "📦 Auto Collect",
+    Description = "Otomatis mengumpulkan item di sekitar",
+    Default = false,
+    Callback = function(v)
+        _G.AutoCollect = v
+        if v then
+            task.spawn(function()
+                while _G.AutoCollect do
+                    local root = GetRootPart()
+                    if root then
+                        for _, obj in pairs(workspace:GetDescendants()) do
+                            if obj:IsA("BasePart") and obj.Parent and not obj.Parent:IsA("Character") then
+                                local dist = (root.Position - obj.Position).Magnitude
+                                if dist < 10 then
+                                    -- Coba collect
+                                    firetouchinterest(root, obj, 0)
+                                    task.wait(0.05)
+                                    firetouchinterest(root, obj, 1)
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.5)
+                end
+            end)
+            Library:MakeNotify({ Title = "Auto Collect", Content = "Aktif!" })
+        else
+            Library:MakeNotify({ Title = "Auto Collect", Content = "Mati!" })
+        end
+    end
+})
+
+-- 11. SERVER INFO
+UniversalSection:AddButton({
+    Title = "📊 Server Info",
+    Description = "Tampilkan informasi server",
+    Callback = function()
+        local players = Players:GetPlayers()
+        local maxPlayers = Players.MaxPlayers
+        local ping = game:GetService("Stats"):FindFirstChild("Network") and 
+                    game:GetService("Stats").Network:FindFirstChild("ClientLatency") and 
+                    game:GetService("Stats").Network.ClientLatency.Value or 0
+        
+        Library:MakeNotify({ 
+            Title = "📊 Server Info", 
+            Content = string.format(
+                "Players: %d/%d\nPing: %dms\nServer: %s\nTime: %s",
+                #players,
+                maxPlayers,
+                math.floor(ping * 1000),
+                game.JobId or "Unknown",
+                os.date("%H:%M:%S")
+            ),
+            Duration = 8
+        })
+    end
+})
+
+-- 12. REJOIN
+UniversalSection:AddButton({
+    Title = "🔄 Rejoin Server",
+    Description = "Bergabung ulang ke server yang sama",
+    Callback = function()
+        Library:MakeNotify({ Title = "Rejoin", Content = "Merejoin server..." })
+        task.wait(1)
+        pcall(function()
+            TeleportService:Teleport(game.PlaceId, LocalPlayer)
+        end)
+    end
+})
+
+-- 13. RESET LOBBY (Visual)
+UniversalSection:AddButton({
+    Title = "🔄 Reset Lobby (Visual)",
+    Description = "Reset semua efek visual di lobby",
+    Callback = function()
+        -- Hapus semua efek
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj ~= workspace.Terrain then
+                if obj.Name:find("MDW") or obj.Name:find("Cage") or obj.Name:find("Troll") or 
+                   obj.Name:find("Wall") or obj.Name:find("Ice") or obj.Name:find("Trap") or
+                   obj.Name:find("Clone") or obj.Name:find("MDW_Skin") or obj.Name:find("Skin_") then
+                    pcall(function() obj:Destroy() end)
+                end
+            end
+        end
+        Library:MakeNotify({ Title = "Reset", Content = "Lobby direset!" })
+    end
+})
+
+-- 14. AUTO FARM (Universal)
+UniversalSection:AddToggle({
+    Title = "🌾 Auto Farm",
+    Description = "Auto farm untuk berbagai game",
+    Default = false,
+    Callback = function(v)
+        _G.AutoFarm = v
+        if v then
+            task.spawn(function()
+                while _G.AutoFarm do
+                    pcall(function()
+                        -- Cari NPC/musuh di sekitar
+                        for _, obj in pairs(workspace:GetDescendants()) do
+                            if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+                                local hum = obj:FindFirstChildOfClass("Humanoid")
+                                if hum and hum.Health > 0 and obj ~= LocalPlayer.Character then
+                                    local root = obj:FindFirstChild("HumanoidRootPart")
+                                    local myRoot = GetRootPart()
+                                    if root and myRoot then
+                                        local dist = (myRoot.Position - root.Position).Magnitude
+                                        if dist < 50 then
+                                            -- Teleport ke target
+                                            myRoot.CFrame = root.CFrame * CFrame.new(0, 3, 3)
+                                            -- Attack
+                                            VirtualInputManager:SendMouseButtonEvent(1, true, game)
+                                            task.wait(0.1)
+                                            VirtualInputManager:SendMouseButtonEvent(1, false, game)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                    task.wait(_G.AutoFarmDelay or 0.5)
+                end
+            end)
+            Library:MakeNotify({ Title = "Auto Farm", Content = "Aktif!" })
+        else
+            Library:MakeNotify({ Title = "Auto Farm", Content = "Mati!" })
+        end
+    end
+})
+
+UniversalSection:AddSlider({
+    Title = "Auto Farm Delay",
+    Description = "Jeda antar aksi Auto Farm",
+    Minimum = 0.1,
+    Maximum = 2,
+    Default = 0.5,
+    Callback = function(v)
+        _G.AutoFarmDelay = v
+    end
+})
+
+-- 15. AIMBOT (Simple)
+UniversalSection:AddToggle({
+    Title = "🎯 Aimbot",
+    Description = "Auto aim ke player terdekat",
+    Default = false,
+    Callback = function(v)
+        _G.Aimbot = v
+        if v then
+            task.spawn(function()
+                while _G.Aimbot do
+                    local closest = nil
+                    local minDist = Config.AimbotRange or 200
+                    local myRoot = GetRootPart()
+                    
+                    if myRoot then
+                        for _, p in pairs(Players:GetPlayers()) do
+                            if p ~= LocalPlayer and p.Character then
+                                local root = p.Character:FindFirstChild("HumanoidRootPart")
+                                if root then
+                                    local dist = (myRoot.Position - root.Position).Magnitude
+                                    if dist < minDist then
+                                        minDist = dist
+                                        closest = root
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    
+                    if closest then
+                        -- Arahkan kamera ke target
+                        local cam = workspace.CurrentCamera
+                        local targetPos = closest.Position + Vector3.new(0, 1.5, 0)
+                        local lookAt = CFrame.lookAt(cam.CFrame.p, targetPos)
+                        cam.CFrame = cam.CFrame:Lerp(lookAt, 0.5)
+                    end
+                    
+                    task.wait(0.05)
+                end
+            end)
+            Library:MakeNotify({ Title = "Aimbot", Content = "Aktif!" })
+        else
+            Library:MakeNotify({ Title = "Aimbot", Content = "Mati!" })
+        end
+    end
+})
+
+UniversalSection:AddSlider({
+    Title = "Aimbot Range",
+    Description = "Jarak maksimal aimbot",
+    Minimum = 50,
+    Maximum = 500,
+    Default = 200,
+    Callback = function(v)
+        Config.AimbotRange = v
+    end
+})
+
+-- ==========================================
+-- SETTINGS - CLEAR EFFECTS
+-- ==========================================
+local ClearSection = SettingsTab:AddSection("🧹 Clear Effects")
+
+ClearSection:AddButton({
+    Title = "Hapus Semua Efek Visual",
+    Description = "Bersihkan part, highlight, dan efek lainnya",
+    Callback = function()
+        ClearManualHighlights()
+        for _, o in pairs(workspace:GetDescendants()) do
+            if o:IsA("Highlight") then
+                pcall(function() o:Destroy() end)
+            end
+        end
+        
+        local toRemove = {}
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and obj ~= workspace.Terrain then
+                if obj.Name:find("MDW") or obj.Name:find("Cage") or obj.Name:find("Troll") or 
+                   obj.Name:find("Wall") or obj.Name:find("Ice") or obj.Name:find("Trap") or
+                   obj.Name:find("Clone") or obj.Name:find("Smoke") or obj.Name:find("Rockslide") or
+                   obj.Name:find("AntiVoidPlatform") or obj.Name:find("MDW_SolidAirFloor") or
+                   obj.Name:find("GodLight") or obj.Name:find("Spawned_Monster") or
+                   obj.Name:find("MDW_Skin") or obj.Name:find("Skin_") then
+                    table.insert(toRemove, obj)
+                end
+            end
+        end
+        
+        for _, obj in pairs(toRemove) do
+            pcall(function() obj:Destroy() end)
+        end
+        
+        for _, obj in pairs(workspace:GetChildren()) do
+            if obj:IsA("Explosion") then
+                pcall(function() obj:Destroy() end)
+            end
+        end
+        
+        if _G.WallHack then
+            ToggleWallHack(false)
+        end
+        
+        Library:MakeNotify({ Title = "Cleared", Content = "Semua efek visual telah dihapus!" })
+    end
+})
+
+-- ==========================================
+-- SETTINGS - EXIT
+-- ==========================================
+local ExitSection = SettingsTab:AddSection("🚪 Exit")
+
+ExitSection:AddButton({
+    Title = "Destroy UI",
+    Callback = function()
+        _G.Spam = false
+        _G.TapTP = false
+        _G.AdminDetect = false
+        _G.Fly = false
+        _G.NC = false
+        _G.InfJump = false
+        _G.AutoWalk = false
+        _G.AutoCP = false
+        _G.ESP = false
+        _G.BoxESP = false
+        _G.LineESP = false
+        _G.SkeletonESP = false
+        _G.HealthESP = false
+        _G.AntiRagdoll = false
+        _G.AntiVoid = false
+        _G.WalkingAntiVoid = false
+        _G.AntiFreeze = false
+        _G.Wiggle = false
+        _G.KillerWarn = false
+        _G.Headlight = false
+        _G.XRay = false
+        _G.Fullbright = false
+        _G.Freecam = false
+        _G.Spam = false
+        _G.ChatLog = false
+        _G.AirWalk = false
+        _G.WallHack = false
+        _G.GravityGunActive = false
+        _G.SkinPreview = false
+        _G.Aimbot = false
+        _G.AutoFarm = false
+        _G.AutoHeal = false
+        _G.AutoCollect = false
+        _G.AntiAFK = false
+        _G.SpeedHack = false
+        _G.JumpHack = false
+        
+        ToggleWallHack(false)
+        ClearManualHighlights()
+        CleanupSkin()
+        
+        Library:MakeNotify({ Title = "FCAL HUB", Content = "Shutdown...", Duration = 2 })
+        task.wait(1)
+        Window:Destroy()
+    end
+})
+
+-- ==========================================
+-- KEYBIND SECTION - QUICK KEYBINDS
 -- ==========================================
 local KeybindSection = SettingsTab:AddSection("⌨️ Quick Keybinds")
 
@@ -2722,894 +3707,18 @@ KeybindSection:AddButton({
 })
 
 -- ==========================================
--- SKIN TAB
--- ==========================================
-local SkinSection = SkinTab:AddSection("👗 Marketplace Skins")
-
-local genderOptions = {"Semua", "Cowok", "Cewek"}
-local selectedGender = "Semua"
-
-SkinSection:AddDropdown({
-    Title = "Filter Gender",
-    Options = genderOptions,
-    Default = "Semua",
-    Callback = function(v)
-        selectedGender = v
-        local filtered = {"❌ No Skin"}
-        for _, skin in pairs(CharacterSkins) do
-            if selectedGender == "Semua" or skin.Gender == selectedGender then
-                table.insert(filtered, skin.Name)
-            end
-        end
-        SkinDropdown:SetValues(filtered)
-    end
-})
-
-local skinOptions = {"❌ No Skin"}
-for _, skin in pairs(CharacterSkins) do
-    table.insert(skinOptions, skin.Name)
-end
-
-local SkinDropdown = SkinSection:AddDropdown({
-    Title = "Pilih Skin",
-    Options = skinOptions,
-    Default = "❌ No Skin",
-    Callback = function(v)
-        if v == "❌ No Skin" then
-            ActiveSkin = nil
-            CleanupSkin()
-            Library:MakeNotify({ Title = "Skin", Content = "Skin dihapus!" })
-            return
-        end
-        
-        for _, skin in pairs(CharacterSkins) do
-            if skin.Name == v then
-                ActiveSkin = skin
-                CreatePremiumSkin(LocalPlayer.Character)
-                Library:MakeNotify({ 
-                    Title = "👗 Skin", 
-                    Content = skin.Name .. " (" .. skin.Gender .. ")\n" .. (skin.Description or ""),
-                    Duration = 4
-                })
-                break
-            end
-        end
-    end
-})
-
-SkinSection:AddToggle({
-    Title = "📡 Tampilkan ke Player Lain",
-    Description = "Kirim data skin ke semua player di server",
-    Default = false,
-    Callback = function(v)
-        _G.SkinPreview = v
-        if v and ActiveSkin then
-            Library:MakeNotify({ 
-                Title = "📡 Sync", 
-                Content = "Mengirim skin ke semua player..." 
-            })
-        end
-    end
-})
-
-SkinSection:AddButton({
-    Title = "🔄 Refresh Skin",
-    Description = "Terapkan ulang skin saat ini",
-    Callback = function()
-        if ActiveSkin then
-            CleanupSkin()
-            task.wait(0.1)
-            CreatePremiumSkin(LocalPlayer.Character)
-            Library:MakeNotify({ Title = "🔄 Refresh", Content = "Skin direfresh!" })
-        end
-    end
-})
-
-SkinSection:AddButton({
-    Title = "🎲 Random Skin",
-    Description = "Pilih skin secara acak dari marketplace",
-    Callback = function()
-        local randomSkins = {}
-        for _, skin in pairs(CharacterSkins) do
-            table.insert(randomSkins, skin)
-        end
-        local randomSkin = randomSkins[math.random(1, #randomSkins)]
-        if randomSkin then
-            ActiveSkin = randomSkin
-            CleanupSkin()
-            task.wait(0.1)
-            CreatePremiumSkin(LocalPlayer.Character)
-            Library:MakeNotify({ 
-                Title = "🎲 Random", 
-                Content = randomSkin.Name .. " (" .. randomSkin.Gender .. ") diterapkan!", 
-                Duration = 3
-            })
-        end
-    end
-})
-
-SkinSection:AddButton({
-    Title = "🧹 Hapus Skin",
-    Description = "Hapus skin yang sedang aktif",
-    Callback = function()
-        ActiveSkin = nil
-        CleanupSkin()
-        Library:MakeNotify({ Title = "🧹 Skin", Content = "Skin dihapus!" })
-    end
-})
-
--- ==========================================
--- UNIVERSAL TAB
--- ==========================================
-local UniversalSection = UniversalTab:AddSection("🌐 Universal Features")
-
-UniversalSection:AddToggle({
-    Title = "⚡ FPS Booster",
-    Description = "Matikan efek visual untuk meningkatkan FPS",
-    Default = false,
-    Callback = function(v)
-        if v then
-            Lighting.GlobalShadows = false
-            Lighting.FogEnd = 1
-            pcall(function()
-                settings().Rendering.QualityLevel = 1
-            end)
-            
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if obj:IsA("ParticleEmitter") then
-                    obj.Enabled = false
-                end
-                if obj:IsA("Trail") then
-                    obj.Enabled = false
-                end
-                if obj:IsA("Fire") or obj:IsA("Smoke") then
-                    obj.Enabled = false
-                end
-                if obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("SunRaysEffect") then
-                    obj.Enabled = false
-                end
-            end
-            
-            Library:MakeNotify({ Title = "FPS Booster", Content = "ON - Efek dimatikan" })
-        else
-            Lighting.GlobalShadows = true
-            Lighting.FogEnd = 100000
-            pcall(function()
-                settings().Rendering.QualityLevel = 2
-            end)
-            
-            for _, obj in pairs(workspace:GetDescendants()) do 
-                if obj:IsA("ParticleEmitter") then
-                    obj.Enabled = true
-                end
-                if obj:IsA("Trail") then
-                    obj.Enabled = true
-                end
-                if obj:IsA("Fire") or obj:IsA("Smoke") then
-                    obj.Enabled = true
-                end
-                if obj:IsA("BloomEffect") or obj:IsA("BlurEffect") or obj:IsA("SunRaysEffect") then
-                    obj.Enabled = true
-                end
-            end
-            
-            Library:MakeNotify({ Title = "FPS Booster", Content = "OFF - Efek kembali" })
-        end
-    end
-})
-
-UniversalSection:AddSlider({
-    Title = "📷 Camera Zoom Extender",
-    Description = "Perbesar jarak kamera maksimal",
-    Minimum = 1,
-    Maximum = 500,
-    Default = 50,
-    Callback = function(v)
-        pcall(function()
-            local cam = workspace.CurrentCamera
-            if cam then
-                cam.MaxZoomDistance = v
-                Library:MakeNotify({ Title = "Zoom", Content = "Jarak max: " .. v })
-            end
-        end)
-    end
-})
-
-UniversalSection:AddToggle({
-    Title = "✨ Highlight All Players",
-    Description = "Highlight semua player di server",
-    Default = false,
-    Callback = function(v)
-        if v then
-            for _, p in pairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character then
-                    local hl = Instance.new("Highlight")
-                    hl.Name = "UniversalHighlight"
-                    hl.Adornee = p.Character
-                    hl.FillColor = Color3.fromRGB(0, 200, 255)
-                    hl.FillTransparency = 0.3
-                    hl.OutlineColor = Color3.new(1, 1, 1)
-                    hl.Parent = p.Character
-                end
-            end
-            Library:MakeNotify({ Title = "Highlight", Content = "Semua player di-highlight!" })
-        else
-            for _, obj in pairs(workspace:GetDescendants()) do
-                if obj:IsA("Highlight") and obj.Name == "UniversalHighlight" then
-                    pcall(function() obj:Destroy() end)
-                end
-            end
-            Library:MakeNotify({ Title = "Highlight", Content = "Highlight dimatikan" })
-        end
-    end
-})
-
-UniversalSection:AddButton({
-    Title = "🏠 Teleport to Spawn",
-    Description = "Teleport ke spawn point terdekat",
-    Callback = function()
-        local spawns = {}
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("SpawnLocation") then
-                table.insert(spawns, obj)
-            end
-        end
-        
-        if #spawns > 0 then
-            local nearest = nil
-            local minDist = math.huge
-            local root = GetRootPart()
-            
-            if root then
-                for _, spawn in pairs(spawns) do
-                    local dist = (root.Position - spawn.Position).Magnitude
-                    if dist < minDist then
-                        minDist = dist
-                        nearest = spawn
-                    end
-                end
-            end
-            
-            if nearest then
-                root.CFrame = nearest.CFrame * CFrame.new(0, 5, 0)
-                Library:MakeNotify({ Title = "Spawn", Content = "Teleport ke spawn!" })
-            end
-        else
-            Library:MakeNotify({ Title = "Spawn", Content = "Tidak ada spawn location!" })
-        end
-    end
-})
-
-UniversalSection:AddButton({
-    Title = "💀 Kill All (Visual)",
-    Description = "Menjatuhkan semua player (efek visual)",
-    Callback = function()
-        for _, p in pairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
-                local root = p.Character:FindFirstChild("HumanoidRootPart")
-                if root then
-                    root.CFrame = root.CFrame + Vector3.new(0, -100, 0)
-                    Library:MakeNotify({ Title = "Kill", Content = p.Name .. " dijatuhkan!" })
-                end
-            end
-        end
-    end
-})
-
-UniversalSection:AddToggle({
-    Title = "💚 Auto Heal",
-    Description = "Otomatis menyembuhkan saat health rendah",
-    Default = false,
-    Callback = function(v)
-        _G.AutoHeal = v
-        if v then
-            task.spawn(function()
-                while _G.AutoHeal do
-                    local hum = GetHumanoid()
-                    if hum and hum.Health < 30 then
-                        for _, obj in pairs(workspace:GetDescendants()) do
-                            if obj:IsA("Tool") and (obj.Name:lower():find("heal") or obj.Name:lower():find("med") or obj.Name:lower():find("pot")) then
-                                local root = GetRootPart()
-                                if root then
-                                    local dist = (root.Position - obj.Parent:GetPivot().Position).Magnitude
-                                    if dist < 10 then
-                                        firetouchinterest(root, obj, 0)
-                                        task.wait(0.05)
-                                        firetouchinterest(root, obj, 1)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    task.wait(1)
-                end
-            end)
-            Library:MakeNotify({ Title = "Auto Heal", Content = "Aktif!" })
-        else
-            Library:MakeNotify({ Title = "Auto Heal", Content = "Mati!" })
-        end
-    end
-})
-
-UniversalSection:AddToggle({
-    Title = "🔄 Anti AFK",
-    Description = "Mencegah kick karena AFK",
-    Default = false,
-    Callback = function(v)
-        _G.AntiAFK = v
-        if v then
-            task.spawn(function()
-                while _G.AntiAFK do
-                    pcall(function()
-                        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.W, false, game)
-                        task.wait(0.01)
-                        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.W, false, game)
-                        
-                        local pos = UserInputService:GetMouseLocation()
-                        VirtualInputManager:SendMouseMoveEvent(pos.X + 1, pos.Y + 1, game)
-                    end)
-                    task.wait(30)
-                end
-            end)
-            Library:MakeNotify({ Title = "Anti AFK", Content = "Aktif!" })
-        else
-            Library:MakeNotify({ Title = "Anti AFK", Content = "Mati!" })
-        end
-    end
-})
-
-UniversalSection:AddToggle({
-    Title = "🏃 Speed Hack",
-    Description = "Meningkatkan kecepatan berjalan",
-    Default = false,
-    Callback = function(v)
-        _G.SpeedHack = v
-        if v then
-            local hum = GetHumanoid()
-            if hum then
-                hum.WalkSpeed = _G.SpeedValue
-            end
-            Library:MakeNotify({ Title = "Speed Hack", Content = "Kecepatan: " .. _G.SpeedValue })
-        else
-            local hum = GetHumanoid()
-            if hum then
-                hum.WalkSpeed = 16
-            end
-            Library:MakeNotify({ Title = "Speed Hack", Content = "Mati!" })
-        end
-    end
-})
-
-UniversalSection:AddSlider({
-    Title = "Speed Value",
-    Description = "Atur kecepatan Speed Hack",
-    Minimum = 16,
-    Maximum = 300,
-    Default = 50,
-    Callback = function(v)
-        _G.SpeedValue = v
-        if _G.SpeedHack then
-            local hum = GetHumanoid()
-            if hum then
-                hum.WalkSpeed = v
-            end
-        end
-    end
-})
-
-UniversalSection:AddToggle({
-    Title = "⬆️ Jump Hack",
-    Description = "Meningkatkan kekuatan lompat",
-    Default = false,
-    Callback = function(v)
-        _G.JumpHack = v
-        if v then
-            local hum = GetHumanoid()
-            if hum then
-                hum.JumpPower = _G.JumpValue
-            end
-            Library:MakeNotify({ Title = "Jump Hack", Content = "Jump Power: " .. _G.JumpValue })
-        else
-            local hum = GetHumanoid()
-            if hum then
-                hum.JumpPower = 50
-            end
-            Library:MakeNotify({ Title = "Jump Hack", Content = "Mati!" })
-        end
-    end
-})
-
-UniversalSection:AddSlider({
-    Title = "Jump Value",
-    Description = "Atur kekuatan Jump Hack",
-    Minimum = 50,
-    Maximum = 500,
-    Default = 100,
-    Callback = function(v)
-        _G.JumpValue = v
-        if _G.JumpHack then
-            local hum = GetHumanoid()
-            if hum then
-                hum.JumpPower = v
-            end
-        end
-    end
-})
-
-UniversalSection:AddToggle({
-    Title = "📦 Auto Collect",
-    Description = "Otomatis mengumpulkan item di sekitar",
-    Default = false,
-    Callback = function(v)
-        _G.AutoCollect = v
-        if v then
-            task.spawn(function()
-                while _G.AutoCollect do
-                    local root = GetRootPart()
-                    if root then
-                        for _, obj in pairs(workspace:GetDescendants()) do
-                            if obj:IsA("BasePart") and obj.Parent and not obj.Parent:IsA("Character") then
-                                local dist = (root.Position - obj.Position).Magnitude
-                                if dist < 10 then
-                                    firetouchinterest(root, obj, 0)
-                                    task.wait(0.05)
-                                    firetouchinterest(root, obj, 1)
-                                end
-                            end
-                        end
-                    end
-                    task.wait(0.5)
-                end
-            end)
-            Library:MakeNotify({ Title = "Auto Collect", Content = "Aktif!" })
-        else
-            Library:MakeNotify({ Title = "Auto Collect", Content = "Mati!" })
-        end
-    end
-})
-
-UniversalSection:AddButton({
-    Title = "📊 Server Info",
-    Description = "Tampilkan informasi server",
-    Callback = function()
-        local players = Players:GetPlayers()
-        local maxPlayers = Players.MaxPlayers
-        local ping = game:GetService("Stats"):FindFirstChild("Network") and 
-                    game:GetService("Stats").Network:FindFirstChild("ClientLatency") and 
-                    game:GetService("Stats").Network.ClientLatency.Value or 0
-        
-        Library:MakeNotify({ 
-            Title = "📊 Server Info", 
-            Content = string.format(
-                "Players: %d/%d\nPing: %dms\nServer: %s\nTime: %s",
-                #players,
-                maxPlayers,
-                math.floor(ping * 1000),
-                game.JobId or "Unknown",
-                os.date("%H:%M:%S")
-            ),
-            Duration = 8
-        })
-    end
-})
-
-UniversalSection:AddButton({
-    Title = "🔄 Rejoin Server",
-    Description = "Bergabung ulang ke server yang sama",
-    Callback = function()
-        Library:MakeNotify({ Title = "Rejoin", Content = "Merejoin server..." })
-        task.wait(1)
-        pcall(function()
-            TeleportService:Teleport(game.PlaceId, LocalPlayer)
-        end)
-    end
-})
-
-UniversalSection:AddButton({
-    Title = "🔄 Reset Lobby (Visual)",
-    Description = "Reset semua efek visual di lobby",
-    Callback = function()
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj ~= workspace.Terrain then
-                if obj.Name:find("MDW") or obj.Name:find("Cage") or obj.Name:find("Troll") or 
-                   obj.Name:find("Wall") or obj.Name:find("Ice") or obj.Name:find("Trap") or
-                   obj.Name:find("Clone") or obj.Name:find("MDW_Skin") or obj.Name:find("Skin_") then
-                    pcall(function() obj:Destroy() end)
-                end
-            end
-        end
-        Library:MakeNotify({ Title = "Reset", Content = "Lobby direset!" })
-    end
-})
-
-UniversalSection:AddToggle({
-    Title = "🌾 Auto Farm",
-    Description = "Auto farm untuk berbagai game",
-    Default = false,
-    Callback = function(v)
-        _G.AutoFarm = v
-        if v then
-            task.spawn(function()
-                while _G.AutoFarm do
-                    pcall(function()
-                        for _, obj in pairs(workspace:GetDescendants()) do
-                            if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
-                                local hum = obj:FindFirstChildOfClass("Humanoid")
-                                if hum and hum.Health > 0 and obj ~= LocalPlayer.Character then
-                                    local root = obj:FindFirstChild("HumanoidRootPart")
-                                    local myRoot = GetRootPart()
-                                    if root and myRoot then
-                                        local dist = (myRoot.Position - root.Position).Magnitude
-                                        if dist < 50 then
-                                            myRoot.CFrame = root.CFrame * CFrame.new(0, 3, 3)
-                                            VirtualInputManager:SendMouseButtonEvent(1, true, game)
-                                            task.wait(0.1)
-                                            VirtualInputManager:SendMouseButtonEvent(1, false, game)
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                    task.wait(_G.AutoFarmDelay or 0.5)
-                end
-            end)
-            Library:MakeNotify({ Title = "Auto Farm", Content = "Aktif!" })
-        else
-            Library:MakeNotify({ Title = "Auto Farm", Content = "Mati!" })
-        end
-    end
-})
-
-UniversalSection:AddSlider({
-    Title = "Auto Farm Delay",
-    Description = "Jeda antar aksi Auto Farm",
-    Minimum = 0.1,
-    Maximum = 2,
-    Default = 0.5,
-    Callback = function(v)
-        _G.AutoFarmDelay = v
-    end
-})
-
-UniversalSection:AddToggle({
-    Title = "🎯 Aimbot",
-    Description = "Auto aim ke player terdekat",
-    Default = false,
-    Callback = function(v)
-        _G.Aimbot = v
-        if v then
-            task.spawn(function()
-                while _G.Aimbot do
-                    local closest = nil
-                    local minDist = Config.AimbotRange or 200
-                    local myRoot = GetRootPart()
-                    
-                    if myRoot then
-                        for _, p in pairs(Players:GetPlayers()) do
-                            if p ~= LocalPlayer and p.Character then
-                                local root = p.Character:FindFirstChild("HumanoidRootPart")
-                                if root then
-                                    local dist = (myRoot.Position - root.Position).Magnitude
-                                    if dist < minDist then
-                                        minDist = dist
-                                        closest = root
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    
-                    if closest then
-                        local cam = workspace.CurrentCamera
-                        local targetPos = closest.Position + Vector3.new(0, 1.5, 0)
-                        local lookAt = CFrame.lookAt(cam.CFrame.p, targetPos)
-                        cam.CFrame = cam.CFrame:Lerp(lookAt, 0.5)
-                    end
-                    
-                    task.wait(0.05)
-                end
-            end)
-            Library:MakeNotify({ Title = "Aimbot", Content = "Aktif!" })
-        else
-            Library:MakeNotify({ Title = "Aimbot", Content = "Mati!" })
-        end
-    end
-})
-
-UniversalSection:AddSlider({
-    Title = "Aimbot Range",
-    Description = "Jarak maksimal aimbot",
-    Minimum = 50,
-    Maximum = 500,
-    Default = 200,
-    Callback = function(v)
-        Config.AimbotRange = v
-    end
-})
-
--- ==========================================
--- ADMIN TAB
--- ==========================================
-local AdminSection = AdminTab:AddSection("🛡️ Admin Tools")
-
-AdminSection:AddButton({
-    Title = "🔍 Detect Admins",
-    Description = "Cari admin/staff di server",
-    Callback = function()
-        local admins = DetectAdmins()
-        if #admins > 0 then
-            Library:MakeNotify({ 
-                Title = "👮 Admin Ditemukan!", 
-                Content = "Admin: " .. table.concat(admins, ", "),
-                Duration = 8
-            })
-        else
-            Library:MakeNotify({ 
-                Title = "🔍 Tidak Ada Admin", 
-                Content = "Tidak ada admin/staff terdeteksi",
-                Duration = 3
-            })
-        end
-    end
-})
-
-AdminSection:AddDropdown({
-    Title = "Target Admin",
-    Description = "Pilih admin untuk di-action",
-    Options = function()
-        local admins = DetectAdmins()
-        if #admins == 0 then return {"Tidak ada admin"} end
-        return admins
-    end,
-    Default = "",
-    Callback = function(v)
-        SelectedTarget = v
-    end
-})
-
-AdminSection:AddButton({
-    Title = "👢 Kick Admin",
-    Description = "Kick admin yang terpilih (Visual)",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada admin" then
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih admin dulu!" })
-            return
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target then
-            local success = KickAdmin(target)
-            if success then
-                Library:MakeNotify({ 
-                    Title = "👢 KICK!", 
-                    Content = "Admin " .. SelectedTarget .. " di-kick!", 
-                    Duration = 3 
-                })
-            else
-                Library:MakeNotify({ 
-                    Title = "❌ Gagal", 
-                    Content = "Gagal meng-kick admin!", 
-                    Duration = 3 
-                })
-            end
-        else
-            Library:MakeNotify({ Title = "Error", Content = "Admin tidak ditemukan!" })
-        end
-    end
-})
-
-AdminSection:AddButton({
-    Title = "❄️ Freeze/Unfreeze Admin",
-    Description = "Bekukan admin yang terpilih",
-    Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada admin" then
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih admin dulu!" })
-            return
-        end
-        
-        local target = Players:FindFirstChild(SelectedTarget)
-        if target then
-            local isFrozen = FrozenPlayers[target] or false
-            local success = FreezeAdmin(target)
-            if success then
-                Library:MakeNotify({ 
-                    Title = isFrozen and "❄️ UNFREEZE" or "❄️ FREEZE", 
-                    Content = isFrozen and SelectedTarget .. " di-unfreeze!" or SelectedTarget .. " di-freeze!",
-                    Duration = 3 
-                })
-            else
-                Library:MakeNotify({ 
-                    Title = "❌ Gagal", 
-                    Content = "Gagal mem-freeze admin!", 
-                    Duration = 3 
-                })
-            end
-        else
-            Library:MakeNotify({ Title = "Error", Content = "Admin tidak ditemukan!" })
-        end
-    end
-})
-
-AdminSection:AddButton({
-    Title = "❄️ Freeze All Admins",
-    Description = "Bekukan semua admin di server",
-    Callback = function()
-        local admins = DetectAdmins()
-        local frozen = 0
-        for _, name in pairs(admins) do
-            local target = Players:FindFirstChild(name)
-            if target and FreezeAdmin(target) then
-                frozen = frozen + 1
-            end
-        end
-        Library:MakeNotify({ 
-            Title = "❄️ Freeze All", 
-            Content = frozen .. " admin di-freeze!",
-            Duration = 3 
-        })
-    end
-})
-
-AdminSection:AddButton({
-    Title = "🔥 Unfreeze All",
-    Description = "Unfreeze semua admin",
-    Callback = function()
-        local count = 0
-        for player, _ in pairs(FrozenPlayers) do
-            if player and player.Character then
-                pcall(function()
-                    local root = player.Character:FindFirstChild("HumanoidRootPart")
-                    if root then root.Anchored = false end
-                    local hum = player.Character:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        hum.PlatformStand = false
-                        hum.Sit = false
-                    end
-                end)
-                FrozenPlayers[player] = nil
-                count = count + 1
-            end
-        end
-        Library:MakeNotify({ 
-            Title = "🔥 Unfreeze All", 
-            Content = count .. " admin di-unfreeze!",
-            Duration = 3 
-        })
-    end
-})
-
-AdminSection:AddToggle({
-    Title = "🛡️ Anti-Admin Kick",
-    Description = "Cegah admin meng-kick kamu",
-    Default = false,
-    Callback = function(v)
-        _G.AntiKick = v
-        if v then
-            Library:MakeNotify({ Title = "Anti-Admin Kick", Content = "Aktif!" })
-        else
-            Library:MakeNotify({ Title = "Anti-Admin Kick", Content = "Mati!" })
-        end
-    end
-})
-
--- ==========================================
--- CLEAR EFFECTS
--- ==========================================
-local ClearSection = SettingsTab:AddSection("🧹 Clear Effects")
-
-ClearSection:AddButton({
-    Title = "Hapus Semua Efek Visual",
-    Description = "Bersihkan part, highlight, dan efek lainnya",
-    Callback = function()
-        ClearManualHighlights()
-        for _, o in pairs(workspace:GetDescendants()) do
-            if o:IsA("Highlight") then
-                pcall(function() o:Destroy() end)
-            end
-        end
-        
-        local toRemove = {}
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj ~= workspace.Terrain then
-                if obj.Name:find("MDW") or obj.Name:find("Cage") or obj.Name:find("Troll") or 
-                   obj.Name:find("Wall") or obj.Name:find("Ice") or obj.Name:find("Trap") or
-                   obj.Name:find("Clone") or obj.Name:find("Smoke") or obj.Name:find("Rockslide") or
-                   obj.Name:find("AntiVoidPlatform") or obj.Name:find("MDW_SolidAirFloor") or
-                   obj.Name:find("GodLight") or obj.Name:find("Spawned_Monster") or
-                   obj.Name:find("MDW_Skin") or obj.Name:find("Skin_") then
-                    table.insert(toRemove, obj)
-                end
-            end
-        end
-        
-        for _, obj in pairs(toRemove) do
-            pcall(function() obj:Destroy() end)
-        end
-        
-        for _, obj in pairs(workspace:GetChildren()) do
-            if obj:IsA("Explosion") then
-                pcall(function() obj:Destroy() end)
-            end
-        end
-        
-        if _G.WallHack then
-            ToggleWallHack(false)
-        end
-        
-        Library:MakeNotify({ Title = "Cleared", Content = "Semua efek visual telah dihapus!" })
-    end
-})
-
--- ==========================================
--- EXIT
--- ==========================================
-local ExitSection = SettingsTab:AddSection("🚪 Exit")
-
-ExitSection:AddButton({
-    Title = "Destroy UI",
-    Callback = function()
-        _G.Spam = false
-        _G.TapTP = false
-        _G.AdminDetect = false
-        _G.Fly = false
-        _G.NC = false
-        _G.InfJump = false
-        _G.AutoWalk = false
-        _G.AutoCP = false
-        _G.ESP = false
-        _G.BoxESP = false
-        _G.LineESP = false
-        _G.SkeletonESP = false
-        _G.HealthESP = false
-        _G.AntiRagdoll = false
-        _G.AntiVoid = false
-        _G.WalkingAntiVoid = false
-        _G.AntiFreeze = false
-        _G.Wiggle = false
-        _G.KillerWarn = false
-        _G.Headlight = false
-        _G.XRay = false
-        _G.Fullbright = false
-        _G.Freecam = false
-        _G.Spam = false
-        _G.ChatLog = false
-        _G.AirWalk = false
-        _G.WallHack = false
-        _G.GravityGunActive = false
-        _G.SkinPreview = false
-        _G.Aimbot = false
-        _G.AutoFarm = false
-        _G.AutoHeal = false
-        _G.AutoCollect = false
-        _G.AntiAFK = false
-        _G.SpeedHack = false
-        _G.JumpHack = false
-        _G.AdminKick = false
-        _G.AdminFreeze = false
-        
-        ToggleWallHack(false)
-        ClearManualHighlights()
-        CleanupSkin()
-        
-        Library:MakeNotify({ Title = "FCAL HUB", Content = "Shutdown...", Duration = 2 })
-        task.wait(1)
-        Window:Destroy()
-    end
-})
-
--- ==========================================
 -- INITIALIZE
 -- ==========================================
 Library:Initialize()
 ApplyTheme("Midnight")
 
 Library:MakeNotify({ 
-    Title = "FCAL HUB v2.3.1", 
-    Content = "Full Fixed!\nSemua fitur ditampilkan dengan benar!", 
+    Title = "FCAL HUB v2.2.0", 
+    Content = "Ultimate Edition Loaded!\nDengan Premium Skins & Universal Features", 
     Duration = 5 
 })
 
+-- Auto update dropdown
 Players.PlayerAdded:Connect(UpdateDropdown)
 Players.PlayerRemoving:Connect(UpdateDropdown)
 Players.PlayerRemoving:Connect(ClearESP)
@@ -3628,4 +3737,4 @@ RunService.Stepped:Connect(function()
     end
 end)
 
-print("FCAL HUB v2.3.1 - Full Fixed Loaded!")
+print("FCAL HUB v2.2.0 - Ultimate Edition Loaded!")
