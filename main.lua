@@ -3042,24 +3042,21 @@ UniversalSection:AddToggle({
     end
 })
 
--- 2. CAMERA ZOOM (DIUBAH MENJADI INPUT)
-UniversalSection:AddInput({
+-- 2. CAMERA ZOOM
+UniversalSection:AddSlider({
     Title = "📷 Camera Zoom Extender",
-    Description = "Masukkan jarak zoom maksimal (1-500)",
-    Default = "50",
+    Description = "Perbesar jarak kamera maksimal",
+    Minimum = 1,
+    Maximum = 500,
+    Default = 50,
     Callback = function(v)
-        local value = tonumber(v)
-        if value and value >= 1 and value <= 500 then
-            pcall(function()
-                local cam = workspace.CurrentCamera
-                if cam then
-                    cam.MaxZoomDistance = value
-                    Library:MakeNotify({ Title = "Zoom", Content = "Jarak max: " .. value })
-                end
-            end)
-        else
-            Library:MakeNotify({ Title = "⚠️ Error", Content = "Masukkan angka 1-500!" })
-        end
+        pcall(function()
+            local cam = workspace.CurrentCamera
+            if cam then
+                cam.MaxZoomDistance = v
+                Library:MakeNotify({ Title = "Zoom", Content = "Jarak max: " .. v })
+            end
+        end)
     end
 })
 
@@ -3237,23 +3234,19 @@ UniversalSection:AddToggle({
     end
 })
 
--- SPEED VALUE (DIUBAH MENJADI INPUT)
-UniversalSection:AddInput({
+UniversalSection:AddSlider({
     Title = "Speed Value",
-    Description = "Masukkan kecepatan Speed Hack (16-300)",
-    Default = "50",
+    Description = "Atur kecepatan Speed Hack",
+    Minimum = 16,
+    Maximum = 300,
+    Default = 50,
     Callback = function(v)
-        local value = tonumber(v)
-        if value and value >= 16 and value <= 300 then
-            _G.SpeedValue = value
-            if _G.SpeedHack then
-                local hum = GetHumanoid()
-                if hum then
-                    hum.WalkSpeed = value
-                end
+        _G.SpeedValue = v
+        if _G.SpeedHack then
+            local hum = GetHumanoid()
+            if hum then
+                hum.WalkSpeed = v
             end
-        else
-            Library:MakeNotify({ Title = "⚠️ Error", Content = "Masukkan angka 16-300!" })
         end
     end
 })
@@ -3281,23 +3274,19 @@ UniversalSection:AddToggle({
     end
 })
 
--- JUMP VALUE (DIUBAH MENJADI INPUT)
-UniversalSection:AddInput({
+UniversalSection:AddSlider({
     Title = "Jump Value",
-    Description = "Masukkan kekuatan Jump Hack (50-500)",
-    Default = "100",
+    Description = "Atur kekuatan Jump Hack",
+    Minimum = 50,
+    Maximum = 500,
+    Default = 100,
     Callback = function(v)
-        local value = tonumber(v)
-        if value and value >= 50 and value <= 500 then
-            _G.JumpValue = value
-            if _G.JumpHack then
-                local hum = GetHumanoid()
-                if hum then
-                    hum.JumpPower = value
-                end
+        _G.JumpValue = v
+        if _G.JumpHack then
+            local hum = GetHumanoid()
+            if hum then
+                hum.JumpPower = v
             end
-        else
-            Library:MakeNotify({ Title = "⚠️ Error", Content = "Masukkan angka 50-500!" })
         end
     end
 })
@@ -3437,18 +3426,14 @@ UniversalSection:AddToggle({
     end
 })
 
--- AUTO FARM DELAY (DIUBAH MENJADI INPUT)
-UniversalSection:AddInput({
+UniversalSection:AddSlider({
     Title = "Auto Farm Delay",
-    Description = "Jeda antar aksi Auto Farm (0.1-2 detik)",
-    Default = "0.5",
+    Description = "Jeda antar aksi Auto Farm",
+    Minimum = 0.1,
+    Maximum = 2,
+    Default = 0.5,
     Callback = function(v)
-        local value = tonumber(v)
-        if value and value >= 0.1 and value <= 2 then
-            _G.AutoFarmDelay = value
-        else
-            Library:MakeNotify({ Title = "⚠️ Error", Content = "Masukkan angka 0.1-2!" })
-        end
+        _G.AutoFarmDelay = v
     end
 })
 
@@ -3499,18 +3484,14 @@ UniversalSection:AddToggle({
     end
 })
 
--- AIMBOT RANGE (DIUBAH MENJADI INPUT)
-UniversalSection:AddInput({
+UniversalSection:AddSlider({
     Title = "Aimbot Range",
-    Description = "Masukkan jarak maksimal aimbot (50-500)",
-    Default = "200",
+    Description = "Jarak maksimal aimbot",
+    Minimum = 50,
+    Maximum = 500,
+    Default = 200,
     Callback = function(v)
-        local value = tonumber(v)
-        if value and value >= 50 and value <= 500 then
-            Config.AimbotRange = value
-        else
-            Library:MakeNotify({ Title = "⚠️ Error", Content = "Masukkan angka 50-500!" })
-        end
+        Config.AimbotRange = v
     end
 })
 
@@ -3723,7 +3704,7 @@ KeybindSection:AddButton({
             end
         end)
     end
-}) 
+})
 
 -- ==========================================
 -- INITIALIZE
