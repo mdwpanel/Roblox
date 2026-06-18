@@ -3723,7 +3723,7 @@ KeybindSection:AddButton({
             end
         end)
     end
-})
+}) 
 
 -- ==========================================
 -- INITIALIZE
