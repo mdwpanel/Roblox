@@ -1,6 +1,7 @@
 --[[
-    FCAL HUB - LYNX GUI EDITION
+    FCAL HUB - LYNX GUI EDITION (FIXED - NO DETECTION)
     Version: 1.0.9 | FULL FEATURES + TROLL MOUNTAIN + ESP IMPROVED
+    FIX: Removed getrawmetatable Anti-Kick (penyebab error 267)
 --]]
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/mdwpanel/Roblox/refs/heads/main/main_ui_modern.lua"))()
@@ -30,6 +31,10 @@ local msg = "FCAL HUB ON TOP!"
 local SpecTarget = ""
 local hbSize = 2
 
+-- ==========================================
+-- ⚠️ ANTI-KICK TELAH DIHAPUS (PENYEBAB ERROR 267)
+-- ==========================================
+
 _G.AutoCPAll = false
 _G.CPTeleportDelay = 0.8
 _G.CPScanDelay = 1.0
@@ -45,7 +50,7 @@ _G.ESP = false
 _G.HealthESP = false
 _G.AntiRagdoll = false
 _G.AntiVoid = false
-_G.AntiKick = false
+_G.AntiKick = false  -- FIX: Default false
 _G.AdminDetect = false
 _G.Hitbox = false
 _G.CPDelay = 2.0
@@ -76,19 +81,6 @@ local Config = {
     Theme = "Midnight", 
     FlySpeed = 100,
 }
-
--- ==========================================
--- ANTI-KICK BYPASS
--- ==========================================
-local mt = getrawmetatable(game) 
-local oldNamecall = mt.__namecall
-setreadonly(mt, false)
-mt.__namecall = newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    if method == "Kick" or method == "kick" then return nil end
-    return oldNamecall(self, ...)
-end)
-setreadonly(mt, true)
 
 -- ==========================================
 -- WINDOW CREATION
@@ -124,6 +116,15 @@ function ClearManualHighlights()
         pcall(function() hl:Destroy() end)
     end
     ManualHighlights = {}
+end
+
+function ClearAllHighlights()
+    ClearManualHighlights()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Highlight") then
+            pcall(function() obj:Destroy() end)
+        end
+    end
 end
 
 function UpdateESP()
@@ -198,7 +199,6 @@ function UpdateSkeletonESP(player, objects)
     local character = player.Character
     if not character then return end
     
-    -- Define joints untuk skeleton
     local joints = {
         {"Head", "UpperTorso"},
         {"UpperTorso", "LowerTorso"},
@@ -212,7 +212,6 @@ function UpdateSkeletonESP(player, objects)
         {"RightUpperLeg", "RightLowerLeg"},
     }
     
-    -- Hapus skeleton lines lama jika ada
     if objects.Skeleton then
         for _, line in pairs(objects.Skeleton) do
             pcall(function() line.Visible = false end)
@@ -2548,18 +2547,9 @@ ChatSection:AddToggle({
 })
 
 -- ==========================================
--- SERVER TAB - PROTECTION
+-- SERVER TAB - PROTECTION (ANTI-KICK DIHAPUS)
 -- ==========================================
 local ProtectSection = ServerTab:AddSection("🛡️ Self-Protection & Security")
-
-ProtectSection:AddToggle({
-    Title = "Anti-Kick Protection",
-    Description = "Mendeteksi upaya kick (Notifikasi saja)",
-    Default = false,
-    Callback = function(v)
-        _G.AntiKick = v
-    end
-})
 
 ProtectSection:AddToggle({
     Title = "Admin Join Detector",
@@ -2823,7 +2813,6 @@ ClearSection:AddButton({
             end
         end
         
-        -- Matikan WallHack jika aktif
         if _G.WallHack then
             ToggleWallHack(false)
         end
@@ -2870,7 +2859,6 @@ ExitSection:AddButton({
         _G.AutoWalkJSON = false
         _G.WallHack = false
         
-        -- Matikan WallHack
         ToggleWallHack(false)
         
         ClearManualHighlights()
@@ -2997,7 +2985,7 @@ end)
 -- INITIALIZE
 -- ==========================================
 Library:Initialize()
-Library:MakeNotify({ Title = "FCAL HUB", Description = "Script Loaded Successfully!", Duration = 5 })
+Library:MakeNotify({ Title = "FCAL HUB", Content = "Script Loaded Successfully! (Anti-Kick Removed)", Duration = 5 })
 
 -- Auto update dropdown
 Players.PlayerAdded:Connect(UpdateDropdown)
