@@ -460,6 +460,173 @@ local function GetPlayerList()
     return list
 end
 
+local MountPrankActive = false
+local ShieldTools = {"Shield", "Perisai", "Protector", "PrankShield"}
+
+-- Fungsi untuk mencari dan mengaktifkan shield
+local function FindAndUseShield()
+    local char = LocalPlayer.Character
+    if not char then return false end
+    
+    -- Cek di tangan
+    local currentTool = char:FindFirstChildOfClass("Tool")
+    if currentTool then
+        for _, name in pairs(ShieldTools) do
+            if currentTool.Name:find(name) then
+                return true -- Sudah memegang shield
+            end
+        end
+    end
+    
+    -- Cari di backpack
+    for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            for _, name in pairs(ShieldTools) do
+                if tool.Name:find(name) then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum:EquipTool(tool)
+                        task.wait(0.3)
+                        -- Aktifkan shield (asumsi klik kanan atau tombol tertentu)
+                        pcall(function()
+                            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.ButtonR1, false, game)
+                            task.wait(0.1)
+                            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.ButtonR1, false, game)
+                        end)
+                        return true
+                    end
+                end
+            end
+        end
+    end
+    return false
+end
+
+-- Fungsi untuk menonaktifkan script prank yang mencurigakan
+local function DisablePrankScripts()
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    for _, obj in pairs(char:GetDescendants()) do
+        if obj:IsA("LocalScript") then
+            local name = obj.Name:lower()
+            if name:find("prank") or name:find("effect") or name:find("trap") or 
+               name:find("stun") or name:find("push") or name:find("launch") then
+                pcall(function()
+                    obj.Disabled = true
+                    print("Disabled script:", obj.Name)
+                end)
+            end
+        end
+        
+        -- Nonaktifkan juga beberapa objek yang mencurigakan
+        if obj:IsA("ObjectValue") or obj:IsA("StringValue") then
+            local name = obj.Name:lower()
+            if name:find("prank") or name:find("effect") or name:find("status") then
+                pcall(function()
+                    obj:Destroy()
+                    print("Removed value:", obj.Name)
+                end)
+            end
+        end
+    end
+end
+
+-- Fungsi untuk memonitor dan memblokir RemoteEvent prank
+local function BlockPrankRemotes()
+    local blocked = 0
+    
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            local name = obj.Name:lower()
+            if name:find("prank") or name:find("effect") or name:find("trap") or 
+               name:find("stun") or name:find("push") or name:find("launch") or
+               name:find("damage") or name:find("kill") then
+                
+                -- Coba blokir dengan menimpa fungsi
+                pcall(function()
+                    if obj:IsA("RemoteEvent") then
+                        local oldFire = obj.FireServer
+                        obj.FireServer = function(...)
+                            if MountPrankActive then
+                                print("Blocked prank remote:", obj.Name)
+                                return
+                            end
+                            return oldFire(obj, ...)
+                        end
+                    end
+                    blocked = blocked + 1
+                end)
+            end
+        end
+    end
+    
+    print("Blocked " .. blocked .. " remote events")
+end
+
+-- Fungsi utama Mount Prank Protection
+local function EnableMountPrankProtection()
+    MountPrankActive = true
+    
+    task.spawn(function()
+        while MountPrankActive do
+            task.wait(0.5)
+            
+            -- 1. Cari dan aktifkan shield
+            FindAndUseShield()
+            
+            -- 2. Nonaktifkan script prank
+            DisablePrankScripts()
+            
+            -- 3. Cegah ragdoll dan stun
+            local hum = GetHumanoid()
+            if hum then
+                if hum.PlatformStand then hum.PlatformStand = false end
+                if hum.Sit then hum.Sit = false end
+                -- Cegah state physics (ragdoll)
+                pcall(function()
+                    if hum:GetState() == Enum.HumanoidStateType.Physics then
+                        hum:ChangeState(Enum.HumanoidStateType.Running)
+                    end
+                end)
+            end
+            
+            -- 4. Cegah parts terlempar
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part:IsA("Part") then
+                        pcall(function()
+                            if part:FindFirstChild("BodyVelocity") then
+                                part.BodyVelocity:Destroy()
+                            end
+                            if part:FindFirstChild("BodyForce") then
+                                part.BodyForce:Destroy()
+                            end
+                            -- Reset posisi jika terlalu jauh
+                            local root = GetRootPart()
+                            if root and part ~= root and (part.Position - root.Position).Magnitude > 20 then
+                                part.CFrame = root.CFrame * CFrame.new(0, -2, 0)
+                            end
+                        end)
+                    end
+                end
+            end
+        end
+    end)
+    
+    -- Block remote events sekali saja
+    task.wait(2)
+    BlockPrankRemotes()
+    
+    Library:MakeNotify({ 
+        Title = "🛡️ Mount Prank Protection", 
+        Content = "Perlindungan untuk Mount Prank diaktifkan!", 
+        Duration = 3 
+    })
+end
+
+
 -- ==========================================
 -- TABS SETUP
 -- ==========================================
@@ -1460,6 +1627,78 @@ MoveSection:AddToggle({
         end
     end
 })
+
+local MountPrankSection = PlayerTab:AddSection("🏔️ Mount Prank Protection")
+
+MountPrankSection:AddToggle({
+    Title = "🛡️ Anti-Prank Mode (Mount Prank)",
+    Description = "Perlindungan khusus untuk game Mount Prank",
+    Default = false,
+    Callback = function(v)
+        if v then
+            EnableMountPrankProtection()
+        else
+            MountPrankActive = false
+            Library:MakeNotify({ 
+                Title = "🛡️ Mount Prank Protection", 
+                Content = "Perlindungan dimatikan", 
+                Duration = 2 
+            })
+        end
+    end
+})
+
+MountPrankSection:AddButton({
+    Title = "🔍 Scan & Block Prank Remotes",
+    Callback = function()
+        BlockPrankRemotes()
+        Library:MakeNotify({ 
+            Title = "🔍 Scan Selesai", 
+            Content = "Remote event prank telah diblokir", 
+            Duration = 2 
+        })
+    end
+})
+
+MountPrankSection:AddButton({
+    Title = "🛡️ Force Equip Shield",
+    Callback = function()
+        if FindAndUseShield() then
+            Library:MakeNotify({ 
+                Title = "✅ Sukses", 
+                Content = "Shield ditemukan dan diaktifkan!", 
+                Duration = 2 
+            })
+        else
+            Library:MakeNotify({ 
+                Title = "❌ Gagal", 
+                Content = "Tidak menemukan shield di inventory!", 
+                Duration = 2 
+            })
+        end
+    end
+})
+
+-- Event untuk mengaktifkan ulang perlindungan saat respawn
+local function OnCharacterAdded(char)
+    task.wait(1)
+    if MountPrankActive then
+        FindAndUseShield()
+        DisablePrankScripts()
+        
+        -- Aktifkan kembali God Mode jika aktif
+        if _G.GodMode then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.Health = hum.MaxHealth
+                hum.BreakJointsOnDeath = false
+            end
+        end
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(OnCharacterAdded)
+local oldDestroy = ExitSection.AddButton.Callback
 
 local AntiSection = PlayerTab:AddSection("🛡️ Protection Settings")
 
