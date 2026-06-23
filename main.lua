@@ -1,3 +1,5 @@
+[file name]: main.lua
+[file content begin]
 --[[
     FCAL HUB - LYNX GUI EDITION (FIXED - NO DETECTION)
     Version: 1.0.9 | FULL FEATURES + TROLL MOUNTAIN + ESP IMPROVED
@@ -73,6 +75,7 @@ _G.MenuVisible = true
 _G.AutoWalk = false
 _G.AutoWalkSpeed = 25
 _G.WallHack = false
+_G.GodMode = false  -- FITUR KEBAL
 
 local Config = {
     WalkSpeedDefault = 16,
@@ -415,6 +418,85 @@ function FindAllGenerators()
         if IsGenerator(obj) then table.insert(generators, obj) end
     end
     return generators
+end
+
+-- ==========================================
+-- GOD MODE / KEBAL FUNCTION
+-- ==========================================
+local function ToggleGodMode(enabled)
+    _G.GodMode = enabled
+    
+    if enabled then
+        -- Loop untuk menjaga karakter tetap kebal
+        if not _G.GodModeLoop then
+            _G.GodModeLoop = RunService.Heartbeat:Connect(function()
+                if not _G.GodMode then return end
+                
+                local char = LocalPlayer.Character
+                if not char then return end
+                
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    -- Set health ke maksimum terus menerus
+                    hum.Health = hum.MaxHealth
+                    
+                    -- Matikan efek stun/ragdoll
+                    hum.PlatformStand = false
+                    hum.Sit = false
+                    
+                    -- Reset break joints jika ada
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") and part:FindFirstChild("BreakJoint") then
+                            pcall(function() part.BreakJoint:Destroy() end)
+                        end
+                    end
+                end
+                
+                -- Hapus efek debuff dari karakter
+                for _, child in pairs(char:GetChildren()) do
+                    if child:IsA("ObjectValue") and child.Name:lower():find("debuff") then
+                        pcall(function() child:Destroy() end)
+                    end
+                end
+            end)
+        end
+        
+        -- Karakter Added event untuk menjaga kebal setelah respawn
+        if not _G.GodModeCharAdded then
+            _G.GodModeCharAdded = LocalPlayer.CharacterAdded:Connect(function(char)
+                if _G.GodMode then
+                    task.wait(0.5)
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum.Health = hum.MaxHealth
+                    end
+                end
+            end)
+        end
+        
+        Library:MakeNotify({ 
+            Title = "🛡️ GOD MODE ON", 
+            Content = "Karakter menjadi kebal terhadap serangan!",
+            Duration = 3 
+        })
+    else
+        -- Matikan loop
+        if _G.GodModeLoop then
+            _G.GodModeLoop:Disconnect()
+            _G.GodModeLoop = nil
+        end
+        
+        if _G.GodModeCharAdded then
+            _G.GodModeCharAdded:Disconnect()
+            _G.GodModeCharAdded = nil
+        end
+        
+        Library:MakeNotify({ 
+            Title = "🛡️ GOD MODE OFF", 
+            Content = "Karakter kembali normal",
+            Duration = 3 
+        })
+    end
 end
 
 -- ==========================================
@@ -866,8 +948,7 @@ TrollSection:AddButton({
                 math.random(-40, 40)
             )
             rock.BrickColor = BrickColor.new("Medium stone grey")
-            rock.Material = Enum.Material.Rock
-            rock.Anchored = false
+            rock.Material = Enum.Material.Rock            rock.Anchored = false
             rock.Parent = workspace
             
             local bv = Instance.new("BodyVelocity")
@@ -1582,6 +1663,18 @@ AntiSection:AddToggle({
 })
 
 -- ==========================================
+-- GOD MODE / KEBAL SECTION
+-- ==========================================
+AntiSection:AddToggle({
+    Title = "🛡️ GOD MODE (Kebal Serangan)",
+    Description = "Karakter menjadi kebal terhadap semua serangan dan efek negatif",
+    Default = false,
+    Callback = function(v)
+        ToggleGodMode(v)
+    end
+}) 
+
+-- ==========================================
 -- FLY SECTION
 -- ==========================================
 local FlySection = PlayerTab:AddSection("✈️ Fly Settings")
@@ -1658,6 +1751,13 @@ end
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
     if _G.Fly then StartFly() end
+    if _G.GodMode then
+        task.wait(0.3)
+        local hum = GetHumanoid()
+        if hum then
+            hum.Health = hum.MaxHealth
+        end
+    end
 end)
 
 FlySection:AddInput({ 
@@ -2858,8 +2958,10 @@ ExitSection:AddButton({
         _G.AirWalk = false
         _G.AutoWalkJSON = false
         _G.WallHack = false
+        _G.GodMode = false
         
         ToggleWallHack(false)
+        ToggleGodMode(false)
         
         ClearManualHighlights()
         
