@@ -1,9 +1,8 @@
-[file name]: main.lua
-[file content begin]
 --[[
     FCAL HUB - LYNX GUI EDITION (FIXED - NO DETECTION)
-    Version: 1.0.9 | FULL FEATURES + TROLL MOUNTAIN + ESP IMPROVED
+    Version: 1.0.9 | FULL FEATURES + TROLL MOUNTAIN + ESP IMPROVED + GOD MODE
     FIX: Removed getrawmetatable Anti-Kick (penyebab error 267)
+    ADDED: God Mode (Kebal Serangan)
 --]]
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/mdwpanel/Roblox/refs/heads/main/main_ui_modern.lua"))()
@@ -75,7 +74,7 @@ _G.MenuVisible = true
 _G.AutoWalk = false
 _G.AutoWalkSpeed = 25
 _G.WallHack = false
-_G.GodMode = false  -- FITUR KEBAL
+_G.GodMode = false  -- NEW: God Mode
 
 local Config = {
     WalkSpeedDefault = 16,
@@ -418,85 +417,6 @@ function FindAllGenerators()
         if IsGenerator(obj) then table.insert(generators, obj) end
     end
     return generators
-end
-
--- ==========================================
--- GOD MODE / KEBAL FUNCTION
--- ==========================================
-local function ToggleGodMode(enabled)
-    _G.GodMode = enabled
-    
-    if enabled then
-        -- Loop untuk menjaga karakter tetap kebal
-        if not _G.GodModeLoop then
-            _G.GodModeLoop = RunService.Heartbeat:Connect(function()
-                if not _G.GodMode then return end
-                
-                local char = LocalPlayer.Character
-                if not char then return end
-                
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    -- Set health ke maksimum terus menerus
-                    hum.Health = hum.MaxHealth
-                    
-                    -- Matikan efek stun/ragdoll
-                    hum.PlatformStand = false
-                    hum.Sit = false
-                    
-                    -- Reset break joints jika ada
-                    for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") and part:FindFirstChild("BreakJoint") then
-                            pcall(function() part.BreakJoint:Destroy() end)
-                        end
-                    end
-                end
-                
-                -- Hapus efek debuff dari karakter
-                for _, child in pairs(char:GetChildren()) do
-                    if child:IsA("ObjectValue") and child.Name:lower():find("debuff") then
-                        pcall(function() child:Destroy() end)
-                    end
-                end
-            end)
-        end
-        
-        -- Karakter Added event untuk menjaga kebal setelah respawn
-        if not _G.GodModeCharAdded then
-            _G.GodModeCharAdded = LocalPlayer.CharacterAdded:Connect(function(char)
-                if _G.GodMode then
-                    task.wait(0.5)
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        hum.Health = hum.MaxHealth
-                    end
-                end
-            end)
-        end
-        
-        Library:MakeNotify({ 
-            Title = "🛡️ GOD MODE ON", 
-            Content = "Karakter menjadi kebal terhadap serangan!",
-            Duration = 3 
-        })
-    else
-        -- Matikan loop
-        if _G.GodModeLoop then
-            _G.GodModeLoop:Disconnect()
-            _G.GodModeLoop = nil
-        end
-        
-        if _G.GodModeCharAdded then
-            _G.GodModeCharAdded:Disconnect()
-            _G.GodModeCharAdded = nil
-        end
-        
-        Library:MakeNotify({ 
-            Title = "🛡️ GOD MODE OFF", 
-            Content = "Karakter kembali normal",
-            Duration = 3 
-        })
-    end
 end
 
 -- ==========================================
@@ -948,7 +868,8 @@ TrollSection:AddButton({
                 math.random(-40, 40)
             )
             rock.BrickColor = BrickColor.new("Medium stone grey")
-            rock.Material = Enum.Material.Rock            rock.Anchored = false
+            rock.Material = Enum.Material.Rock
+            rock.Anchored = false
             rock.Parent = workspace
             
             local bv = Instance.new("BodyVelocity")
@@ -1178,7 +1099,7 @@ local jsonMatcha = [[
     {"position":{"x":-27.625, "y":188.38, "z":-503.16}, "walkSpeed":52, "states":"Running"},
     {"position":{"x":-27.512, "y":188.38, "z":-502.30}, "walkSpeed":52, "states":"Running"},
     {"position":{"x":-9448.06, "y":1788.38, "z":-2132.23}, "walkSpeed":52, "states":"Running"}
-]
+}
 ]]
 
 local waypoints = {}
@@ -1663,16 +1584,92 @@ AntiSection:AddToggle({
 })
 
 -- ==========================================
--- GOD MODE / KEBAL SECTION
+-- GOD MODE (KEBAL SERANGAN) - NEW FEATURE
 -- ==========================================
 AntiSection:AddToggle({
-    Title = "🛡️ GOD MODE (Kebal Serangan)",
-    Description = "Karakter menjadi kebal terhadap semua serangan dan efek negatif",
+    Title = "🛡️ God Mode (Kebal Serangan)",
+    Description = "Tidak akan mati terkena serangan apapun",
     Default = false,
     Callback = function(v)
-        ToggleGodMode(v)
+        _G.GodMode = v
+        if v then
+            task.spawn(function()
+                while _G.GodMode do
+                    task.wait(0.1)
+                    local char = LocalPlayer.Character
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        -- Set health ke max setiap saat
+                        hum.Health = hum.MaxHealth
+                        -- Cegah ragdoll
+                        if hum.PlatformStand then hum.PlatformStand = false end
+                        if hum.Sit then hum.Sit = false end
+                        -- Cegah stun/freeze
+                        pcall(function()
+                            if hum:GetState() == Enum.HumanoidStateType.Physics then
+                                hum:ChangeState(Enum.HumanoidStateType.Running)
+                            end
+                        end)
+                        -- Reset break joints jika ada
+                        if hum.BreakJointsOnDeath then
+                            hum.BreakJointsOnDeath = false
+                        end
+                    end
+                    
+                    -- Cegah parts terlepas
+                    if char then
+                        for _, part in pairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") and part:IsA("Part") then
+                                pcall(function()
+                                    if part:FindFirstChild("BodyVelocity") then
+                                        part.BodyVelocity:Destroy()
+                                    end
+                                    if part:FindFirstChild("BodyForce") then
+                                        part.BodyForce:Destroy()
+                                    end
+                                end)
+                            end
+                        end
+                    end
+                end
+            end)
+            Library:MakeNotify({ Title = "🛡️ God Mode", Content = "Kamu sekarang kebal terhadap segala serangan!" })
+        else
+            Library:MakeNotify({ Title = "🛡️ God Mode", Content = "Fitur kebal dimatikan" })
+        end
     end
-}) 
+})
+
+-- Event untuk auto-heal saat karakter spawn
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    if _G.GodMode then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.Health = hum.MaxHealth
+            hum.BreakJointsOnDeath = false
+        end
+    end
+end)
+
+-- Humanoid state changed untuk cegah mati
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.Died:Connect(function()
+            if _G.GodMode then
+                task.wait(0.1)
+                local newChar = LocalPlayer.Character
+                local newHum = newChar and newChar:FindFirstChildOfClass("Humanoid")
+                if newHum then
+                    newHum.Health = newHum.MaxHealth
+                    newHum.BreakJointsOnDeath = false
+                end
+            end
+        end)
+    end
+end)
 
 -- ==========================================
 -- FLY SECTION
@@ -1751,13 +1748,6 @@ end
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
     if _G.Fly then StartFly() end
-    if _G.GodMode then
-        task.wait(0.3)
-        local hum = GetHumanoid()
-        if hum then
-            hum.Health = hum.MaxHealth
-        end
-    end
 end)
 
 FlySection:AddInput({ 
@@ -2961,7 +2951,6 @@ ExitSection:AddButton({
         _G.GodMode = false
         
         ToggleWallHack(false)
-        ToggleGodMode(false)
         
         ClearManualHighlights()
         
@@ -3087,7 +3076,7 @@ end)
 -- INITIALIZE
 -- ==========================================
 Library:Initialize()
-Library:MakeNotify({ Title = "FCAL HUB", Content = "Script Loaded Successfully! (Anti-Kick Removed)", Duration = 5 })
+Library:MakeNotify({ Title = "FCAL HUB", Content = "Script Loaded Successfully! (Anti-Kick Removed + God Mode Added)", Duration = 5 })
 
 -- Auto update dropdown
 Players.PlayerAdded:Connect(UpdateDropdown)
