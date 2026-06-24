@@ -2067,53 +2067,98 @@ PrankSection:AddToggle({
     end
 })
 
-local AvatarSection = PrankSection:AddSection("🎨 Avatar Changer")
+local CarrySection = PrankSection:AddSection("🤝 Carry System")
 
-AvatarSection:AddToggle({
-    Title = "🎨 Auto Avatar Changer",
-    Description = "Ganti avatar secara otomatis setiap 10 detik",
-    Default = false,
-    Callback = function(v)
-        AvatarChangerActive = v
-        if v then
-            task.spawn(AutoChangeAvatarLoop)
-            Library:MakeNotify({
-                Title = "🎨 Auto Avatar ON",
-                Content = "Avatar akan berganti otomatis!",
-                Duration = 2
-            })
-        else
-            Library:MakeNotify({
-                Title = "🎨 Auto Avatar OFF",
-                Content = "Auto avatar dimatikan",
-                Duration = 2
-            })
-        end
-    end
-})
-
-AvatarSection:AddButton({
-    Title = "🎨 Random Avatar",
-    Description = "Ganti avatar ke random",
+CarrySection:AddButton({
+    Title = "🤝 Carry Target (Selected)",
+    Description = "Gendong pemain yang dipilih",
     Callback = function()
-        local id = AvatarIds[math.random(1, #AvatarIds)]
-        if ChangeAvatar(id) then
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then
             Library:MakeNotify({
-                Title = "🎨 Avatar Changed!",
-                Content = "Berhasil ganti avatar!",
+                Title = "⚠️ Error",
+                Content = "Pilih pemain dulu di dropdown!",
+                Duration = 2
+            })
+            return
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and CarryPlayer(target) then
+            CarryActive = true
+            task.spawn(CarryLoop)
+            Library:MakeNotify({
+                Title = "🤝 Carrying!",
+                Content = "Menggendong " .. target.Name,
                 Duration = 2
             })
         else
             Library:MakeNotify({
                 Title = "❌ Gagal",
-                Content = "Tidak bisa mengganti avatar!",
+                Content = "Tidak bisa menggendong target!",
                 Duration = 2
             })
         end
     end
 })
 
+CarrySection:AddButton({
+    Title = "🤝 Drop Player",
+    Description = "Melepas gendongan",
+    Callback = function()
+        CarryActive = false
+        DropPlayer()
+        Library:MakeNotify({
+            Title = "🤝 Dropped!",
+            Content = "Pemain dilepas!",
+            Duration = 2
+        })
+    end
+})
 
+local ObstacleSection = PrankSection:AddSection("🧗 Obstacle Helper")
+
+ObstacleSection:AddToggle({
+    Title = "🧗 Auto Skip Obstacles",
+    Description = "Otomatis melewati rintangan di depan",
+    Default = false,
+    Callback = function(v)
+        ObstacleSkipActive = v
+        if v then
+            task.spawn(AutoSkipLoop)
+            Library:MakeNotify({
+                Title = "🧗 Auto Skip ON",
+                Content = "Rintangan akan dilewati otomatis!",
+                Duration = 2
+            })
+        else
+            Library:MakeNotify({
+                Title = "🧗 Auto Skip OFF",
+                Content = "Auto skip dimatikan",
+                Duration = 2
+            })
+        end
+    end
+})
+
+ObstacleSection:AddButton({
+    Title = "🧗 Skip Nearest Obstacle",
+    Description = "Lompati rintangan terdekat",
+    Callback = function()
+        if SkipObstacle() then
+            Library:MakeNotify({
+                Title = "🧗 Skipped!",
+                Content = "Berhasil melewati rintangan!",
+                Duration = 1.5
+            })
+        else
+            Library:MakeNotify({
+                Title = "❌ Gagal",
+                Content = "Tidak ada rintangan di dekatmu!",
+                Duration = 2
+            })
+        end
+    end
+})
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
