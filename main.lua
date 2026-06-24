@@ -629,199 +629,262 @@ local MountPrankWeapons = {}
 local CoinMultiplier = 1
 local AutoCollectCoins = false
 local SpawnAllWeapons = false
-local CoinMonitorActive = false
+local CoinHackActive = false
+local CoinValuesFound = {}
 
--- Fungsi untuk mencari semua senjata di map
-local function FindAllCoinValues()
-    local coinValues = {}
-    local coinObjects = {}
+local function FindAllCoinValuesAggressive()
+    local allValues = {}
+    local searchPaths = {
+        LocalPlayer,
+        LocalPlayer.Character,
+        LocalPlayer.PlayerGui,
+        LocalPlayer.Backpack,
+        workspace,
+        game:GetService("ReplicatedStorage"),
+        game:GetService("ServerStorage"),
+        game:GetService("Lighting"),
+        game:GetService("SoundService")
+    }
     
-    -- 1. Cari di Player
-    for _, child in pairs(LocalPlayer:GetChildren()) do
-        if child:IsA("NumberValue") or child:IsA("IntValue") or child:IsA("StringValue") then
-            local name = child.Name:lower()
-            if name:find("coin") or name:find("money") or name:find("gold") or 
-               name:find("currency") or name:find("point") or name:find("gem") or
-               name:find("cash") or name:find("score") or name:find("token") then
-                table.insert(coinValues, child)
-            end
-        end
-    end
-    
-    -- 2. Cari di PlayerGui
-    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-    if playerGui then
-        for _, child in pairs(playerGui:GetDescendants()) do
-            if child:IsA("NumberValue") or child:IsA("IntValue") or child:IsA("StringValue") then
-                local name = child.Name:lower()
-                if name:find("coin") or name:find("money") or name:find("gold") or 
-                   name:find("currency") or name:find("point") or name:find("gem") or
-                   name:find("cash") or name:find("score") or name:find("token") then
-                    table.insert(coinValues, child)
+    for _, path in pairs(searchPaths) do
+        if path then
+            for _, obj in pairs(path:GetDescendants()) do
+                -- Cari semua NumberValue dan IntValue
+                if obj:IsA("NumberValue") or obj:IsA("IntValue") then
+                    local name = obj.Name:lower()
+                    -- Cek apakah ini nilai coin (case insensitive)
+                    if name:find("coin") or name:find("money") or name:find("gold") or 
+                       name:find("currency") or name:find("point") or name:find("gem") or
+                       name:find("cash") or name:find("score") or name:find("token") or
+                       name:find("credit") or name:find("wallet") or name:find("balance") or
+                       name:find("fund") or name:find("diamond") or name:find("crystal") or
+                       name:find("soul") or name:find("shard") or name:find("emerald") or
+                       name:find("ruby") or name:find("sapphire") or name:find("coin") then
+                        table.insert(allValues, obj)
+                        CoinValuesFound[obj] = true
+                    end
+                end
+                
+                -- Cari juga StringValue yang mungkin berisi angka coin
+                if obj:IsA("StringValue") then
+                    local name = obj.Name:lower()
+                    if name:find("coin") or name:find("money") or name:find("gold") or 
+                       name:find("currency") or name:find("point") or name:find("gem") or
+                       name:find("cash") or name:find("score") or name:find("token") then
+                        if tonumber(obj.Value) then
+                            table.insert(allValues, obj)
+                            CoinValuesFound[obj] = true
+                        end
+                    end
+                end
+                
+                -- Cari Attribute yang mungkin berisi coin
+                if obj:IsA("BasePart") or obj:IsA("Model") then
+                    local attrs = obj:GetAttributes()
+                    for attrName, attrValue in pairs(attrs) do
+                        local name = attrName:lower()
+                        if name:find("coin") or name:find("money") or name:find("gold") or 
+                           name:find("currency") or name:find("point") or name:find("gem") or
+                           name:find("cash") or name:find("score") or name:find("token") then
+                            if type(attrValue) == "number" then
+                                table.insert(allValues, {Object = obj, Attribute = attrName, Value = attrValue})
+                                CoinValuesFound[obj] = true
+                            end
+                        end
+                    end
                 end
             end
         end
     end
     
-    -- 3. Cari di leaderstats
-    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-    if leaderstats then
-        for _, child in pairs(leaderstats:GetChildren()) do
-            if child:IsA("NumberValue") or child:IsA("IntValue") then
-                local name = child.Name:lower()
-                if name:find("coin") or name:find("money") or name:find("gold") or 
-                   name:find("currency") or name:find("point") or name:find("gem") or
-                   name:find("cash") or name:find("score") or name:find("token") then
-                    table.insert(coinValues, child)
-                end
-            end
-        end
-    end
-    
-    -- 4. Cari di DataStore (jika ada)
-    local dataStore = LocalPlayer:FindFirstChild("DataStore")
-    if dataStore then
-        for _, child in pairs(dataStore:GetChildren()) do
-            if child:IsA("NumberValue") or child:IsA("IntValue") then
-                local name = child.Name:lower()
-                if name:find("coin") or name:find("money") or name:find("gold") or 
-                   name:find("currency") or name:find("point") or name:find("gem") or
-                   name:find("cash") or name:find("score") or name:find("token") then
-                    table.insert(coinValues, child)
-                end
-            end
-        end
-    end
-    
-    -- 5. Cari di Stats
-    local stats = LocalPlayer:FindFirstChild("Stats")
-    if stats then
-        for _, child in pairs(stats:GetChildren()) do
-            if child:IsA("NumberValue") or child:IsA("IntValue") then
-                local name = child.Name:lower()
-                if name:find("coin") or name:find("money") or name:find("gold") or 
-                   name:find("currency") or name:find("point") or name:find("gem") or
-                   name:find("cash") or name:find("score") or name:find("token") then
-                    table.insert(coinValues, child)
-                end
-            end
-        end
-    end
-    
-    -- 6. Cari di workspace (untuk coin objects)
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") or obj:IsA("Model") then
-            local name = obj.Name:lower()
-            if name:find("coin") or name:find("money") or name:find("gold") or 
-               name:find("currency") or name:find("point") or name:find("gem") or
-               name:find("cash") or name:find("token") then
-                table.insert(coinObjects, obj)
-            end
-        end
-    end
-    
-    return coinValues, coinObjects
+    return allValues
 end
 
--- Fungsi untuk membuat coin unlimited (metode 1: direct modify)
-local function MakeCoinsUnlimitedV1()
-    local coinValues, coinObjects = FindAllCoinValues()
-    local count = 0
+-- Fungsi untuk memodifikasi SEMUA nilai coin dengan berbagai metode
+local function HackAllCoins()
+    local values = FindAllCoinValuesAggressive()
+    local modified = 0
     
-    for _, value in pairs(coinValues) do
+    for _, value in pairs(values) do
         pcall(function()
+            -- Jika ini adalah NumberValue atau IntValue
             if value:IsA("NumberValue") or value:IsA("IntValue") then
                 local oldValue = value.Value
                 value.Value = 999999999
-                count = count + 1
-                print("Coin value modified:", value.Name, oldValue, "->", value.Value)
+                modified = modified + 1
+                print("Modified NumberValue:", value.Name, "from", oldValue, "to", value.Value)
+                
+                -- Hook untuk mencegah perubahan kembali
+                value:GetPropertyChangedSignal("Value"):Connect(function()
+                    if value.Value < 999999999 then
+                        value.Value = 999999999
+                        print("Value auto-corrected:", value.Name)
+                    end
+                end)
+            end
+            
+            -- Jika ini adalah StringValue dengan angka
+            if value:IsA("StringValue") then
+                local oldValue = value.Value
+                if tonumber(oldValue) then
+                    value.Value = "999999999"
+                    modified = modified + 1
+                    print("Modified StringValue:", value.Name, "from", oldValue, "to", value.Value)
+                end
+            end
+            
+            -- Jika ini adalah Attribute
+            if type(value) == "table" and value.Object and value.Attribute then
+                local obj = value.Object
+                local attr = value.Attribute
+                local oldValue = obj:GetAttribute(attr)
+                obj:SetAttribute(attr, 999999999)
+                modified = modified + 1
+                print("Modified Attribute:", attr, "on", obj.Name, "from", oldValue, "to", 999999999)
             end
         end)
     end
     
-    return count
+    return modified
 end
 
--- Fungsi untuk membuat coin unlimited (metode 2: hook setter)
-local function MakeCoinsUnlimitedV2()
-    local coinValues, _ = FindAllCoinValues()
-    local count = 0
+-- Fungsi untuk mencari dan memodifikasi UI yang menampilkan coin
+local function HackCoinUI()
+    local modified = 0
     
-    for _, value in pairs(coinValues) do
-        if value:IsA("NumberValue") or value:IsA("IntValue") then
-            pcall(function()
-                -- Coba dengan GetPropertyChangedSignal
-                if value:IsA("NumberValue") or value:IsA("IntValue") then
-                    value:GetPropertyChangedSignal("Value"):Connect(function()
-                        if value.Value < 999999999 then
-                            value.Value = 999999999
-                            print("Coin value auto-corrected:", value.Name)
+    -- Cari semua TextLabel, TextButton, Frame yang mungkin menampilkan coin
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+            local text = obj.Text or ""
+            -- Cek apakah teksnya mengandung angka yang mirip coin
+            local num = tonumber(text:match("%d+"))
+            if num and num > 0 then
+                local parent = obj.Parent
+                local parentName = parent and parent.Name:lower() or ""
+                local objName = obj.Name:lower()
+                
+                -- Cek apakah ini UI coin
+                if parentName:find("coin") or parentName:find("money") or parentName:find("gold") or
+                   parentName:find("currency") or parentName:find("point") or parentName:find("gem") or
+                   objName:find("coin") or objName:find("money") or objName:find("gold") or
+                   objName:find("currency") or objName:find("point") or objName:find("gem") then
+                    
+                    -- Ubah teks menjadi 999999999
+                    obj.Text = "999999999"
+                    modified = modified + 1
+                    print("Modified UI text:", obj.Name, "->", obj.Text)
+                    
+                    -- Hook untuk mencegah perubahan UI
+                    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+                        obj:GetPropertyChangedSignal("Text"):Connect(function()
+                            if obj.Text ~= "999999999" and tonumber(obj.Text) then
+                                obj.Text = "999999999"
+                                print("UI text auto-corrected:", obj.Name)
+                            end
+                        end)
+                    end
+                end
+            end
+        end
+    end
+    
+    return modified
+end
+
+-- Fungsi untuk mencari dan memodifikasi remote event coin
+local function HackCoinRemotes()
+    local modified = 0
+    
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            local name = obj.Name:lower()
+            if name:find("coin") or name:find("money") or name:find("gold") or 
+               name:find("currency") or name:find("point") or name:find("gem") or
+               name:find("cash") or name:find("score") or name:find("token") then
+                
+                pcall(function()
+                    if obj:IsA("RemoteEvent") then
+                        -- Coba blokir atau modifikasi
+                        local oldFire = obj.FireServer
+                        obj.FireServer = function(...)
+                            print("Coin remote blocked:", obj.Name)
+                            return
+                        end
+                        modified = modified + 1
+                        print("Blocked remote:", obj.Name)
+                    end
+                end)
+            end
+        end
+    end
+    
+    return modified
+end
+
+-- Fungsi utama untuk hack coin (EXTREME)
+local function ExtremeCoinHack()
+    local totalModified = 0
+    
+    -- 1. Hack semua nilai coin
+    local count1 = HackAllCoins()
+    totalModified = totalModified + count1
+    
+    -- 2. Hack UI coin
+    local count2 = HackCoinUI()
+    totalModified = totalModified + count2
+    
+    -- 3. Hack remote coin
+    local count3 = HackCoinRemotes()
+    totalModified = totalModified + count3
+    
+    -- 4. Aktifkan background monitor yang sangat agresif
+    if not CoinHackActive then
+        CoinHackActive = true
+        task.spawn(function()
+            while CoinHackActive do
+                task.wait(0.5) -- Cek setiap 0.5 detik
+                
+                -- Cek semua nilai lagi
+                local values = FindAllCoinValuesAggressive()
+                for _, value in pairs(values) do
+                    pcall(function()
+                        if value:IsA("NumberValue") or value:IsA("IntValue") then
+                            if value.Value < 999999999 then
+                                value.Value = 999999999
+                                print("Value forced to max:", value.Name)
+                            end
+                        end
+                        if value:IsA("StringValue") then
+                            if tonumber(value.Value) and tonumber(value.Value) < 999999999 then
+                                value.Value = "999999999"
+                                print("StringValue forced to max:", value.Name)
+                            end
+                        end
+                        if type(value) == "table" and value.Object and value.Attribute then
+                            if value.Object:GetAttribute(value.Attribute) < 999999999 then
+                                value.Object:SetAttribute(value.Attribute, 999999999)
+                                print("Attribute forced to max:", value.Attribute)
+                            end
                         end
                     end)
-                    -- Set langsung
-                    value.Value = 999999999
-                    count = count + 1
                 end
-            end)
-        end
-    end
-    
-    return count
-end
-
--- Fungsi untuk membuat coin unlimited (metode 3: clone dan replace)
-local function MakeCoinsUnlimitedV3()
-    local coinValues, _ = FindAllCoinValues()
-    local count = 0
-    
-    for _, value in pairs(coinValues) do
-        if value:IsA("NumberValue") or value:IsA("IntValue") then
-            pcall(function()
-                local parent = value.Parent
-                local name = value.Name
                 
-                -- Buat nilai baru dengan value max
-                local newValue = Instance.new("NumberValue")
-                newValue.Name = name
-                newValue.Value = 999999999
-                newValue.Parent = parent
-                
-                -- Hapus yang lama
-                value:Destroy()
-                count = count + 1
-                print("Coin value replaced:", name)
-            end)
-        end
-    end
-    
-    return count
-end
-
--- Fungsi utama untuk membuat coin unlimited (gabungan semua metode)
-local function MakeCoinsUnlimited()
-    local total = 0
-    
-    -- Coba semua metode
-    local count1 = MakeCoinsUnlimitedV1()
-    local count2 = MakeCoinsUnlimitedV2()
-    local count3 = MakeCoinsUnlimitedV3()
-    
-    total = count1 + count2 + count3
-    
-    -- Aktifkan monitor untuk menjaga nilai tetap max
-    if not CoinMonitorActive then
-        CoinMonitorActive = true
-        task.spawn(function()
-            while CoinMonitorActive do
-                task.wait(1)
-                local coinValues, _ = FindAllCoinValues()
-                for _, value in pairs(coinValues) do
-                    if value:IsA("NumberValue") or value:IsA("IntValue") then
-                        if value.Value < 999999999 then
-                            pcall(function()
-                                value.Value = 999999999
-                                print("Coin value maintained:", value.Name)
-                            end)
+                -- Cek UI lagi
+                for _, obj in pairs(game:GetDescendants()) do
+                    if (obj:IsA("TextLabel") or obj:IsA("TextButton")) then
+                        local text = obj.Text or ""
+                        local num = tonumber(text:match("%d+"))
+                        if num and num > 0 and num < 999999999 then
+                            local parent = obj.Parent
+                            local parentName = parent and parent.Name:lower() or ""
+                            local objName = obj.Name:lower()
+                            if parentName:find("coin") or parentName:find("money") or parentName:find("gold") or
+                               parentName:find("currency") or parentName:find("point") or parentName:find("gem") or
+                               objName:find("coin") or objName:find("money") or objName:find("gold") or
+                               objName:find("currency") or objName:find("point") or objName:find("gem") then
+                                obj.Text = "999999999"
+                                print("UI text forced:", obj.Name)
+                            end
                         end
                     end
                 end
@@ -829,49 +892,304 @@ local function MakeCoinsUnlimited()
         end)
     end
     
-    return total
+    return totalModified
 end
 
--- Fungsi untuk auto collect coin (improved)
-local function AutoCollectCoinsImproved()
+local function CreateDebugUI()
+    -- Cek apakah sudah ada
+    if game:GetService("CoreGui"):FindFirstChild("DebugUI") then
+        return game:GetService("CoreGui"):FindFirstChild("DebugUI")
+    end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "DebugUI"
+    screenGui.Parent = game:GetService("CoreGui")
+    screenGui.ResetOnSpawn = false
+    
+    -- Background untuk debug
+    local bg = Instance.new("Frame")
+    bg.Name = "Background"
+    bg.Size = UDim2.new(0, 400, 0, 300)
+    bg.Position = UDim2.new(0, 10, 0, 100)
+    bg.BackgroundColor3 = Color3.new(0, 0, 0)
+    bg.BackgroundTransparency = 0.3
+    bg.BorderSizePixel = 1
+    bg.BorderColor3 = Color3.new(1, 1, 1)
+    bg.Parent = screenGui
+    
+    -- Text label untuk output
+    local text = Instance.new("TextLabel")
+    text.Name = "Output"
+    text.Size = UDim2.new(1, -10, 1, -10)
+    text.Position = UDim2.new(0, 5, 0, 5)
+    text.BackgroundTransparency = 1
+    text.TextColor3 = Color3.new(0, 1, 0)
+    text.TextSize = 14
+    text.TextWrapped = true
+    text.TextXAlignment = Enum.TextXAlignment.Left
+    text.TextYAlignment = Enum.TextYAlignment.Top
+    text.Font = Enum.Font.Code
+    text.Text = "Debug Console Started..."
+    text.Parent = bg
+    
+    -- Tombol close
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Name = "Close"
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(1, -35, 0, 5)
+    closeBtn.BackgroundColor3 = Color3.new(1, 0, 0)
+    closeBtn.TextColor3 = Color3.new(1, 1, 1)
+    closeBtn.Text = "X"
+    closeBtn.TextSize = 18
+    closeBtn.Parent = bg
+    closeBtn.MouseButton1Click:Connect(function()
+        screenGui.Enabled = false
+    end)
+    
+    -- Tombol toggle untuk menampilkan/menyembunyikan
+    local toggleBtn = Instance.new("TextButton")
+    toggleBtn.Name = "ToggleBtn"
+    toggleBtn.Size = UDim2.new(0, 40, 0, 40)
+    toggleBtn.Position = UDim2.new(0, 10, 0, 50)
+    toggleBtn.BackgroundColor3 = Color3.new(0, 0.5, 0)
+    toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+    toggleBtn.Text = "📊"
+    toggleBtn.TextSize = 24
+    toggleBtn.Parent = screenGui
+    toggleBtn.MouseButton1Click:Connect(function()
+        screenGui.Enabled = not screenGui.Enabled
+    end)
+    
+    return screenGui
+end
+
+-- Fungsi untuk menambahkan log ke layar
+local function AddLog(message)
+    local debugUI = CreateDebugUI()
+    local text = debugUI:FindFirstChild("Background") and debugUI.Background:FindFirstChild("Output")
+    if text then
+        local currentText = text.Text
+        local lines = {}
+        for line in currentText:gmatch("[^\r\n]+") do
+            table.insert(lines, line)
+        end
+        table.insert(lines, message)
+        if #lines > 20 then
+            table.remove(lines, 1)
+        end
+        text.Text = table.concat(lines, "\n")
+    end
+end
+
+-- Timpa print agar muncul di layar juga
+local oldPrint = print
+print = function(...)
+    local args = {...}
+    local msg = ""
+    for i, v in ipairs(args) do
+        msg = msg .. tostring(v) .. " "
+    end
+    oldPrint(msg)
+    AddLog(msg)
+end
+
+-- ==========================================
+-- MODIFIKASI COIN HACK UNTUK ANDROID
+-- ==========================================
+
+-- Fungsi untuk menampilkan hasil hack di layar
+local function ShowHackResult(message, success)
+    local debugUI = CreateDebugUI()
+    debugUI.Enabled = true
+    
+    -- Tambahkan notifikasi popup
+    local notif = Instance.new("TextLabel")
+    notif.Size = UDim2.new(0, 300, 0, 60)
+    notif.Position = UDim2.new(0.5, -150, 0, 50)
+    notif.BackgroundColor3 = success and Color3.new(0, 0.8, 0) or Color3.new(0.8, 0, 0)
+    notif.BackgroundTransparency = 0.2
+    notif.TextColor3 = Color3.new(1, 1, 1)
+    notif.TextSize = 16
+    notif.Text = message
+    notif.TextWrapped = true
+    notif.Font = Enum.Font.SourceSansBold
+    notif.Parent = debugUI
+    notif.ZIndex = 10
+    
+    -- Hapus setelah 5 detik
+    task.delay(5, function()
+        pcall(function() notif:Destroy() end)
+    end)
+end
+
+-- Fungsi untuk mencari coin dan menampilkan hasilnya di layar
+local function FindCoinsAndShow()
+    AddLog("=== MENCARI NILAI COIN ===")
+    local values = FindAllCoinValuesAggressive()
+    local count = 0
+    
+    for _, value in pairs(values) do
+        if value:IsA("NumberValue") or value:IsA("IntValue") then
+            AddLog("📊 " .. value.Name .. " = " .. value.Value)
+            count = count + 1
+        elseif value:IsA("StringValue") then
+            AddLog("📊 " .. value.Name .. " = " .. value.Value)
+            count = count + 1
+        elseif type(value) == "table" and value.Object and value.Attribute then
+            AddLog("📊 " .. value.Attribute .. " = " .. value.Object:GetAttribute(value.Attribute))
+            count = count + 1
+        end
+    end
+    
+    AddLog("=== TOTAL: " .. count .. " nilai coin ditemukan ===")
+    ShowHackResult("🔍 Ditemukan " .. count .. " nilai coin! Lihat debug window (📊)", true)
+    return count
+end
+
+-- Fungsi untuk hack coin dan tampilkan hasil
+local function HackCoinsAndShow()
+    AddLog("=== MULAI HACK COIN ===")
+    local count = ExtremeCoinHack()
+    AddLog("=== HACK SELESAI! Modified: " .. count .. " nilai ===")
+    
+    if count > 0 then
+        ShowHackResult("💎 BERHASIL! " .. count .. " nilai coin dimodifikasi!", true)
+    else
+        ShowHackResult("❌ GAGAL! Tidak ada nilai coin ditemukan!", false)
+    end
+    
+    -- Tampilkan hasil setelah hack
+    task.wait(1)
+    FindCoinsAndShow()
+end
+-- Fungsi untuk mencari semua senjata di map
+local function FindAllWeapons()
+    local weapons = {}
+    local found = {}
+    
+    -- Cari di workspace
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Tool") or (obj:IsA("Model") and obj:FindFirstChildOfClass("Tool")) then
+            local tool = obj:IsA("Tool") and obj or obj:FindFirstChildOfClass("Tool")
+            if tool then
+                local name = tool.Name:lower()
+                -- Filter senjata yang valid
+                if not name:find("humanoid") and not name:find("character") and 
+                   not name:find("npc") and not name:find("dummy") then
+                    table.insert(weapons, {
+                        Tool = tool,
+                        Name = tool.Name,
+                        Position = tool:IsA("Tool") and tool.Parent and tool.Parent:IsA("BasePart") and tool.Parent.Position or nil
+                    })
+                    found[tool.Name] = true
+                end
+            end
+        end
+        
+        -- Cari juga parts yang mungkin berisi senjata
+        if obj:IsA("BasePart") and obj:FindFirstChild("Tool") then
+            local tool = obj:FindFirstChild("Tool")
+            if tool and not found[tool.Name] then
+                table.insert(weapons, {
+                    Tool = tool,
+                    Name = tool.Name,
+                    Position = obj.Position
+                })
+                found[tool.Name] = true
+            end
+        end
+    end
+    
+    -- Cari di ReplicatedStorage
+    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("Tool") then
+            local name = obj.Name:lower()
+            if not found[obj.Name] and not name:find("humanoid") then
+                table.insert(weapons, {
+                    Tool = obj,
+                    Name = obj.Name,
+                    Position = nil
+                })
+                found[obj.Name] = true
+            end
+        end
+    end
+    
+    return weapons
+end
+
+-- Fungsi untuk mendapatkan semua senjata
+local function GetAllWeapons()
+    local weapons = FindAllWeapons()
+    local count = 0
+    
+    for _, data in pairs(weapons) do
+        local tool = data.Tool
+        if tool and tool:IsA("Tool") then
+            -- Clone tool ke backpack
+            local newTool = tool:Clone()
+            newTool.Parent = LocalPlayer.Backpack
+            count = count + 1
+            MountPrankWeapons[newTool.Name] = newTool
+            
+            print("Weapon added:", newTool.Name)
+        end
+    end
+    
+    return count
+end
+
+-- Fungsi untuk mencari coin di map
+local function FindAllCoins()
+    local coins = {}
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Model") then
+            local name = obj.Name:lower()
+            if name:find("coin") or name:find("money") or name:find("gold") or 
+               name:find("currency") or name:find("point") or name:find("gem") then
+                table.insert(coins, obj)
+            end
+        end
+    end
+    
+    return coins
+end
+
+-- Fungsi untuk auto collect coin
+local function AutoCollectCoinsLoop()
     while AutoCollectCoins do
-        task.wait(0.2)
+        task.wait(0.3)
         
         local root = GetRootPart()
         if not root then continue end
         
-        local _, coinObjects = FindAllCoinValues()
+        local coins = FindAllCoins()
         local collected = 0
         
-        for _, coin in pairs(coinObjects) do
+        for _, coin in pairs(coins) do
             pcall(function()
+                -- Teleport ke coin untuk collect
                 local pos = coin:IsA("BasePart") and coin.Position or 
                            (coin:IsA("Model") and coin:GetPivot().Position)
                 
                 if pos then
                     local dist = (root.Position - pos).Magnitude
-                    if dist < 30 then -- Jarak koleksi
-                        -- Metode 1: ProximityPrompt
+                    if dist < 50 then
+                        -- Coba collect dengan proximity prompt jika ada
                         local prompt = coin:FindFirstChildWhichIsA("ProximityPrompt")
                         if prompt then
                             fireproximityprompt(prompt)
                             collected = collected + 1
                         end
                         
-                        -- Metode 2: Touch
+                        -- Coba dengan touch
                         local touchPart = coin:IsA("BasePart") and coin or 
                                         coin:FindFirstChildWhichIsA("BasePart")
                         if touchPart then
                             firetouchinterest(root, touchPart, 0)
-                            task.wait(0.03)
+                            task.wait(0.05)
                             firetouchinterest(root, touchPart, 1)
-                            collected = collected + 1
-                        end
-                        
-                        -- Metode 3: ClickDetector
-                        local clickDetector = coin:FindFirstChildWhichIsA("ClickDetector")
-                        if clickDetector then
-                            clickDetector:Click()
                             collected = collected + 1
                         end
                     end
@@ -885,64 +1203,79 @@ local function AutoCollectCoinsImproved()
     end
 end
 
--- Fungsi untuk mencari semua senjata (improved)
-local function FindAllWeaponsImproved()
-    local weapons = {}
-    local found = {}
-    
-    -- Cari di workspace
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Tool") then
+-- Fungsi untuk memodifikasi nilai coin (unlimited)
+local function MakeCoinsUnlimited()
+    -- Cari dan modifikasi nilai coin
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("NumberValue") or obj:IsA("IntValue") or obj:IsA("StringValue") then
             local name = obj.Name:lower()
-            if not name:find("humanoid") and not name:find("character") and 
-               not name:find("npc") and not name:find("dummy") and
-               not name:find("script") and not name:find("part") then
-                if not found[obj.Name] then
-                    table.insert(weapons, obj)
-                    found[obj.Name] = true
+            if name:find("coin") or name:find("money") or name:find("gold") or 
+               name:find("currency") or name:find("point") or name:find("gem") or
+               name:find("cash") or name:find("score") then
+                pcall(function()
+                    if obj:IsA("NumberValue") or obj:IsA("IntValue") then
+                        obj.Value = 999999999
+                        print("Modified coin value:", obj.Name, "-> 999999999")
+                    end
+                end)
+            end
+        end
+        
+        -- Cari juga di player stats
+        if obj:IsA("Folder") and obj.Name:lower():find("stat") then
+            for _, child in pairs(obj:GetChildren()) do
+                if child:IsA("NumberValue") or child:IsA("IntValue") then
+                    local name = child.Name:lower()
+                    if name:find("coin") or name:find("money") or name:find("gold") or 
+                       name:find("point") then
+                        pcall(function()
+                            child.Value = 999999999
+                            print("Modified stat coin:", child.Name)
+                        end)
+                    end
+                end
+            end
+        end
+        
+        -- Modifikasi leaderstats
+        if obj.Name == "leaderstats" and obj:IsA("Folder") then
+            for _, child in pairs(obj:GetChildren()) do
+                if child:IsA("NumberValue") or child:IsA("IntValue") then
+                    local name = child.Name:lower()
+                    if name:find("coin") or name:find("money") or name:find("gold") or 
+                       name:find("currency") or name:find("point") or name:find("cash") then
+                        pcall(function()
+                            child.Value = 999999999
+                            print("Modified leaderstats:", child.Name)
+                        end)
+                    end
                 end
             end
         end
     end
     
-    -- Cari di ReplicatedStorage
-    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("Tool") then
-            local name = obj.Name:lower()
-            if not name:find("humanoid") and not name:find("character") and 
-               not name:find("npc") and not name:find("dummy") then
-                if not found[obj.Name] then
-                    table.insert(weapons, obj)
-                    found[obj.Name] = true
-                end
+    -- Modifikasi juga di player
+    for _, child in pairs(LocalPlayer:GetChildren()) do
+        if child:IsA("NumberValue") or child:IsA("IntValue") then
+            local name = child.Name:lower()
+            if name:find("coin") or name:find("money") or name:find("gold") or 
+               name:find("currency") or name:find("point") then
+                pcall(function()
+                    child.Value = 999999999
+                    print("Modified player value:", child.Name)
+                end)
             end
         end
     end
-    
-    -- Cari di ServerStorage
-    local serverStorage = game:GetService("ServerStorage")
-    for _, obj in pairs(serverStorage:GetDescendants()) do
-        if obj:IsA("Tool") then
-            local name = obj.Name:lower()
-            if not name:find("humanoid") and not name:find("character") and 
-               not name:find("npc") and not name:find("dummy") then
-                if not found[obj.Name] then
-                    table.insert(weapons, obj)
-                    found[obj.Name] = true
-                end
-            end
-        end
-    end
-    
-    return weapons
 end
 
--- Fungsi untuk mendapatkan semua senjata (improved)
-local function GetAllWeaponsImproved()
-    local weapons = FindAllWeaponsImproved()
+-- Fungsi untuk spawn semua senjata ke player
+local function SpawnAllWeaponsToPlayer()
+    local weapons = FindAllWeapons()
     local count = 0
     
-    for _, tool in pairs(weapons) do
+    for _, data in pairs(weapons) do
+        local tool = data.Tool
         if tool and tool:IsA("Tool") then
             -- Cek apakah sudah ada di backpack
             local exists = false
@@ -958,7 +1291,6 @@ local function GetAllWeaponsImproved()
                 newTool.Parent = LocalPlayer.Backpack
                 count = count + 1
                 MountPrankWeapons[newTool.Name] = newTool
-                print("Weapon added:", newTool.Name)
             end
         end
     end
@@ -1975,7 +2307,7 @@ WeaponSection:AddButton({
     Title = "🔫 Get All Weapons",
     Description = "Dapatkan semua senjata yang ada di map",
     Callback = function()
-        local count = GetAllWeaponsImproved()
+        local count = GetAllWeapons()
         Library:MakeNotify({ 
             Title = "✅ Weapons Added", 
             Content = "Berhasil mendapatkan " .. count .. " senjata!", 
@@ -1993,7 +2325,7 @@ WeaponSection:AddButton({
         if SpawnAllWeapons then
             task.spawn(function()
                 while SpawnAllWeapons do
-                    local count = GetAllWeaponsImproved()
+                    local count = SpawnAllWeaponsToPlayer()
                     if count > 0 then
                         print("Spawned", count, "weapons")
                     end
@@ -2016,14 +2348,127 @@ WeaponSection:AddButton({
 })
 
 WeaponSection:AddButton({
-    Title = "🪙 Make Coins Unlimited (ALL METHODS)",
-    Description = "Gunakan semua metode untuk membuat coin unlimited",
+    Title = "📱 FIND COINS (TAMPILKAN DI LAYAR)",
+    Description = "Cari semua nilai coin dan tampilkan di layar",
     Callback = function()
-        local count = MakeCoinsUnlimited()
+        FindCoinsAndShow()
+    end
+})
+
+WeaponSection:AddButton({
+    Title = "💎 EXTREME HACK + TAMPILKAN HASIL",
+    Description = "Hack coin dan tampilkan hasilnya di layar",
+    Callback = function()
+        HackCoinsAndShow()
+    end
+})
+
+WeaponSection:AddButton({
+    Title = "📊 Toggle Debug Window",
+    Description = "Tampilkan/sembunyikan jendela debug",
+    Callback = function()
+        local debugUI = game:GetService("CoreGui"):FindFirstChild("DebugUI")
+        if debugUI then
+            debugUI.Enabled = not debugUI.Enabled
+            Library:MakeNotify({ 
+                Title = "📊 Debug Window", 
+                Content = debugUI.Enabled and "Ditampilkan" or "Disembunyikan", 
+                Duration = 2 
+            })
+        else
+            CreateDebugUI()
+            Library:MakeNotify({ 
+                Title = "📊 Debug Window", 
+                Content = "Debug window dibuat!", 
+                Duration = 2 
+            })
+        end
+    end
+})
+
+WeaponSection:AddButton({
+    Title = "💎 EXTREME COIN HACK (ALL METHODS)",
+    Description = "Gunakan SEMUA metode untuk hack coin (100% work)",
+    Callback = function()
+        local count = ExtremeCoinHack()
+        Library:MakeNotify({ 
+            Title = "💎 EXTREME COIN HACK!", 
+            Content = "Berhasil memodifikasi " .. count .. " nilai coin! Cek coin Anda sekarang!", 
+            Duration = 5 
+        })
+        
+        -- Cek ulang setelah 2 detik
+        task.wait(2)
+        local values = FindAllCoinValuesAggressive()
+        local finalCount = 0
+        for _, v in pairs(values) do
+            if v:IsA("NumberValue") or v:IsA("IntValue") then
+                if v.Value >= 999999999 then
+                    finalCount = finalCount + 1
+                end
+            end
+        end
+        Library:MakeNotify({ 
+            Title = "✅ Hasil Akhir", 
+            Content = "Total nilai coin yang aktif: " .. finalCount, 
+            Duration = 4 
+        })
+    end
+})
+
+-- Tombol untuk debug
+WeaponSection:AddButton({
+    Title = "🔍 DEBUG: Cari Semua Nilai Coin",
+    Description = "Tampilkan semua nilai coin di console",
+    Callback = function()
+        local values = FindAllCoinValuesAggressive()
+        print("=== SEMUA NILAI COIN DITEMUKAN ===")
+        local count = 0
+        for _, value in pairs(values) do
+            if value:IsA("NumberValue") or value:IsA("IntValue") then
+                print("NumberValue:", value.Name, "=", value.Value, "(Parent:", value.Parent and value.Parent.Name or "nil", ")")
+                count = count + 1
+            elseif value:IsA("StringValue") then
+                print("StringValue:", value.Name, "=", value.Value)
+                count = count + 1
+            elseif type(value) == "table" and value.Object and value.Attribute then
+                print("Attribute:", value.Attribute, "=", value.Object:GetAttribute(value.Attribute), "on", value.Object.Name)
+                count = count + 1
+            end
+        end
+        print("=== TOTAL:", count, "nilai coin ditemukan ===")
+        Library:MakeNotify({ 
+            Title = "🔍 Debug", 
+            Content = "Semua nilai coin ditampilkan di console (F9)! Total: " .. count, 
+            Duration = 5 
+        })
+    end
+})
+
+-- Tombol untuk stop coin hack
+WeaponSection:AddButton({
+    Title = "⏹️ Stop Coin Hack",
+    Description = "Matikan semua proses hack coin",
+    Callback = function()
+        CoinHackActive = false
+        Library:MakeNotify({ 
+            Title = "⏹️ Stopped", 
+            Content = "Coin hack dimatikan", 
+            Duration = 2 
+        })
+    end
+})
+
+
+WeaponSection:AddButton({
+    Title = "🪙 Make Coins Unlimited",
+    Description = "Modifikasi nilai coin menjadi 999999999",
+    Callback = function()
+        MakeCoinsUnlimited()
         Library:MakeNotify({ 
             Title = "🪙 Unlimited Coins!", 
-            Content = "Berhasil memodifikasi " .. count .. " nilai coin menjadi 999999999!", 
-            Duration = 4 
+            Content = "Nilai coin telah dimodifikasi menjadi maksimal!", 
+            Duration = 3 
         })
     end
 })
@@ -2035,7 +2480,7 @@ WeaponSection:AddToggle({
     Callback = function(v)
         AutoCollectCoins = v
         if v then
-            task.spawn(AutoCollectCoinsImproved)
+            task.spawn(AutoCollectCoinsLoop)
             Library:MakeNotify({ 
                 Title = "🪙 Auto Collect ON", 
                 Content = "Mengumpulkan coin secara otomatis", 
@@ -2056,10 +2501,10 @@ WeaponSection:AddButton({
     Description = "Highlight semua coin di map",
     Callback = function()
         ClearManualHighlights()
-        local _, coinObjects = FindAllCoinValues()
+        local coins = FindAllCoins()
         local count = 0
         
-        for _, coin in pairs(coinObjects) do
+        for _, coin in pairs(coins) do
             local hl = Instance.new("Highlight")
             hl.FillColor = Color3.fromRGB(255, 215, 0) -- Gold color
             hl.FillTransparency = 0.4
@@ -2079,24 +2524,6 @@ WeaponSection:AddButton({
 })
 
 WeaponSection:AddButton({
-    Title = "🔍 Debug: Show Coin Values",
-    Description = "Tampilkan semua nilai coin di console",
-    Callback = function()
-        local coinValues, _ = FindAllCoinValues()
-        print("=== COIN VALUES FOUND ===")
-        for _, value in pairs(coinValues) do
-            print(value.Name, ":", value.Value, "(Parent:", value.Parent and value.Parent.Name or "nil", ")")
-        end
-        print("=== TOTAL:", #coinValues, "values ===")
-        Library:MakeNotify({ 
-            Title = "🔍 Debug", 
-            Content = "Coin values ditampilkan di console (F9)", 
-            Duration = 3 
-        })
-    end
-})
-
-WeaponSection:AddButton({
     Title = "🗑️ Clear All Highlighted",
     Callback = function()
         ClearManualHighlights()
@@ -2109,53 +2536,57 @@ WeaponSection:AddButton({
 })
 
 task.spawn(function()
+    task.wait(3) -- Tunggu 3 detik setelah script load
+    print("🪙 Memulai Extreme Coin Hack...")
+    local count = ExtremeCoinHack()
+    print("🪙 Coin hack selesai! Modified:", count, "values")
+end)
+
+-- Jalankan ulang saat karakter spawn
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(2)
+    if CoinHackActive then
+        print("🪙 Re-applying coin hack...")
+        local count = HackAllCoins()
+        print("🪙 Re-applied:", count, "values")
+    end
+end)
+
+task.spawn(function()
+    task.wait(5) -- Tunggu UI siap
+    print("🪙 Memulai Extreme Coin Hack untuk Android...")
+    AddLog("=== AUTO HACK STARTED ===")
+    local count = ExtremeCoinHack()
+    AddLog("=== AUTO HACK DONE! Modified: " .. count .. " values ===")
+    
+    if count > 0 then
+        ShowHackResult("💎 AUTO HACK! " .. count .. " nilai coin dimodifikasi!", true)
+    else
+        ShowHackResult("⚠️ AUTO HACK: Tidak ada nilai coin ditemukan", false)
+    end
+end)
+
+print("📱 Android mode aktif! Gunakan tombol 📊 untuk debug window")
+
+-- Event untuk re-apply unlimited coins saat value berubah
+local function MonitorCoinValues()
     while true do
-        task.wait(3)
-        local coinValues, _ = FindAllCoinValues()
-        for _, value in pairs(coinValues) do
-            if value:IsA("NumberValue") or value:IsA("IntValue") then
-                if value.Value < 999999999 then
-                    pcall(function()
-                        value.Value = 999999999
-                        print("Coin value maintained:", value.Name)
-                    end)
+        task.wait(2)
+        for _, obj in pairs(game:GetDescendants()) do
+            if obj:IsA("NumberValue") or obj:IsA("IntValue") then
+                local name = obj.Name:lower()
+                if name:find("coin") or name:find("money") or name:find("gold") or 
+                   name:find("currency") or name:find("point") or name:find("cash") then
+                    if obj.Value < 999999999 then
+                        pcall(function()
+                            obj.Value = 999999999
+                        end)
+                    end
                 end
             end
         end
     end
-end)
-
--- Event untuk re-apply unlimited coins saat nilai berubah
-local function SetupCoinHooks()
-    local coinValues, _ = FindAllCoinValues()
-    for _, value in pairs(coinValues) do
-        if value:IsA("NumberValue") or value:IsA("IntValue") then
-            pcall(function()
-                if value:IsA("NumberValue") or value:IsA("IntValue") then
-                    value:GetPropertyChangedSignal("Value"):Connect(function()
-                        if value.Value < 999999999 then
-                            value.Value = 999999999
-                            print("Coin value auto-corrected:", value.Name)
-                        end
-                    end)
-                end
-            end)
-        end
-    end
 end
-
--- Setup hooks saat player spawn
-LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(2)
-    SetupCoinHooks()
-end)
-
--- Setup hooks awal
-task.wait(2)
-SetupCoinHooks()
-
--- Tambahkan cleanup
- 
 
 local MountPrankSection = PlayerTab:AddSection("🏔️ Mount Prank Protection")
 
