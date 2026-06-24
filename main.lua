@@ -1094,12 +1094,108 @@ local function EnableMountPrankProtection()
         Duration = 3 
     })
 end
+local PrankActive = false
+local PrankTargets = {}
+
+-- Fungsi untuk mendapatkan pemain terdekat
+local function GetNearestPlayer()
+    local root = GetRootPart()
+    if not root then return nil end
+    
+    local nearest = nil
+    local nearestDist = math.huge
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+            if targetRoot then
+                local dist = (root.Position - targetRoot.Position).Magnitude
+                if dist < nearestDist then
+                    nearestDist = dist
+                    nearest = player
+                end
+            end
+        end
+    end
+    
+    return nearest
+end
+
+-- Fungsi untuk melakukan prank ke target
+local function DoPrank(target)
+    if not target or not target.Character then return false end
+    
+    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+    if not targetRoot then return false end
+    
+    -- Metode prank yang tersedia
+    local prankMethods = {
+        -- Dorong
+        function()
+            targetRoot.AssemblyLinearVelocity = Vector3.new(
+                math.random(-50, 50),
+                math.random(20, 60),
+                math.random(-50, 50)
+            )
+            return true
+        end,
+        -- Lempar ke atas
+        function()
+            targetRoot.AssemblyLinearVelocity = Vector3.new(0, 100, 0)
+            return true
+        end,
+        -- Teleport ke depan
+        function()
+            local look = targetRoot.CFrame.LookVector
+            targetRoot.CFrame = targetRoot.CFrame + (look * 20)
+            return true
+        end,
+        -- Buat jatuh
+        function()
+            targetRoot.AssemblyLinearVelocity = Vector3.new(0, -80, 0)
+            return true
+        end
+    }
+    
+    local method = prankMethods[math.random(1, #prankMethods)]
+    return method()
+end
+
+-- Fungsi auto prank
+local function AutoPrankLoop()
+    while PrankActive do
+        task.wait(2) -- Jeda antar prank
+        
+        local target = GetNearestPlayer()
+        if target then
+            local success = DoPrank(target)
+            if success then
+                print("🎭 Pranked:", target.Name)
+                AddLog("🎭 Pranked " .. target.Name)
+                Library:MakeNotify({
+                    Title = "🎭 PRANK!",
+                    Content = "Berhasil memprank " .. target.Name,
+                    Duration = 1.5
+                })
+            end
+        end
+    end
+end
+local AutoShieldActive = false
+
+-- Fungsi auto shield
+local function AutoShieldLoop()
+    while AutoShieldActive do
+        task.wait(0.5)
+        FindAndUseShield()
+    end
+end
 
 -- ==========================================
 -- TABS SETUP
 -- ==========================================
 local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local AutoWalking = Window:AddTab({ Name = "AutoWalk", Icon = "player" })
+local MountTab = Window:AddTab({ Name = "Mount", Icon = "player" })
 local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
 local GameTab = Window:AddTab({ Name = "Game", Icon = "gamepad" })
 local ServerTab = Window:AddTab({ Name = "Server", Icon = "web" })
@@ -1727,251 +1823,105 @@ TrollSection:AddButton({
 -- ==========================================
 -- AUTOWALK TAB
 -- ==========================================
-local WalkSection = AutoWalking:AddSection("🗽 Auto Walk Mountain")
+local PrankSection = MountTab:AddSection("🎭 Prank System")
 
-local jsonMatcha = [[
-[
-    {"position":{"x":-27.625, "y":188.38, "z":-503.16}, "walkSpeed":52, "states":"Running"},
-    {"position":{"x":-27.512, "y":188.38, "z":-502.30}, "walkSpeed":52, "states":"Running"},
-    {"position":{"x":-9448.06, "y":1788.38, "z":-2132.23}, "walkSpeed":52, "states":"Running"}
-}
-]]
-
-local waypoints = {}
-
-local function loadWaypoints()
-    local success, result = pcall(function()
-        return HttpService:JSONDecode(jsonMatcha)
-    end)
-    if success then
-        waypoints = result
-        return #waypoints
-    else
-        warn("Gagal membaca data JSON Waypoints!")
-        return 0
-    end
-end
-
-local MountainRoute = {}
-_G.AutoWalkSpeed = 25 
-_G.AutoWalk = false
-
-local function GetHum() return LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") end
-local function GetRoot() return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") end
-
-local function ScanMountain()
-    MountainRoute = {}
-    local allParts = workspace:GetDescendants()
-    for i, obj in pairs(allParts) do
-        if i % 500 == 0 then task.wait() end
-        
-        if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (
-            obj.Name:lower():find("cp") or 
-            obj.Name:lower():find("stage") or 
-            obj.Name:lower():find("camp") or 
-            obj.Name:lower():find("point")
-        )) then
-            table.insert(MountainRoute, {Part = obj, Y = obj.Position.Y})
-        end
-    end
-    table.sort(MountainRoute, function(a, b) return a.Y < b.Y end)
-    return #MountainRoute
-end
-
-WalkSection:AddToggle({
-    Title = "Start Auto Walk (Smooth Mode)",
-    Description = "Jalan halus menembus rintangan ke puncak",
+PrankSection:AddToggle({ 
+    Title = "🎭 Auto Prank (Terdekat)",
+    Description = "Otomatis memprank pemain terdekat",
     Default = false,
     Callback = function(v)
-        _G.AutoWalk = v
+        PrankActive = v
         if v then
-            task.spawn(function()
-                local total = ScanMountain()
-                Library:MakeNotify({ Title = "MDW HUB", Content = "Mulai mendaki! Menghindari rintangan..." })
-
-                while _G.AutoWalk do
-                    local root = GetRoot()
-                    local hum = GetHum()
-                    if not root or not hum then task.wait(1) continue end
-
-                    local targetData = nil
-                    for _, data in pairs(MountainRoute) do
-                        if data.Y > root.Position.Y + 5 then 
-                            targetData = data
-                            break
-                        end
-                    end
-
-                    if targetData then
-                        local targetPart = targetData.Part
-                        local distance = (root.Position - targetPart.Position).Magnitude
-                        local duration = distance / (_G.AutoWalkSpeed or 25)
-
-                        hum.PlatformStand = true
-                        
-                        local ncLoop = RunService.Stepped:Connect(function()
-                            if LocalPlayer.Character then
-                                for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
-                                    if p:IsA("BasePart") then p.CanCollide = false end
-                                end
-                            end
-                        end)
-
-                        local targetCFrame = CFrame.new(targetPart.Position + Vector3.new(0, 3, 0)) 
-                        local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-                            CFrame = targetCFrame * CFrame.Angles(0, math.rad(root.Orientation.Y), 0)
-                        })
-                        
-                        tween:Play()
-
-                        local reached = false
-                        local finished = tween.Completed:Connect(function() reached = true end)
-
-                        repeat 
-                            task.wait(0.1)
-                            if not _G.AutoWalk or hum.Health <= 0 then 
-                                tween:Cancel()
-                                reached = true 
-                            end
-                        until reached
-
-                        finished:Disconnect()
-                        ncLoop:Disconnect()
-                        hum.PlatformStand = false
-
-                        if firetouchinterest and _G.AutoWalk then
-                            pcall(function()
-                                firetouchinterest(root, targetPart, 0)
-                                task.wait(0.1)
-                                firetouchinterest(root, targetPart, 1)
-                            end)
-                        end
-                    else
-                        Library:MakeNotify({ Title = "Selesai", Content = "Sudah sampai di puncak!" })
-                        _G.AutoWalk = false
-                        break
-                    end
-                    task.wait(0.1)
-                end
-                
-                local h = GetHum()
-                if h then h.PlatformStand = false end
-            end)
+            task.spawn(AutoPrankLoop)
+            Library:MakeNotify({
+                Title = "🎭 Auto Prank ON",
+                Content = "Mulai memprank pemain terdekat!",
+                Duration = 2
+            })
+        else
+            Library:MakeNotify({
+                Title = "🎭 Auto Prank OFF",
+                Content = "Auto prank dimatikan",
+                Duration = 2
+            })
         end
     end
 })
 
-WalkSection:AddInput({
-    Title = "WalkSpeed Hack",
-    Description = "Semakin tinggi angkanya, semakin cepat larinya.",
-    Min = 16,
-    Max = 300,
-    Default = 16,
-    Callback = function(value)
-        local character = LocalPlayer.Character
-        if character and character:FindFirstChild("Humanoid") then
-            character.Humanoid.WalkSpeed = value
-        end
-    end
-})
-
-WalkSection:AddInput({
-    Title = "JumpPower Hack",
-    Description = "Semakin tinggi angkanya, semakin tinggi lompatannya.",
-    Min = 50,
-    Max = 500,
-    Default = 50,
-    Callback = function(value)
-        local character = LocalPlayer.Character
-        if character and character:FindFirstChild("Humanoid") then
-            character.Humanoid.UseJumpPower = true
-            character.Humanoid.JumpPower = value
-        end
-    end
-})
-
-WalkSection:AddButton({
-    Title = "Rescan Rute",
+PrankSection:AddButton({
+    Title = "🎭 Prank All Players",
+    Description = "Prank semua pemain sekaligus",
     Callback = function()
-        local total = ScanMountain()
-        Library:MakeNotify({ Title = "MDW HUB", Content = "Rute diperbarui: " .. total .. " titik." })
+        local count = 0
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                if DoPrank(player) then
+                    count = count + 1
+                end
+            end
+        end
+        Library:MakeNotify({
+            Title = "🎭 Prank All!",
+            Content = "Berhasil memprank " .. count .. " pemain!",
+            Duration = 3
+        })
+        AddLog("🎭 Pranked " .. count .. " players")
     end
 })
 
-WalkSection:AddToggle({
-    Title = "Start Matcha Autowalk (JSON)",
-    Description = "Berjalan mengikuti koordinat dari file JSON",
+PrankSection:AddButton({
+    Title = "🎯 Prank Target (Selected)",
+    Description = "Prank pemain yang dipilih di dropdown",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then
+            Library:MakeNotify({
+                Title = "⚠️ Error",
+                Content = "Pilih pemain dulu di dropdown!",
+                Duration = 2
+            })
+            return
+        end
+        
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and DoPrank(target) then
+            Library:MakeNotify({
+                Title = "🎯 Prank!",
+                Content = "Berhasil memprank " .. target.Name,
+                Duration = 2
+            })
+        else
+            Library:MakeNotify({
+                Title = "❌ Gagal",
+                Content = "Tidak bisa memprank target!",
+                Duration = 2
+            })
+        end
+    end
+})
+
+PrankSection:AddToggle({
+    Title = "🛡️ Auto Shield (Always On)",
+    Description = "Otomatis mengaktifkan shield terus-menerus",
     Default = false,
     Callback = function(v)
-        _G.AutoWalkJSON = v
-        
+        AutoShieldActive = v
         if v then
-            task.spawn(function()
-                local total = loadWaypoints()
-                if total == 0 then 
-                    Library:MakeNotify({ Title = "Error", Content = "Data Waypoint Kosong!" })
-                    return 
-                end
-
-                Library:MakeNotify({ Title = "MDW HUB", Content = "Memulai Autowalk: " .. total .. " Titik." })
-
-                local ncLoop = RunService.Stepped:Connect(function()
-                    if _G.AutoWalkJSON and LocalPlayer.Character then
-                        for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
-                            if p:IsA("BasePart") then p.CanCollide = false end
-                        end
-                    end
-                end)
-
-                local char = LocalPlayer.Character
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                local root = char:FindFirstChild("HumanoidRootPart")
-
-                if hum then hum.PlatformStand = true end
-
-                for i, data in ipairs(waypoints) do
-                    if not _G.AutoWalkJSON or hum.Health <= 0 then break end
-
-                    local targetPos = Vector3.new(data.position.x, data.position.y + 3, data.position.z)
-                    local speed = data.walkSpeed or 25
-                    
-                    local distance = (root.Position - targetPos).Magnitude
-                    local duration = distance / speed
-
-                    local tween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-                        CFrame = CFrame.new(targetPos)
-                    })
-                    
-                    tween:Play()
-
-                    local reached = false
-                    local finished = tween.Completed:Connect(function() reached = true end)
-
-                    repeat 
-                        task.wait(0.1)
-                        if not _G.AutoWalkJSON then tween:Cancel() reached = true end
-                    until reached
-
-                    finished:Disconnect()
-                    print("Sampai di waypoint ke-" .. i)
-                end
-
-                if ncLoop then ncLoop:Disconnect() end
-                if hum then hum.PlatformStand = false end
-                _G.AutoWalkJSON = false
-                Library:MakeNotify({ Title = "Selesai", Content = "Karakter sampai di tujuan akhir." })
-            end)
+            task.spawn(AutoShieldLoop)
+            Library:MakeNotify({
+                Title = "🛡️ Auto Shield ON",
+                Content = "Shield akan selalu aktif!",
+                Duration = 2
+            })
+        else
+            Library:MakeNotify({
+                Title = "🛡️ Auto Shield OFF",
+                Content = "Auto shield dimatikan",
+                Duration = 2
+            })
         end
     end
 })
 
-WalkSection:AddButton({
-    Title = "Reload JSON Data",
-    Callback = function()
-        local count = loadWaypoints()
-        Library:MakeNotify({ Title = "Success", Content = "Data diupdate: " .. count .. " koordinat." })
-    end
-})
 
 -- ==========================================
 -- PLAYER TAB
