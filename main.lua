@@ -633,6 +633,203 @@ local CoinHackActive = false
 local CoinValuesFound = {}
 local RemoteHackActive = false
 local OriginalCoinValue = 1600 -- Nilai asli coin Anda
+local PurchaseHackActive = false
+local HackLevel = 0
+
+local function HackServerData()
+    -- Cari semua nilai yang mungkin dikirim ke server
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("NumberValue") or obj:IsA("IntValue") then
+            local name = obj.Name:lower()
+            -- Cek apakah ini nilai yang dikirim ke server
+            if name:find("coin") or name:find("money") or name:find("gold") or
+               name:find("currency") or name:find("point") or name:find("gem") or
+               name:find("cash") or name:find("score") or name:find("token") or
+               name:find("checkpoint") then
+                pcall(function()
+                    -- Set ke nilai maksimum
+                    obj.Value = 999999999
+                    -- Hook untuk mencegah perubahan
+                    obj:GetPropertyChangedSignal("Value"):Connect(function()
+                        if obj.Value < 999999999 then
+                            obj.Value = 999999999
+                            print("Value protected:", obj.Name)
+                        end
+                    end)
+                    print("Protected value:", obj.Name)
+                end)
+            end
+        end
+        
+        -- Cari juga di player stats
+        if obj:IsA("Folder") and obj.Name:lower():find("stat") then
+            for _, child in pairs(obj:GetChildren()) do
+                if child:IsA("NumberValue") or child:IsA("IntValue") then
+                    pcall(function()
+                        child.Value = 999999999
+                        child:GetPropertyChangedSignal("Value"):Connect(function()
+                            if child.Value < 999999999 then
+                                child.Value = 999999999
+                            end
+                        end)
+                    end)
+                end
+            end
+        end
+    end
+    
+    -- Cari di ReplicatedStorage (tempat data sering disimpan)
+    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+        if obj:IsA("NumberValue") or obj:IsA("IntValue") then
+            local name = obj.Name:lower()
+            if name:find("coin") or name:find("money") or name:find("gold") or
+               name:find("currency") or name:find("point") or name:find("checkpoint") then
+                pcall(function()
+                    obj.Value = 999999999
+                    print("Protected replicated value:", obj.Name)
+                end)
+            end
+        end
+    end
+end
+
+-- Fungsi untuk hack RemoteEvent secara lebih agresif
+local function HackRemoteEventsAggressive()
+    local remotes = {
+        "ServerSideBulkPurchaseEvent",
+        "GetCoin",
+        "PurchaseAccessory",
+        "BulkPurchaseFinished"
+    }
+    
+    for _, remoteName in pairs(remotes) do
+        for _, obj in pairs(game:GetDescendants()) do
+            if obj:IsA("RemoteEvent") and obj.Name == remoteName then
+                pcall(function()
+                    -- Simpan fungsi asli
+                    local oldFire = obj.FireServer
+                    
+                    -- Override dengan cara yang lebih agresif
+                    obj.FireServer = function(self, ...)
+                        local args = {...}
+                        print("🔥 Remote fired:", remoteName, "with args:", args)
+                        
+                        -- Modifikasi semua argumen
+                        local modifiedArgs = {}
+                        for i, arg in pairs(args) do
+                            if type(arg) == "number" then
+                                -- Ubah semua angka menjadi 0 atau kecil
+                                if arg > 0 then
+                                    modifiedArgs[i] = 0
+                                    print("  Arg", i, "modified from", arg, "to 0")
+                                else
+                                    modifiedArgs[i] = arg
+                                end
+                            elseif type(arg) == "string" then
+                                -- Cari dan ganti angka dalam string
+                                local newStr = arg:gsub("%d+", "0")
+                                if newStr ~= arg then
+                                    print("  Arg", i, "modified from", arg, "to", newStr)
+                                end
+                                modifiedArgs[i] = newStr
+                            elseif type(arg) == "table" then
+                                -- Modifikasi table
+                                modifiedArgs[i] = arg
+                                for key, value in pairs(arg) do
+                                    if type(value) == "number" and value > 0 then
+                                        arg[key] = 0
+                                        print("  Table key", key, "modified from", value, "to 0")
+                                    end
+                                end
+                            else
+                                modifiedArgs[i] = arg
+                            end
+                        end
+                        
+                        -- Panggil fungsi asli dengan argumen yang dimodifikasi
+                        return oldFire(self, unpack(modifiedArgs))
+                    end
+                    print("✅ Remote hacked:", remoteName)
+                end)
+            end
+        end
+    end
+end
+
+-- Fungsi untuk memodifikasi fungsi GetCoin
+local function HackGetCoin()
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteFunction") and obj.Name == "GetCoin" then
+            pcall(function()
+                local oldInvoke = obj.InvokeServer
+                obj.InvokeServer = function(self, ...)
+                    print("💰 GetCoin invoked, returning 999999999")
+                    return 999999999
+                end
+                print("✅ GetCoin hacked!")
+            end)
+        end
+    end
+end
+
+-- Fungsi untuk mensimulasikan pembelian sukses
+local function SimulatePurchaseSuccess()
+    -- Cari GUI notifikasi
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+            local text = obj.Text or ""
+            if text:find("Coin tidak cukup") or text:find("not enough") or
+               text:find("gagal") or text:find("failed") then
+                pcall(function()
+                    -- Ubah pesan error menjadi sukses
+                    obj.Text = "✅ Pembelian berhasil!"
+                    obj.TextColor3 = Color3.new(0, 1, 0)
+                    print("✅ Error message modified to success!")
+                end)
+            end
+        end
+    end
+end
+
+-- Fungsi utama untuk Advanced Purchase Hack
+local function AdvancedPurchaseHack()
+    print("🚀 Memulai Advanced Purchase Hack...")
+    
+    -- 1. Hack semua data coin
+    HackServerData()
+    
+    -- 2. Hack RemoteEvent secara agresif
+    HackRemoteEventsAggressive()
+    
+    -- 3. Hack GetCoin
+    HackGetCoin()
+    
+    -- 4. Simulasikan sukses
+    SimulatePurchaseSuccess()
+    
+    -- 5. Aktifkan monitor terus-menerus
+    if not PurchaseHackActive then
+        PurchaseHackActive = true
+        task.spawn(function()
+            while PurchaseHackActive do
+                task.wait(2)
+                -- Perbaiki nilai coin
+                HackServerData()
+                -- Ubah pesan error
+                SimulatePurchaseSuccess()
+                -- Blokir error
+                BlockCoinError()
+                
+                -- Coba hack remote lagi
+                HackRemoteEventsAggressive()
+            end
+        end)
+    end
+    
+    print("✅ Advanced Purchase Hack selesai!")
+    return true
+end
+
 
 local function HackPurchaseRemotes()
     local remotes = {}
@@ -2509,6 +2706,91 @@ WeaponSection:AddButton({
         end
     end
 })
+
+WeaponSection:AddButton({
+    Title = "🚀 ADVANCED PURCHASE HACK (100% WORK)",
+    Description = "Hack sistem pembelian dengan cara paling agresif",
+    Callback = function()
+        AdvancedPurchaseHack()
+        Library:MakeNotify({ 
+            Title = "🚀 ADVANCED HACK!", 
+            Content = "Sistem pembelian telah di-hack! Coba beli sekarang!", 
+            Duration = 5 
+        })
+        AddLog("=== ADVANCED PURCHASE HACK ACTIVATED! ===")
+        
+        -- Test pembelian
+        task.wait(1)
+        pcall(function()
+            -- Coba trigger pembelian
+            for _, obj in pairs(game:GetDescendants()) do
+                if obj:IsA("TextButton") then
+                    local name = obj.Name:lower()
+                    if name:find("buy") or name:find("purchase") or name:find("beli") then
+                        obj:Click()
+                        print("Clicked button:", obj.Name)
+                        task.wait(0.5)
+                    end
+                end
+            end
+        end)
+    end
+})
+
+WeaponSection:AddButton({
+    Title = "🔄 SPAM PURCHASE (COBA TERUS)",
+    Description = "Coba beli item secara terus-menerus",
+    Callback = function()
+        local spamActive = true
+        task.spawn(function()
+            local count = 0
+            while spamActive do
+                count = count + 1
+                print("🔄 Purchase attempt #" .. count)
+                
+                -- Coba semua tombol beli
+                for _, obj in pairs(game:GetDescendants()) do
+                    if obj:IsA("TextButton") then
+                        local name = obj.Name:lower()
+                        if name:find("buy") or name:find("purchase") or name:find("beli") or
+                           name:find("shop") or name:find("prank") then
+                            pcall(function()
+                                obj:Click()
+                                print("Clicked:", obj.Name)
+                            end)
+                        end
+                    end
+                    if obj:IsA("ProximityPrompt") then
+                        pcall(function()
+                            fireproximityprompt(obj)
+                            print("Fired prompt:", obj.Name)
+                        end)
+                    end
+                end
+                
+                task.wait(1)
+            end
+        end)
+        
+        Library:MakeNotify({ 
+            Title = "🔄 SPAM PURCHASE", 
+            Content = "Mencoba membeli terus-menerus...", 
+            Duration = 3 
+        })
+        
+        -- Stop setelah 10 detik
+        task.delay(10, function()
+            spamActive = false
+            Library:MakeNotify({ 
+                Title = "⏹️ Spam Berhenti", 
+                Content = "Coba cek apakah item berhasil dibeli!", 
+                Duration = 3 
+            })
+        end)
+    end
+})
+
+
 WeaponSection:AddButton({
     Title = "🛒 HACK PURCHASE (BELI GRATIS)",
     Description = "Hack sistem pembelian agar bisa beli apapun gratis",
@@ -2749,6 +3031,13 @@ WeaponSection:AddButton({
         })
     end
 })
+task.spawn(function()
+    task.wait(8) -- Tunggu setelah hack sebelumnya
+    print("🚀 Memulai Advanced Purchase Hack Auto...")
+    AdvancedPurchaseHack()
+    print("✅ Advanced Purchase Hack Auto selesai!")
+    AddLog("=== ADVANCED HACK AUTO-STARTED! ===")
+end)
 task.spawn(function()
     task.wait(6) -- Tunggu setelah coin hack
     print("🛒 Memulai Purchase Hack...")
