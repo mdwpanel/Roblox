@@ -468,180 +468,7 @@ local SpawnAllWeapons = false
 local ShieldTools = {"Shield", "Perisai", "Protector", "PrankShield"}
 local PrankActive = false
 local PrankTargets = {}
-local Checkpoints = {}
-local CurrentCPIndex = 0
-local AutoClimbActive = false
-local ClimbDelay = 1.5
 
--- Fungsi untuk mencari semua checkpoint di Mount Prank
-local function ScanMountPrankCheckpoints()
-    Checkpoints = {}
-    local seen = {}
-    
-    -- Cari semua part yang kemungkinan adalah checkpoint
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            local name = obj.Name:lower()
-            local pos = obj.Position
-            
-            -- Filter: cek nama yang berhubungan dengan checkpoint
-            local isCheckpoint = false
-            
-            -- Nama-nama yang umum di Mount Prank
-            if name:find("checkpoint") or name:find("cp") or name:find("stage") or
-               name:find("point") or name:find("zone") or name:find("platform") or
-               name:find("spawn") or name:find("respawn") or name:find("start") or
-               name:find("finish") or name:find("level") or name:find("rest") or
-               name:find("save") or name:find("safe") or name:find("check") then
-                isCheckpoint = true
-            end
-            
-            -- Cek attribute
-            if obj:GetAttribute("Checkpoint") or obj:GetAttribute("CP") or
-               obj:GetAttribute("Stage") or obj:GetAttribute("Point") then
-                isCheckpoint = true
-            end
-            
-            -- Cek ukuran (banyak checkpoint berbentuk platform)
-            if obj.Size.X > 3 and obj.Size.Z > 3 and obj.Size.Y < 2 then
-                if name:find("plate") or name:find("floor") or name:find("ground") or
-                   name:find("base") or name:find("platform") then
-                    isCheckpoint = true
-                end
-            end
-            
-            -- Jika checkpoint, simpan
-            if isCheckpoint and pos.Y > -100 and pos.Y < 10000 then
-                -- Buat key unik untuk menghindari duplikat
-                local key = math.floor(pos.X) .. "_" .. math.floor(pos.Y) .. "_" .. math.floor(pos.Z)
-                if not seen[key] then
-                    seen[key] = true
-                    table.insert(Checkpoints, {
-                        Part = obj,
-                        Position = pos,
-                        Y = pos.Y,
-                        Name = obj.Name,
-                        Size = obj.Size,
-                        Key = key
-                    })
-                end
-            end
-        end
-    end
-    
-    -- Urutkan berdasarkan ketinggian (Y) dari bawah ke atas
-    table.sort(Checkpoints, function(a, b)
-        return a.Y < b.Y
-    end)
-    
-    -- Hapus duplikat yang terlalu dekat (dalam radius 5 studs)
-    local unique = {}
-    for i, cp in ipairs(Checkpoints) do
-        local isDuplicate = false
-        for j, u in ipairs(unique) do
-            if math.abs(cp.Y - u.Y) < 3 then
-                isDuplicate = true
-                break
-            end
-        end
-        if not isDuplicate then
-            table.insert(unique, cp)
-        end
-    end
-    Checkpoints = unique
-    
-    -- Update indeks saat ini berdasarkan posisi player
-    local root = GetRootPart()
-    if root then
-        local currentY = root.Position.Y
-        local nearestIndex = 1
-        local nearestDist = math.huge
-        for i, cp in ipairs(Checkpoints) do
-            local dist = math.abs(cp.Y - currentY)
-            if dist < nearestDist then
-                nearestDist = dist
-                nearestIndex = i
-            end
-        end
-        CurrentCPIndex = nearestIndex
-    end
-    
-    return #Checkpoints
-end
-
--- Fungsi untuk teleport ke checkpoint tertentu
-local function TeleportToCheckpoint(index)
-    if index < 1 or index > #Checkpoints then
-        Library:MakeNotify({
-            Title = "❌ Error",
-            Content = "Checkpoint tidak valid!",
-            Duration = 2
-        })
-        return false
-    end
-    
-    local cp = Checkpoints[index]
-    local root = GetRootPart()
-    if not root or not cp then
-        Library:MakeNotify({
-            Title = "❌ Error",
-            Content = "Tidak bisa teleport!",
-            Duration = 2
-        })
-        return false
-    end
-    
-    -- Teleport dengan aman
-    local targetCF = CFrame.new(cp.Position + Vector3.new(0, 5, 0))
-    root.CFrame = targetCF
-    root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-    root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-    
-    CurrentCPIndex = index
-    
-    Library:MakeNotify({
-        Title = "✅ Teleport!",
-        Content = "Ke checkpoint " .. index .. " (" .. cp.Name .. ")",
-        Duration = 2
-    })
-    
-    return true
-end
-
--- Fungsi auto climb (naik ke checkpoint berikutnya)
-local function AutoClimbLoop()
-    while AutoClimbActive do
-        local root = GetRootPart()
-        if not root then
-            task.wait(1)
-            continue
-        end
-        
-        -- Cari checkpoint berikutnya di atas
-        local nextIndex = nil
-        local currentY = root.Position.Y
-        
-        for i, cp in ipairs(Checkpoints) do
-            if cp.Y > currentY + 2 then
-                nextIndex = i
-                break
-            end
-        end
-        
-        if nextIndex then
-            TeleportToCheckpoint(nextIndex)
-            task.wait(ClimbDelay)
-        else
-            Library:MakeNotify({
-                Title = "🏔️ Puncak!",
-                Content = "Sudah di checkpoint tertinggi!",
-                Duration = 3
-            })
-            AutoClimbActive = false
-            break
-        end
-    end
-end
 -- Fungsi untuk mendapatkan pemain terdekat
 local function GetNearestPlayer()
     local root = GetRootPart()
@@ -1541,7 +1368,7 @@ end
 -- TABS SETUP
 -- ==========================================
 local MainTab = Window:AddTab({ Name = "Main", Icon = "home" })
-local Mount = Window:AddTab({ Name = "Mount", Icon = "player" })
+local MountTab = Window:AddTab({ Name = "Mount", Icon = "player" })
 local PlayerTab = Window:AddTab({ Name = "Player", Icon = "user" })
 local GameTab = Window:AddTab({ Name = "Game", Icon = "gamepad" })
 local ServerTab = Window:AddTab({ Name = "Server", Icon = "web" })
@@ -2169,7 +1996,7 @@ TrollSection:AddButton({
 -- ==========================================
 -- AUTOWALK TAB
 -- ==========================================
-local PrankSection = Mount:AddSection("🎭 Prank System")
+local PrankSection = MountTab:AddSection("🎭 Prank System")
 
 PrankSection:AddToggle({
     Title = "🎭 Auto Prank (Terdekat)",
@@ -2250,7 +2077,7 @@ PrankSection:AddButton({
 -- ==========================================
 
 
-local AvatarSection = Mount:AddSection("🎨 Avatar Changer")
+local AvatarSection = MountTab:AddSection("🎨 Avatar Changer")
 
 AvatarSection:AddToggle({
     Title = "🎨 Auto Avatar Changer",
@@ -2301,7 +2128,7 @@ AvatarSection:AddButton({
 -- ==========================================
 
 
-local CarrySection = Mount:AddSection("🤝 Carry System")
+local CarrySection = MountTab:AddSection("🤝 Carry System")
 
 CarrySection:AddButton({
     Title = "🤝 Carry Target (Selected)",
@@ -2353,7 +2180,7 @@ CarrySection:AddButton({
 -- 5. OBSTACLE SKIP (MELEWATI RINTANGAN)
 -- ==========================================
 
-local ObstacleSection = Mount:AddSection("🧗 Obstacle Helper")
+local ObstacleSection = MountTab:AddSection("🧗 Obstacle Helper")
 
 ObstacleSection:AddToggle({
     Title = "🧗 Auto Skip Obstacles",
@@ -2420,215 +2247,11 @@ ObstacleSection:AddButton({
 -- 8. CHECKPOINT SYSTEM - SUDAH ADA
 -- ==========================================
 
-local CheckpointSection = Mount:AddSection("⛰️ Checkpoint System (Mount Prank)")
-
-CheckpointSection:AddButton({
-    Title = "🔍 Scan Checkpoints (Mount Prank)",
-    Description = "Cari semua checkpoint di map",
-    Callback = function()
-        local count = ScanMountPrankCheckpoints()
-        if count == 0 then
-            Library:MakeNotify({
-                Title = "❌ Tidak Ada",
-                Content = "Tidak ada checkpoint ditemukan!",
-                Duration = 3
-            })
-            return
-        end
-        
-        -- Highlight checkpoint
-        ClearManualHighlights()
-        for _, cp in pairs(Checkpoints) do
-            local hl = Instance.new("Highlight")
-            hl.FillColor = Color3.fromRGB(0, 200, 255)
-            hl.FillTransparency = 0.4
-            hl.OutlineColor = Color3.new(1, 1, 1)
-            hl.Adornee = cp.Part
-            hl.Parent = cp.Part
-            table.insert(ManualHighlights, hl)
-        end
-        
-        local msg = "Ditemukan " .. count .. " checkpoint:\n"
-        for i, cp in ipairs(Checkpoints) do
-            if i <= 10 then
-                msg = msg .. i .. ". " .. cp.Name .. " (Y: " .. math.floor(cp.Y) .. ")\n"
-            end
-        end
-        if count > 10 then
-            msg = msg .. "... dan " .. (count - 10) .. " lainnya"
-        end
-        
-        Library:MakeNotify({
-            Title = "🔍 Scan Selesai",
-            Content = msg,
-            Duration = 5
-        })
-        AddLog("=== Found " .. count .. " checkpoints ===")
-    end
-})
-
-CheckpointSection:AddButton({
-    Title = "🏔️ TP ke Checkpoint Tertinggi",
-    Description = "Teleport ke puncak",
-    Callback = function()
-        if #Checkpoints == 0 then
-            Library:MakeNotify({
-                Title = "❌ Error",
-                Content = "Scan checkpoint dulu!",
-                Duration = 2
-            })
-            return
-        end
-        TeleportToCheckpoint(#Checkpoints)
-    end
-})
-
-CheckpointSection:AddButton({
-    Title = "🏔️ TP ke Checkpoint Terendah",
-    Description = "Teleport ke awal",
-    Callback = function()
-        if #Checkpoints == 0 then
-            Library:MakeNotify({
-                Title = "❌ Error",
-                Content = "Scan checkpoint dulu!",
-                Duration = 2
-            })
-            return
-        end
-        TeleportToCheckpoint(1)
-    end
-})
-
-CheckpointSection:AddButton({
-    Title = "⬆️ TP ke Checkpoint Berikutnya",
-    Description = "Naik ke checkpoint di atas",
-    Callback = function()
-        if #Checkpoints == 0 then
-            Library:MakeNotify({
-                Title = "❌ Error",
-                Content = "Scan checkpoint dulu!",
-                Duration = 2
-            })
-            return
-        end
-        
-        local nextIndex = CurrentCPIndex + 1
-        if nextIndex > #Checkpoints then
-            Library:MakeNotify({
-                Title = "🏔️ Puncak!",
-                Content = "Sudah di checkpoint tertinggi!",
-                Duration = 2
-            })
-            return
-        end
-        
-        TeleportToCheckpoint(nextIndex)
-    end
-})
-
-CheckpointSection:AddButton({
-    Title = "⬇️ TP ke Checkpoint Sebelumnya",
-    Description = "Turun ke checkpoint di bawah",
-    Callback = function()
-        if #Checkpoints == 0 then
-            Library:MakeNotify({
-                Title = "❌ Error",
-                Content = "Scan checkpoint dulu!",
-                Duration = 2
-            })
-            return
-        end
-        
-        local prevIndex = CurrentCPIndex - 1
-        if prevIndex < 1 then
-            Library:MakeNotify({
-                Title = "⬇️ Dasar!",
-                Content = "Sudah di checkpoint terendah!",
-                Duration = 2
-            })
-            return
-        end
-        
-        TeleportToCheckpoint(prevIndex)
-    end
-})
-
-CheckpointSection:AddToggle({
-    Title = "🚀 Auto Climb (Naik Otomatis)",
-    Description = "Naik ke checkpoint berikutnya dengan delay",
-    Default = false,
-    Callback = function(v)
-        AutoClimbActive = v
-        if v then
-            if #Checkpoints == 0 then
-                Library:MakeNotify({
-                    Title = "❌ Error",
-                    Content = "Scan checkpoint dulu!",
-                    Duration = 2
-                })
-                AutoClimbActive = false
-                return
-            end
-            task.spawn(AutoClimbLoop)
-            Library:MakeNotify({
-                Title = "🚀 Auto Climb ON",
-                Content = "Mulai naik ke puncak!",
-                Duration = 2
-            })
-        else
-            Library:MakeNotify({
-                Title = "🚀 Auto Climb OFF",
-                Content = "Auto climb dimatikan",
-                Duration = 2
-            })
-        end
-    end
-})
-
-CheckpointSection:AddInput({
-    Title = "⏱️ Delay Climb (detik)",
-    Description = "Jeda antar teleport (default: 1.5)",
-    Default = "1.5",
-    Callback = function(v)
-        local num = tonumber(v)
-        if num and num > 0 then
-            ClimbDelay = num
-        end
-    end
-})
-
-CheckpointSection:AddButton({
-    Title = "🔄 Reset ke Checkpoint 1",
-    Description = "Kembali ke checkpoint pertama",
-    Callback = function()
-        if #Checkpoints == 0 then
-            Library:MakeNotify({
-                Title = "❌ Error",
-                Content = "Scan checkpoint dulu!",
-                Duration = 2
-            })
-            return
-        end
-        TeleportToCheckpoint(1)
-    end
-})
-
-CheckpointSection:AddButton({
-    Title = "🧹 Clear Highlights",
-    Description = "Hapus highlight checkpoint",
-    Callback = function()
-        ClearManualHighlights()
-        Library:MakeNotify({
-            Title = "🧹 Cleared",
-            Content = "Highlight checkpoint dihapus!",
-            Duration = 2
-        })
-    end
-})
-
--- ==========================================
--- AUTO UPDATE CURRENT CP INDEX
--- ==========================================
+-- Catatan: Fitur checkpoint sudah ada di Game Tab:
+-- - Auto CP All Mountain
+-- - Scan Checkpoint
+-- - TP ke CP Berikutnya
+-- - TP ke Puncak
 
 -- ==========================================
 -- 9. SPECTATOR MODE - SUDAH ADA
@@ -2642,7 +2265,7 @@ CheckpointSection:AddButton({
 -- 10. QUICK ACCESS (SEMUA FITUR DALAM SATU TEMPAT)
 -- ==========================================
 
-local QuickAccessSection = Mount:AddSection("🎮 Mount Prank Quick Access")
+local QuickAccessSection = MountTab:AddSection("🎮 Mount Prank Quick Access")
 
 QuickAccessSection:AddButton({
     Title = "🎭 Quick Prank Target",
@@ -2764,25 +2387,6 @@ QuickAccessSection:AddButton({
         end
     end
 })
-task.spawn(function()
-    while true do
-        task.wait(2)
-        local root = GetRootPart()
-        if root and #Checkpoints > 0 then
-            local currentY = root.Position.Y
-            local nearestIndex = 1
-            local nearestDist = math.huge
-            for i, cp in ipairs(Checkpoints) do
-                local dist = math.abs(cp.Y - currentY)
-                if dist < nearestDist then
-                    nearestDist = dist
-                    nearestIndex = i
-                end
-            end
-            CurrentCPIndex = nearestIndex
-        end
-    end
-end)
 
 -- ==========================================
 -- PLAYER TAB
