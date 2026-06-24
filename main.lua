@@ -1094,6 +1094,151 @@ local function EnableMountPrankProtection()
         Duration = 3 
     })
 end
+local function DoPrank(player)
+    if not player or not player.Character then return false end
+    local root = player.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return false end
+    
+    local methods = {
+        function() root.AssemblyLinearVelocity = Vector3.new(math.random(-60,60), math.random(30,80), math.random(-60,60)) end,
+        function() root.AssemblyLinearVelocity = Vector3.new(0, 120, 0) end,
+        function() root.CFrame = root.CFrame + root.CFrame.LookVector * 25 end,
+        function() root.AssemblyLinearVelocity = Vector3.new(0, -100, 0) end,
+    }
+    local method = methods[math.random(#methods)]
+    method()
+    return true
+end
+
+local function GetNearestPlayer()
+    local myRoot = GetRootPart()
+    if not myRoot then return nil end
+    local nearest, dist = nil, math.huge
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            local r = p.Character:FindFirstChild("HumanoidRootPart")
+            if r then
+                local d = (myRoot.Position - r.Position).Magnitude
+                if d < dist then dist = d; nearest = p end
+            end
+        end
+    end
+    return nearest
+end
+
+-- Prank Loop
+local PrankActive = false
+task.spawn(function()
+    while true do
+        task.wait(2)
+        if PrankActive then
+            local target = GetNearestPlayer()
+            if target then
+                DoPrank(target)
+                Library:MakeNotify({ Title = "🎭 Prank!", Content = "Memprank " .. target.Name, Duration = 1 })
+            end
+        end
+    end
+end)
+
+-- Shield Loop
+local AutoShieldActive = false
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if AutoShieldActive then
+            FindAndUseShield()
+        end
+    end
+end)
+
+-- Carry System
+local CarryActive = false
+local CarryTarget = nil
+
+local function CarryPlayer(target)
+    if not target or not target.Character then return false end
+    CarryTarget = target
+    return true
+end
+
+local function DropPlayer()
+    CarryTarget = nil
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if CarryActive and CarryTarget and CarryTarget.Character then
+            local myRoot = GetRootPart()
+            local targetRoot = CarryTarget.Character:FindFirstChild("HumanoidRootPart")
+            if myRoot and targetRoot then
+                targetRoot.CFrame = myRoot.CFrame * CFrame.new(0, 3, 0)
+                targetRoot.AssemblyLinearVelocity = Vector3.new(0,0,0)
+            else
+                DropPlayer()
+            end
+        end
+    end
+end)
+
+-- Skip Obstacle
+local SkipActive = false
+local function SkipObstacle()
+    local root = GetRootPart()
+    if not root then return false end
+    local nearest = nil
+    local dist = math.huge
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Size.Y > 5 and obj.CanCollide and obj.Parent and not obj.Parent:FindFirstChild("Humanoid") then
+            local d = (root.Position - obj.Position).Magnitude
+            if d < 30 and d < dist then
+                dist = d
+                nearest = obj
+            end
+        end
+    end
+    if nearest then
+        root.CFrame = nearest.CFrame * CFrame.new(0, nearest.Size.Y + 5, 10)
+        return true
+    end
+    return false
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.8)
+        if SkipActive then
+            SkipObstacle()
+        end
+    end
+end)
+
+-- Avatar Changer
+local AvatarActive = false
+local AvatarIDs = {"0", "1", "2"} -- dummy, ganti dengan ID asli jika ada
+local function ChangeAvatar()
+    local id = AvatarIDs[math.random(#AvatarIDs)]
+    -- Coba trigger remote
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") and obj.Name:lower():find("avatar") then
+            pcall(function() obj:FireServer(id) end)
+            return true
+        end
+    end
+    return false
+end
+
+task.spawn(function()
+    while true do
+        task.wait(10)
+        if AvatarActive then
+            ChangeAvatar()
+        end
+    end
+end)
+
+
 local Checkpoints = {}
 local CurrentCPIndex = 0
 local AutoClimbActive = false
@@ -2127,8 +2272,237 @@ task.spawn(function()
     end
 end)
 
-print("✅ Mount Prank Checkpoint System Loaded!")
-AddLog("=== CHECKPOINT SYSTEM READY ===")
+local PrankSection = MountTab:AddSection("🎭 Prank System")
+
+PrankSection:AddToggle({
+    Title = "🎭 Auto Prank (Nearest)",
+    Description = "Prank pemain terdekat otomatis",
+    Default = false,
+    Callback = function(v)
+        PrankActive = v
+        Library:MakeNotify({ Title = "Prank", Content = v and "ON" or "OFF", Duration = 1 })
+    end
+})
+
+PrankSection:AddButton({
+    Title = "🎭 Prank All Players",
+    Description = "Prank semua pemain sekaligus",
+    Callback = function()
+        local count = 0
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and DoPrank(p) then
+                count = count + 1
+            end
+        end
+        Library:MakeNotify({ Title = "🎭 Prank All", Content = "Memprank " .. count .. " pemain", Duration = 2 })
+    end
+})
+
+PrankSection:AddButton({
+    Title = "🎯 Prank Target (Selected)",
+    Description = "Prank pemain yang dipilih di dropdown",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then
+            Library:MakeNotify({ Title = "⚠️ Error", Content = "Pilih pemain dulu!", Duration = 2 })
+            return
+        end
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and DoPrank(target) then
+            Library:MakeNotify({ Title = "🎯 Prank!", Content = "Berhasil memprank " .. target.Name, Duration = 2 })
+        else
+            Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak bisa memprank target!", Duration = 2 })
+        end
+    end
+})
+
+-- Section: Shield
+local ShieldSection = MountTab:AddSection("🛡️ Shield")
+
+ShieldSection:AddToggle({
+    Title = "🛡️ Auto Shield (Always On)",
+    Description = "Otomatis mengaktifkan shield terus-menerus",
+    Default = false,
+    Callback = function(v)
+        AutoShieldActive = v
+        Library:MakeNotify({ Title = "Auto Shield", Content = v and "ON" or "OFF", Duration = 1 })
+    end
+})
+
+ShieldSection:AddButton({
+    Title = "🛡️ Force Equip Shield",
+    Description = "Aktifkan shield instan",
+    Callback = function()
+        if FindAndUseShield() then
+            Library:MakeNotify({ Title = "✅ Shield", Content = "Shield aktif!", Duration = 2 })
+        else
+            Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak ada shield!", Duration = 2 })
+        end
+    end
+})
+
+-- Section: Avatar Changer
+local AvatarSection = MountTab:AddSection("🎨 Avatar Changer")
+
+AvatarSection:AddToggle({
+    Title = "🎨 Auto Avatar Changer",
+    Description = "Ganti avatar otomatis setiap 10 detik",
+    Default = false,
+    Callback = function(v)
+        AvatarActive = v
+        Library:MakeNotify({ Title = "Avatar", Content = v and "ON" or "OFF", Duration = 1 })
+    end
+})
+
+AvatarSection:AddButton({
+    Title = "🎨 Random Avatar",
+    Description = "Ganti avatar ke random",
+    Callback = function()
+        if ChangeAvatar() then
+            Library:MakeNotify({ Title = "✅ Avatar", Content = "Berhasil ganti avatar!", Duration = 2 })
+        else
+            Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak bisa ganti avatar!", Duration = 2 })
+        end
+    end
+})
+
+-- Section: Carry System
+local CarrySection = MountTab:AddSection("🤝 Carry System")
+
+CarrySection:AddButton({
+    Title = "🤝 Carry Target (Selected)",
+    Description = "Gendong pemain yang dipilih",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then
+            Library:MakeNotify({ Title = "⚠️ Error", Content = "Pilih pemain dulu!", Duration = 2 })
+            return
+        end
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and CarryPlayer(target) then
+            CarryActive = true
+            Library:MakeNotify({ Title = "🤝 Carry", Content = "Menggendong " .. target.Name, Duration = 2 })
+        else
+            Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak bisa menggendong!", Duration = 2 })
+        end
+    end
+})
+
+CarrySection:AddButton({
+    Title = "🤝 Drop Player",
+    Description = "Melepas gendongan",
+    Callback = function()
+        CarryActive = false
+        DropPlayer()
+        Library:MakeNotify({ Title = "🤝 Dropped", Content = "Pemain dilepas!", Duration = 2 })
+    end
+})
+
+CarrySection:AddToggle({
+    Title = "🤝 Auto Carry (Nearest)",
+    Description = "Gendong pemain terdekat otomatis",
+    Default = false,
+    Callback = function(v)
+        if v then
+            local target = GetNearestPlayer()
+            if target then
+                CarryPlayer(target)
+                CarryActive = true
+                Library:MakeNotify({ Title = "🤝 Carry", Content = "Menggendong " .. target.Name, Duration = 2 })
+            else
+                Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak ada pemain dekat!", Duration = 2 })
+                return
+            end
+        else
+            CarryActive = false
+            DropPlayer()
+            Library:MakeNotify({ Title = "🤝 Stopped", Content = "Auto carry dimatikan", Duration = 1 })
+        end
+    end
+})
+
+-- Section: Obstacle Helper
+local ObstacleSection = MountTab:AddSection("🧗 Obstacle Helper")
+
+ObstacleSection:AddToggle({
+    Title = "🧗 Auto Skip Obstacles",
+    Description = "Otomatis melewati rintangan di depan",
+    Default = false,
+    Callback = function(v)
+        SkipActive = v
+        Library:MakeNotify({ Title = "Auto Skip", Content = v and "ON" or "OFF", Duration = 1 })
+    end
+})
+
+ObstacleSection:AddButton({
+    Title = "🧗 Skip Nearest Obstacle",
+    Description = "Lompati rintangan terdekat",
+    Callback = function()
+        if SkipObstacle() then
+            Library:MakeNotify({ Title = "🧗 Skipped!", Content = "Berhasil melewati rintangan!", Duration = 1.5 })
+        else
+            Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak ada rintangan di dekatmu!", Duration = 2 })
+        end
+    end
+})
+
+-- Section: Quick Access (gabungan)
+local QuickMountSection = MountTab:AddSection("⚡ Quick Mount Actions")
+
+QuickMountSection:AddButton({
+    Title = "🎭 Quick Prank Target",
+    Description = "Prank target yang dipilih",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then
+            Library:MakeNotify({ Title = "⚠️ Error", Content = "Pilih pemain dulu!", Duration = 2 })
+            return
+        end
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and DoPrank(target) then
+            Library:MakeNotify({ Title = "🎭 PRANK!", Content = "Berhasil memprank " .. target.Name, Duration = 2 })
+        end
+    end
+})
+
+QuickMountSection:AddButton({
+    Title = "🛡️ Quick Shield",
+    Description = "Aktifkan shield instan",
+    Callback = function()
+        if FindAndUseShield() then
+            Library:MakeNotify({ Title = "🛡️ Shield", Content = "Shield aktif!", Duration = 2 })
+        else
+            Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak ada shield!", Duration = 2 })
+        end
+    end
+})
+
+QuickMountSection:AddButton({
+    Title = "🤝 Quick Carry Target",
+    Description = "Gendong target yang dipilih",
+    Callback = function()
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then
+            Library:MakeNotify({ Title = "⚠️ Error", Content = "Pilih pemain dulu!", Duration = 2 })
+            return
+        end
+        local target = Players:FindFirstChild(SelectedTarget)
+        if target and CarryPlayer(target) then
+            CarryActive = true
+            Library:MakeNotify({ Title = "🤝 Carry", Content = "Menggendong " .. target.Name, Duration = 2 })
+        else
+            Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak bisa menggendong!", Duration = 2 })
+        end
+    end
+})
+
+QuickMountSection:AddButton({
+    Title = "🧗 Quick Skip Obstacle",
+    Description = "Lewati rintangan terdekat",
+    Callback = function()
+        if SkipObstacle() then
+            Library:MakeNotify({ Title = "🧗 Skipped!", Content = "Berhasil melewati rintangan!", Duration = 1.5 })
+        else
+            Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak ada rintangan di dekatmu!", Duration = 2 })
+        end
+    end
+})
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
