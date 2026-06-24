@@ -631,186 +631,6 @@ local AutoCollectCoins = false
 local SpawnAllWeapons = false
 local CoinHackActive = false
 local CoinValuesFound = {}
-local UltimateHackActive = false
-local PurchaseSuccess = false
-
-local function UltimateHack()
-    print("🚀 Memulai Ultimate Hack...")
-    
-    -- 1. Cari semua ModuleScript yang berhubungan dengan coin
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("ModuleScript") then
-            local name = obj.Name:lower()
-            if name:find("coin") or name:find("money") or name:find("shop") or
-               name:find("purchase") or name:find("player") or name:find("data") then
-                pcall(function()
-                    -- Coba modifikasi module
-                    local module = require(obj)
-                    if type(module) == "table" then
-                        -- Cari nilai coin di module
-                        for key, value in pairs(module) do
-                            if type(value) == "number" and value > 0 then
-                                if key:lower():find("coin") or key:lower():find("money") or
-                                   key:lower():find("price") or key:lower():find("cost") then
-                                    module[key] = 0
-                                    print("✅ Module modified:", obj.Name, key, "-> 0")
-                                end
-                            end
-                        end
-                    end
-                end)
-            end
-        end
-    end
-    
-    -- 2. Cari dan modifikasi semua RemoteFunction yang mengembalikan coin
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("RemoteFunction") then
-            local name = obj.Name:lower()
-            if name:find("coin") or name:find("money") or name:find("get") or
-               name:find("check") or name:find("balance") then
-                pcall(function()
-                    local oldInvoke = obj.InvokeServer
-                    obj.InvokeServer = function(self, ...)
-                        print("💰 RemoteFunction hijacked:", obj.Name, "returning 999999999")
-                        return 999999999
-                    end
-                    print("✅ RemoteFunction hacked:", obj.Name)
-                end)
-            end
-        end
-    end
-    
-    -- 3. Cari dan modifikasi semua nilai di player data
-    local playerData = LocalPlayer:FindFirstChild("Data")
-    if playerData then
-        for _, child in pairs(playerData:GetChildren()) do
-            if child:IsA("NumberValue") or child:IsA("IntValue") then
-                pcall(function()
-                    child.Value = 999999999
-                    child:GetPropertyChangedSignal("Value"):Connect(function()
-                        if child.Value < 999999999 then
-                            child.Value = 999999999
-                        end
-                    end)
-                    print("✅ Player data protected:", child.Name)
-                end)
-            end
-        end
-    end
-    
-    -- 4. Cari dan modifikasi semua nilai di leaderstats
-    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-    if leaderstats then
-        for _, child in pairs(leaderstats:GetChildren()) do
-            if child:IsA("NumberValue") or child:IsA("IntValue") then
-                pcall(function()
-                    child.Value = 999999999
-                    child:GetPropertyChangedSignal("Value"):Connect(function()
-                        if child.Value < 999999999 then
-                            child.Value = 999999999
-                        end
-                    end)
-                    print("✅ leaderstats protected:", child.Name)
-                end)
-            end
-        end
-    end
-    
-    print("✅ Ultimate Hack selesai!")
-    return true
-end
-
--- Fungsi untuk mencoba pembelian dengan berbagai metode
-local function TryPurchaseAllMethods()
-    print("🛒 Mencoba pembelian dengan semua metode...")
-    
-    -- Metode 1: Klik semua tombol
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("TextButton") or obj:IsA("ImageButton") then
-            local name = obj.Name:lower()
-            if name:find("buy") or name:find("purchase") or name:find("beli") or
-               name:find("shop") or name:find("prank") or name:find("skill") or
-               name:find("upgrade") or name:find("shield") then
-                pcall(function()
-                    obj:Click()
-                    print("🖱️ Clicked:", obj.Name)
-                    task.wait(0.3)
-                end)
-            end
-        end
-    end
-    
-    -- Metode 2: Fire semua ProximityPrompt
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            pcall(function()
-                fireproximityprompt(obj)
-                print("🔥 Fired prompt:", obj.Name)
-                task.wait(0.3)
-            end)
-        end
-    end
-    
-    -- Metode 3: Coba semua RemoteEvent
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            local name = obj.Name:lower()
-            if name:find("purchase") or name:find("buy") or name:find("shop") or
-               name:find("prank") or name:find("skill") or name:find("upgrade") then
-                pcall(function()
-                    obj:FireServer()
-                    print("📡 Fired remote:", obj.Name)
-                    task.wait(0.3)
-                end)
-            end
-        end
-    end
-    
-    print("✅ Semua metode pembelian telah dicoba!")
-end
-
--- Fungsi untuk memonitor dan memaksa pembelian
-local function ForcePurchaseLoop()
-    while UltimateHackActive do
-        task.wait(2)
-        
-        -- 1. Pastikan nilai coin tetap max
-        local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-        if leaderstats then
-            for _, child in pairs(leaderstats:GetChildren()) do
-                if child:IsA("NumberValue") or child:IsA("IntValue") then
-                    if child.Value < 999999999 then
-                        child.Value = 999999999
-                        print("🔄 Coin value restored:", child.Name)
-                    end
-                end
-            end
-        end
-        
-        -- 2. Coba pembelian
-        TryPurchaseAllMethods()
-        
-        -- 3. Cek apakah ada notifikasi sukses
-        for _, obj in pairs(game:GetDescendants()) do
-            if obj:IsA("TextLabel") then
-                local text = obj.Text or ""
-                if text:find("berhasil") or text:find("success") or text:find("terbeli") then
-                    PurchaseSuccess = true
-                    print("✅ Pembelian BERHASIL!")
-                    AddLog("=== PEMBELIAN BERHASIL! ===")
-                end
-                if text:find("tidak cukup") or text:find("gagal") then
-                    -- Ubah pesan error
-                    pcall(function()
-                        obj.Text = "✅ Pembelian berhasil!"
-                        obj.TextColor3 = Color3.new(0, 1, 0)
-                    end)
-                end
-            end
-        end
-    end
-end
 
 local function FindAllCoinValuesAggressive()
     local allValues = {}
@@ -2496,7 +2316,6 @@ WeaponSection:AddButton({
     end
 })
 
-
 WeaponSection:AddButton({
     Title = "🔄 Spawn All Weapons (Every 5s)",
     Description = "Spawn semua senjata secara otomatis setiap 5 detik",
@@ -2525,96 +2344,6 @@ WeaponSection:AddButton({
                 Duration = 2 
             })
         end
-    end
-})
-
-WeaponSection:AddButton({
-    Title = "💎 ULTIMATE HACK (FINAL SOLUTION)",
-    Description = "Hack sistem dengan cara paling ekstrim",
-    Callback = function()
-        UltimateHackActive = true
-        
-        -- Jalankan Ultimate Hack
-        UltimateHack()
-        
-        -- Mulai force purchase loop
-        task.spawn(ForcePurchaseLoop)
-        
-        Library:MakeNotify({ 
-            Title = "💎 ULTIMATE HACK!", 
-            Content = "Semua sistem telah di-hack! Coba beli sekarang!", 
-            Duration = 5 
-        })
-        AddLog("=== ULTIMATE HACK ACTIVATED! ===")
-        
-        -- Langsung coba pembelian
-        task.wait(1)
-        TryPurchaseAllMethods()
-    end
-})
-
-WeaponSection:AddButton({
-    Title = "🛒 FORCE BUY (LANGSUNG)",
-    Description = "Coba beli item secara paksa",
-    Callback = function()
-        TryPurchaseAllMethods()
-        Library:MakeNotify({ 
-            Title = "🛒 FORCE BUY", 
-            Content = "Pembelian telah dicoba! Cek apakah berhasil!", 
-            Duration = 3 
-        })
-    end
-})
-
-WeaponSection:AddButton({
-    Title = "🔍 CEK STATUS PEMBELIAN",
-    Description = "Cek apakah pembelian berhasil",
-    Callback = function()
-        if PurchaseSuccess then
-            Library:MakeNotify({ 
-                Title = "✅ BERHASIL!", 
-                Content = "Pembelian berhasil! Item sudah didapatkan!", 
-                Duration = 3 
-            })
-        else
-            -- Cek manual
-            local found = false
-            for _, obj in pairs(game:GetDescendants()) do
-                if obj:IsA("TextLabel") then
-                    local text = obj.Text or ""
-                    if text:find("berhasil") or text:find("success") then
-                        found = true
-                        break
-                    end
-                end
-            end
-            if found then
-                PurchaseSuccess = true
-                Library:MakeNotify({ 
-                    Title = "✅ BERHASIL!", 
-                    Content = "Pembelian berhasil!", 
-                    Duration = 3 
-                })
-            else
-                Library:MakeNotify({ 
-                    Title = "❌ BELUM BERHASIL", 
-                    Content = "Coba klik 'FORCE BUY' lagi atau restart script", 
-                    Duration = 3 
-                })
-            end
-        end
-    end
-})
-
-WeaponSection:AddButton({
-    Title = "⏹️ STOP ULTIMATE HACK",
-    Callback = function()
-        UltimateHackActive = false
-        Library:MakeNotify({ 
-            Title = "⏹️ Stopped", 
-            Content = "Ultimate hack dimatikan", 
-            Duration = 2 
-        })
     end
 })
 
@@ -2805,15 +2534,7 @@ WeaponSection:AddButton({
         })
     end
 })
-task.spawn(function()
-    task.wait(12) -- Tunggu semua hack selesai
-    print("💎 Memulai Ultimate Hack Auto...")
-    UltimateHackActive = true
-    UltimateHack()
-    task.spawn(ForcePurchaseLoop)
-    print("💎 Ultimate Hack Auto selesai!")
-    AddLog("=== ULTIMATE HACK AUTO-STARTED! ===")
-end)
+
 task.spawn(function()
     task.wait(3) -- Tunggu 3 detik setelah script load
     print("🪙 Memulai Extreme Coin Hack...")
@@ -2839,8 +2560,7 @@ task.spawn(function()
     AddLog("=== AUTO HACK DONE! Modified: " .. count .. " values ===")
     
     if count > 0 then
-        ShowHackResult("💎 AUTO HACK
-! " .. count .. " nilai coin dimodifikasi!", true)
+        ShowHackResult("💎 AUTO HACK! " .. count .. " nilai coin dimodifikasi!", true)
     else
         ShowHackResult("⚠️ AUTO HACK: Tidak ada nilai coin ditemukan", false)
     end
