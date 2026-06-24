@@ -631,6 +631,169 @@ local AutoCollectCoins = false
 local SpawnAllWeapons = false
 local CoinHackActive = false
 local CoinValuesFound = {}
+local RemoteHackActive = false
+local OriginalCoinValue = 1600 -- Nilai asli coin Anda
+
+local function HackPurchaseRemotes()
+    local remotes = {}
+    
+    -- Cari semua RemoteEvent dan RemoteFunction
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            local name = obj.Name:lower()
+            -- Cari yang berhubungan dengan pembelian
+            if name:find("purchase") or name:find("buy") or name:find("shop") or 
+               name:find("coin") or name:find("money") or name:find("spend") or
+               name:find("pay") or name:find("cost") or name:find("skill") or
+               name:find("upgrade") or name:find("prank") then
+                table.insert(remotes, obj)
+                print("Found remote:", obj.Name)
+            end
+        end
+    end
+    
+    -- Modifikasi setiap remote
+    for _, remote in pairs(remotes) do
+        pcall(function()
+            if remote:IsA("RemoteEvent") then
+                -- Simpan fungsi asli
+                local oldFire = remote.FireServer
+                
+                -- Override FireServer
+                remote.FireServer = function(self, ...)
+                    local args = {...}
+                    print("Remote fired:", remote.Name, "with args:", args)
+                    
+                    -- Cek apakah argumen mengandung coin
+                    for i, arg in pairs(args) do
+                        if type(arg) == "number" and arg > 0 then
+                            -- Ubah nilai coin menjadi 0 atau kecil
+                            args[i] = 0
+                            print("Modified argument:", i, "from", arg, "to 0")
+                        end
+                        if type(arg) == "string" and arg:find("coin") then
+                            -- Ubah string yang berisi coin
+                            args[i] = arg:gsub("%d+", "0")
+                            print("Modified string:", i, "to", args[i])
+                        end
+                    end
+                    
+                    -- Panggil fungsi asli dengan argumen yang dimodifikasi
+                    return oldFire(self, unpack(args))
+                end
+                print("Hacked remote:", remote.Name)
+            end
+            
+            if remote:IsA("RemoteFunction") then
+                -- Simpan fungsi asli
+                local oldInvoke = remote.InvokeServer
+                
+                -- Override InvokeServer
+                remote.InvokeServer = function(self, ...)
+                    local args = {...}
+                    print("Remote invoked:", remote.Name, "with args:", args)
+                    
+                    -- Cek apakah argumen mengandung coin
+                    for i, arg in pairs(args) do
+                        if type(arg) == "number" and arg > 0 then
+                            args[i] = 0
+                            print("Modified argument:", i, "from", arg, "to 0")
+                        end
+                    end
+                    
+                    -- Panggil fungsi asli
+                    return oldInvoke(self, unpack(args))
+                end
+                print("Hacked remote function:", remote.Name)
+            end
+        end)
+    end
+    
+    return #remotes
+end
+
+-- Fungsi untuk memodifikasi request pembelian
+local function HookPurchaseRequests()
+    -- Cari semua fungsi yang berhubungan dengan pembelian
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
+            pcall(function()
+                -- Coba cari fungsi di script
+                local env = getfenv(obj)
+                if env then
+                    -- Cari fungsi yang mungkin digunakan untuk pembelian
+                    for name, func in pairs(env) do
+                        if type(func) == "function" then
+                            local nameLower = name:lower()
+                            if nameLower:find("purchase") or nameLower:find("buy") or 
+                               nameLower:find("spend") or nameLower:find("pay") or
+                               nameLower:find("cost") or nameLower:find("coin") then
+                                -- Override fungsi
+                                local oldFunc = func
+                                env[name] = function(...)
+                                    print("Hooked function:", name)
+                                    local args = {...}
+                                    -- Modifikasi argumen
+                                    for i, arg in pairs(args) do
+                                        if type(arg) == "number" and arg > 0 then
+                                            args[i] = 0
+                                        end
+                                    end
+                                    return oldFunc(unpack(args))
+                                end
+                                print("Hooked function:", name)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end
+
+-- Fungsi untuk memonitor dan memblokir error "Coin tidak cukup!"
+local function BlockCoinError()
+    -- Cari semua GUI yang menampilkan error
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+            local text = obj.Text or ""
+            if text:find("Coin tidak cukup") or text:find("not enough") then
+                -- Sembunyikan error
+                pcall(function()
+                    obj.Visible = false
+                    obj.Text = ""
+                    print("Blocked coin error:", obj.Name)
+                end)
+            end
+        end
+    end
+end
+
+-- Fungsi utama untuk hack pembelian
+local function HackPurchases()
+    local total = 0
+    
+    -- 1. Hack RemoteEvent
+    local count1 = HackPurchaseRemotes()
+    total = total + count1
+    
+    -- 2. Hook fungsi pembelian
+    HookPurchaseRequests()
+    
+    -- 3. Block error
+    BlockCoinError()
+    
+    -- 4. Monitor dan block error terus-menerus
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            BlockCoinError()
+        end
+    end)
+    
+    print("Purchase hack selesai! Modified:", total, "remotes")
+    return total
+end
 
 local function FindAllCoinValuesAggressive()
     local allValues = {}
@@ -2346,6 +2509,58 @@ WeaponSection:AddButton({
         end
     end
 })
+WeaponSection:AddButton({
+    Title = "🛒 HACK PURCHASE (BELI GRATIS)",
+    Description = "Hack sistem pembelian agar bisa beli apapun gratis",
+    Callback = function()
+        local count = HackPurchases()
+        Library:MakeNotify({ 
+            Title = "🛒 PURCHASE HACK!", 
+            Content = "Berhasil memodifikasi " .. count .. " remote! Coba beli sekarang!", 
+            Duration = 4 
+        })
+        AddLog("=== PURCHASE HACK ACTIVATED! Modified: " .. count .. " remotes ===")
+    end
+})
+
+WeaponSection:AddButton({
+    Title = "🔄 FORCE PURCHASE (COBA BELI)",
+    Description = "Coba beli item dengan paksa",
+    Callback = function()
+        -- Coba trigger pembelian secara paksa
+        pcall(function()
+            -- Cari semua tombol beli
+            for _, obj in pairs(game:GetDescendants()) do
+                if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+                    local name = obj.Name:lower()
+                    if name:find("buy") or name:find("purchase") or name:find("shop") or
+                       name:find("beli") or name:find("coin") then
+                        -- Simulate click
+                        obj:Click()
+                        print("Clicked button:", obj.Name)
+                        task.wait(0.5)
+                    end
+                end
+                -- Cari juga ProximityPrompt
+                if obj:IsA("ProximityPrompt") then
+                    local name = obj.Name:lower()
+                    if name:find("buy") or name:find("purchase") or name:find("shop") or
+                       name:find("beli") then
+                        fireproximityprompt(obj)
+                        print("Fired prompt:", obj.Name)
+                        task.wait(0.5)
+                    end
+                end
+            end
+        end)
+        Library:MakeNotify({ 
+            Title = "🔄 FORCE PURCHASE", 
+            Content = "Mencoba membeli item... Cek apakah berhasil!", 
+            Duration = 3 
+        })
+    end
+})
+
 
 WeaponSection:AddButton({
     Title = "📱 FIND COINS (TAMPILKAN DI LAYAR)",
@@ -2534,7 +2749,15 @@ WeaponSection:AddButton({
         })
     end
 })
+task.spawn(function()
+    task.wait(6) -- Tunggu setelah coin hack
+    print("🛒 Memulai Purchase Hack...")
+    local count = HackPurchases()
+    print("🛒 Purchase Hack selesai! Modified:", count, "remotes")
+    AddLog("=== PURCHASE HACK AUTO-STARTED! Modified: " .. count .. " remotes ===")
+end)
 
+print("🛒 Purchase hack aktif! Coba beli item sekarang!")
 task.spawn(function()
     task.wait(3) -- Tunggu 3 detik setelah script load
     print("🪙 Memulai Extreme Coin Hack...")
