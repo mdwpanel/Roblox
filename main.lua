@@ -1975,9 +1975,8 @@ PrankSection:AddToggle({
     end
 })
 
-local AvatarSection = MountTab:AddSection("🎨 Avatar Changer")
 
-AvatarSection:AddToggle({
+PrankSection:AddToggle({
     Title = "🎨 Auto Avatar Changer",
     Description = "Ganti avatar secara otomatis setiap 10 detik",
     Default = false,
@@ -2000,7 +1999,7 @@ AvatarSection:AddToggle({
     end
 })
 
-AvatarSection:AddButton({
+PrankSection:AddButton({
     Title = "🎨 Random Avatar",
     Description = "Ganti avatar ke random",
     Callback = function()
