@@ -1190,6 +1190,7 @@ local function AutoShieldLoop()
         FindAndUseShield()
     end
 end
+
 local AvatarChangerActive = false
 
 -- Daftar ID avatar (contoh, bisa ditambah)
@@ -1968,6 +1969,52 @@ PrankSection:AddToggle({
             Library:MakeNotify({
                 Title = "🛡️ Auto Shield OFF",
                 Content = "Auto shield dimatikan",
+                Duration = 2
+            })
+        end
+    end
+})
+
+local AvatarSection = MountTab:AddSection("🎨 Avatar Changer")
+
+AvatarSection:AddToggle({
+    Title = "🎨 Auto Avatar Changer",
+    Description = "Ganti avatar secara otomatis setiap 10 detik",
+    Default = false,
+    Callback = function(v)
+        AvatarChangerActive = v
+        if v then
+            task.spawn(AutoChangeAvatarLoop)
+            Library:MakeNotify({
+                Title = "🎨 Auto Avatar ON",
+                Content = "Avatar akan berganti otomatis!",
+                Duration = 2
+            })
+        else
+            Library:MakeNotify({
+                Title = "🎨 Auto Avatar OFF",
+                Content = "Auto avatar dimatikan",
+                Duration = 2
+            })
+        end
+    end
+})
+
+AvatarSection:AddButton({
+    Title = "🎨 Random Avatar",
+    Description = "Ganti avatar ke random",
+    Callback = function()
+        local id = AvatarIds[math.random(1, #AvatarIds)]
+        if ChangeAvatar(id) then
+            Library:MakeNotify({
+                Title = "🎨 Avatar Changed!",
+                Content = "Berhasil ganti avatar!",
+                Duration = 2
+            })
+        else
+            Library:MakeNotify({
+                Title = "❌ Gagal",
+                Content = "Tidak bisa mengganti avatar!",
                 Duration = 2
             })
         end
