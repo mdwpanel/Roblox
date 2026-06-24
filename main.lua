@@ -459,12 +459,231 @@ local function GetPlayerList()
     table.sort(list)
     return list
 end
+
 local MountPrankActive = false
 local MountPrankWeapons = {}
 local CoinMultiplier = 1
 local AutoCollectCoins = false
 local SpawnAllWeapons = false
 local ShieldTools = {"Shield", "Perisai", "Protector", "PrankShield"}
+local WeaponFixActive = false
+local FixedWeapons = {}
+
+local function IsToolComplete(tool)
+    if not tool or not tool:IsA("Tool") then return false end
+    
+    -- Cek apakah ada Handle
+    local handle = tool:FindFirstChild("Handle")
+    if not handle or not handle:IsA("BasePart") then
+        print("❌ Tool tidak memiliki Handle:", tool.Name)
+        return false
+    end
+    
+    -- Cek apakah ada script (opsional, beberapa tool pake LocalScript)
+    local hasScript = false
+    for _, child in pairs(tool:GetChildren()) do
+        if child:IsA("Script") or child:IsA("LocalScript") then
+            hasScript = true
+            break
+        end
+    end
+    
+    if not hasScript then
+        print("⚠️ Tool tidak memiliki script:", tool.Name)
+        -- Tetap return true karena bisa jadi tool tanpa script (misal tool fisik)
+    end
+    
+    return true
+end
+
+-- Fungsi untuk memperbaiki tool yang rusak
+local function FixTool(tool)
+    if not tool or not tool:IsA("Tool") then return false end
+    
+    -- 1. Tambahkan Handle jika tidak ada
+    if not tool:FindFirstChild("Handle") then
+        local handle = Instance.new("Part")
+        handle.Name = "Handle"
+        handle.Size = Vector3.new(1, 1, 1)
+        handle.Anchored = false
+        handle.CanCollide = true
+        handle.Parent = tool
+        print("✅ Handle ditambahkan ke:", tool.Name)
+    end
+    
+    -- 2. Pastikan Handle adalah BasePart
+    local handle = tool:FindFirstChild("Handle")
+    if handle and not handle:IsA("BasePart") then
+        handle:Destroy()
+        local newHandle = Instance.new("Part")
+        newHandle.Name = "Handle"
+        newHandle.Size = Vector3.new(1, 1, 1)
+        newHandle.Anchored = false
+        newHandle.CanCollide = true
+        newHandle.Parent = tool
+        print("✅ Handle diganti di:", tool.Name)
+    end
+    
+    -- 3. Tambahkan script dasar jika tidak ada
+    if not tool:FindFirstChildWhichIsA("Script") and not tool:FindFirstChildWhichIsA("LocalScript") then
+        local script = Instance.new("LocalScript")
+        script.Name = "WeaponScript"
+        script.Source = [[
+            local tool = script.Parent
+            local handle = tool:FindFirstChild("Handle")
+            
+            tool.Equipped:Connect(function()
+                print("🔫 Weapon equipped:", tool.Name)
+                if handle then
+                    handle.Transparency = 0
+                end
+            end)
+            
+            tool.Unequipped:Connect(function()
+                print("🔫 Weapon unequipped:", tool.Name)
+                if handle then
+                    handle.Transparency = 0.5
+                end
+            end)
+            
+            tool.Activated:Connect(function()
+                print("🔫 Weapon activated:", tool.Name)
+                -- Efek sederhana
+                if handle then
+                    local sound = Instance.new("Sound")
+                    sound.SoundId = "rbxassetid://9120264714" -- Suara tembak
+                    sound.Parent = handle
+                    sound:Play()
+                    sound.Destroy:Connect(function()
+                        sound:Destroy()
+                    end)
+                end
+            end)
+        ]]
+        script.Parent = tool
+        print("✅ Script ditambahkan ke:", tool.Name)
+    end
+    
+    return true
+end
+
+-- Fungsi untuk mendapatkan semua senjata dan memperbaikinya
+local function GetAndFixAllWeapons()
+    local weapons = FindAllWeaponsImproved()
+    local count = 0
+    local fixed = 0
+    local broken = 0
+    
+    for _, tool in pairs(weapons) do
+        if tool and tool:IsA("Tool") then
+            -- Cek apakah sudah ada di backpack
+            local exists = false
+            for _, item in pairs(LocalPlayer.Backpack:GetChildren()) do
+                if item.Name == tool.Name then
+                    exists = true
+                    break
+                end
+            end
+            
+            if not exists then
+                -- Clone tool
+                local newTool = tool:Clone()
+                
+                -- Perbaiki tool
+                if FixTool(newTool) then
+                    fixed = fixed + 1
+                else
+                    broken = broken + 1
+                end
+                
+                -- Masukkan ke backpack
+                newTool.Parent = LocalPlayer.Backpack
+                count = count + 1
+                MountPrankWeapons[newTool.Name] = newTool
+                
+                print("🔫 Weapon added:", newTool.Name)
+            end
+        end
+    end
+    
+    return count, fixed, broken
+end
+
+-- Fungsi untuk memaksa equip senjata
+local function ForceEquipWeapon(toolName)
+    if not toolName or toolName == "" then
+        -- Equip senjata pertama yang ditemukan
+        for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and tool:FindFirstChild("Handle") then
+                local hum = GetHumanoid()
+                if hum then
+                    hum:EquipTool(tool)
+                    print("✅ Equipped:", tool.Name)
+                    Library:MakeNotify({ 
+                        Title = "🔫 Equipped", 
+                        Content = tool.Name .. " telah digunakan!", 
+                        Duration = 2 
+                    })
+                    return true
+                end
+            end
+        end
+    else
+        -- Equip senjata dengan nama tertentu
+        for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and tool.Name:lower():find(toolName:lower()) then
+                local hum = GetHumanoid()
+                if hum then
+                    hum:EquipTool(tool)
+                    print("✅ Equipped:", tool.Name)
+                    Library:MakeNotify({ 
+                        Title = "🔫 Equipped", 
+                        Content = tool.Name .. " telah digunakan!", 
+                        Duration = 2 
+                    })
+                    return true
+                end
+            end
+        end
+    end
+    
+    Library:MakeNotify({ 
+        Title = "❌ Gagal", 
+        Content = "Tidak ada senjata yang bisa digunakan!", 
+        Duration = 2 
+    })
+    return false
+end
+
+-- Fungsi untuk menampilkan daftar senjata yang tersedia
+local function ListWeapons()
+    local weapons = {}
+    for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            local status = IsToolComplete(tool) and "✅" or "❌"
+            table.insert(weapons, status .. " " .. tool.Name)
+        end
+    end
+    
+    if #weapons == 0 then
+        Library:MakeNotify({ 
+            Title = "📋 Daftar Senjata", 
+            Content = "Tidak ada senjata di backpack!", 
+            Duration = 3 
+        })
+        return
+    end
+    
+    local msg = "Daftar Senjata:\n" .. table.concat(weapons, "\n")
+    Library:MakeNotify({ 
+        Title = "📋 Daftar Senjata", 
+        Content = msg, 
+        Duration = 5 
+    })
+    print(msg)
+end
+ 
+
 local function FindAllWeapons()
     local weapons = {}
     local found = {}
@@ -1794,6 +2013,72 @@ MountPrankSection:AddButton({
     end
 })
 local WeaponSection = PlayerTab:AddSection("⚔️ Weapons & Coins")
+WeaponSection:AddButton({
+    Title = "🔧 GET & FIX ALL WEAPONS",
+    Description = "Dapatkan semua senjata dan perbaiki agar bisa digunakan",
+    Callback = function()
+        local count, fixed, broken = GetAndFixAllWeapons()
+        Library:MakeNotify({ 
+            Title = "🔧 Weapons Fixed!", 
+            Content = "Total: " .. count .. " | Diperbaiki: " .. fixed .. " | Rusak: " .. broken, 
+            Duration = 4 
+        })
+        AddLog("=== WEAPON FIX: " .. count .. " weapons, " .. fixed .. " fixed, " .. broken .. " broken ===")
+    end
+})
+
+WeaponSection:AddButton({
+    Title = "🔫 FORCE EQUIP WEAPON",
+    Description = "Paksa menggunakan senjata pertama yang tersedia",
+    Callback = function()
+        ForceEquipWeapon()
+    end
+})
+
+WeaponSection:AddButton({
+    Title = "📋 LIST WEAPONS",
+    Description = "Tampilkan daftar senjata di backpack",
+    Callback = function()
+        ListWeapons()
+    end
+})
+
+WeaponSection:AddInput({
+    Title = "🔫 Equip Weapon by Name",
+    Description = "Masukkan nama senjata yang ingin digunakan",
+    Default = "",
+    Callback = function(v)
+        if v and v ~= "" then
+            ForceEquipWeapon(v)
+        end
+    end
+})
+
+WeaponSection:AddButton({
+    Title = "🔄 AUTO EQUIP (SETIAP SPAWN)",
+    Description = "Otomatis equip senjata saat karakter spawn",
+    Callback = function()
+        WeaponFixActive = not WeaponFixActive
+        if WeaponFixActive then
+            Library:MakeNotify({ 
+                Title = "🔄 Auto Equip ON", 
+                Content = "Senjata akan otomatis digunakan saat spawn", 
+                Duration = 2 
+            })
+        else
+            Library:MakeNotify({ 
+                Title = "🔄 Auto Equip OFF", 
+                Content = "Auto equip dimatikan", 
+                Duration = 2 
+            })
+        end
+    end
+})
+
+-- ==========================================
+-- AUTO EQUIP SAAT SPAWN
+-- ==========================================
+
 
 WeaponSection:AddButton({
     Title = "🔫 Get All Weapons",
@@ -1838,7 +2123,50 @@ WeaponSection:AddButton({
         end
     end
 })
+WeaponSection:AddButton({
+    Title = "🔍 DEBUG: Cek Status Senjata",
+    Description = "Tampilkan status semua senjata di console",
+    Callback = function()
+        print("=== STATUS SENJATA ===")
+        local total = 0
+        local complete = 0
+        local incomplete = 0
+        
+        for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+            if tool:IsA("Tool") then
+                total = total + 1
+                local hasHandle = tool:FindFirstChild("Handle") and true or false
+                local hasScript = false
+                for _, child in pairs(tool:GetChildren()) do
+                    if child:IsA("Script") or child:IsA("LocalScript") then
+                        hasScript = true
+                        break
+                    end
+                end
+                
+                local status = (hasHandle and hasScript) and "✅ COMPLETE" or "❌ INCOMPLETE"
+                print(tool.Name, "| Handle:", hasHandle, "| Script:", hasScript, "|", status)
+                
+                if hasHandle and hasScript then
+                    complete = complete + 1
+                else
+                    incomplete = incomplete + 1
+                end
+            end
+        end
+        
+        print("=== TOTAL:", total, "| COMPLETE:", complete, "| INCOMPLETE:", incomplete)
+        AddLog("=== WEAPON STATUS: " .. total .. " total, " .. complete .. " complete, " .. incomplete .. " incomplete ===")
+        
+        Library:MakeNotify({ 
+            Title = "🔍 Debug", 
+            Content = "Status senjata: " .. complete .. "/" .. total .. " siap digunakan", 
+            Duration = 3 
+        })
+    end
+})
 
+print("🔧 Weapon fix system loaded!")
 WeaponSection:AddButton({
     Title = "🗑️ Clear All Highlighted",
     Callback = function()
@@ -1867,6 +2195,19 @@ local function OnCharacterAdded(char)
         end
     end
 end
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(2)
+    if WeaponFixActive then
+        ForceEquipWeapon()
+    end
+    
+    -- Perbaiki senjata yang ada di backpack
+    for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            FixTool(tool)
+        end
+    end
+end)
 
 LocalPlayer.CharacterAdded:Connect(OnCharacterAdded)
 
