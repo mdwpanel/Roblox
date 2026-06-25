@@ -3,7 +3,6 @@
     Version: 1.0.9 | FULL FEATURES + TROLL MOUNTAIN + ESP IMPROVED + GOD MODE
     FIX: Removed getrawmetatable Anti-Kick (penyebab error 267)
     ADDED: God Mode (Kebal Serangan)
-    FIXES: Various function definitions and chat handler fixes
 --]]
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/mdwpanel/Roblox/refs/heads/main/main_ui_modern.lua"))()
@@ -13,7 +12,7 @@ local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
-local UserInputService = game:GetService("UserInputService")
+local UserInputService = game:GetService("UserInputService") 
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -60,7 +59,7 @@ _G.Fly = false
 _G.AirWalk = false
 _G.AutoWalkJSON = false
 _G.WalkingAntiVoid = false
-_G.AntiFreeze = false
+_G.AntiFreeze = false 
 _G.Wiggle = false
 _G.KillerWarn = false
 _G.AutoSkillMobile = false
@@ -81,18 +80,9 @@ local Config = {
     WalkSpeedDefault = 16,
     JumpPowerDefault = 50,
     GravityDefault = 196,
-    Theme = "Midnight",
+    Theme = "Midnight", 
     FlySpeed = 100,
 }
-
--- Helper: simple logger
-local Logs = {}
-local function AddLog(s)
-    pcall(function()
-        table.insert(Logs, tostring(s))
-        print(s)
-    end)
-end
 
 -- ==========================================
 -- WINDOW CREATION
@@ -108,17 +98,15 @@ local Window = Library:Window({
 function ClearESP(player)
     if ESP_Objects[player] then
         for _, obj in pairs(ESP_Objects[player]) do
-            pcall(function()
+            pcall(function() 
                 if obj.Box then obj.Box.Visible = false end
                 if obj.Line then obj.Line.Visible = false end
-                if obj.Skeleton then
+                if obj.Skeleton then 
                     for _, line in pairs(obj.Skeleton) do
                         line.Visible = false
                     end
                 end
-                if obj.Remove and type(obj.Remove) == "function" then
-                    pcall(obj.Remove)
-                end
+                obj:Remove() 
             end)
         end
         ESP_Objects[player] = nil
@@ -148,7 +136,7 @@ function UpdateESP()
             if character and character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
                 local rootPart = character.HumanoidRootPart
                 local pos, onScreen = Workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
-
+                
                 if onScreen then
                     if not ESP_Objects[player] then
                         ESP_Objects[player] = {
@@ -164,7 +152,7 @@ function UpdateESP()
                     if _G.BoxESP then
                         local sizeX = 2000 / pos.Z
                         local sizeY = 3000 / pos.Z
-
+                        
                         objects.Box.Visible = true
                         objects.Box.Color = color
                         objects.Box.Thickness = 1
@@ -184,7 +172,7 @@ function UpdateESP()
                     else
                         objects.Line.Visible = false
                     end
-
+                    
                     -- Skeleton ESP
                     if _G.SkeletonESP then
                         UpdateSkeletonESP(player, objects)
@@ -195,9 +183,9 @@ function UpdateESP()
                     end
                 else
                     if ESP_Objects[player] then
-                        if ESP_Objects[player].Box then ESP_Objects[player].Box.Visible = false end
-                        if ESP_Objects[player].Line then ESP_Objects[player].Line.Visible = false end
-                        for _, line in pairs(ESP_Objects[player].Skeleton or {}) do
+                        ESP_Objects[player].Box.Visible = false
+                        ESP_Objects[player].Line.Visible = false
+                        for _, line in pairs(ESP_Objects[player].Skeleton) do
                             line.Visible = false
                         end
                     end
@@ -212,7 +200,7 @@ end
 function UpdateSkeletonESP(player, objects)
     local character = player.Character
     if not character then return end
-
+    
     local joints = {
         {"Head", "UpperTorso"},
         {"UpperTorso", "LowerTorso"},
@@ -225,24 +213,24 @@ function UpdateSkeletonESP(player, objects)
         {"LowerTorso", "RightUpperLeg"},
         {"RightUpperLeg", "RightLowerLeg"},
     }
-
+    
     if objects.Skeleton then
         for _, line in pairs(objects.Skeleton) do
             pcall(function() line.Visible = false end)
         end
         objects.Skeleton = {}
     end
-
+    
     local color = GetESPColor(player)
-
+    
     for i, joint in pairs(joints) do
         local part1 = character:FindFirstChild(joint[1])
         local part2 = character:FindFirstChild(joint[2])
-
+        
         if part1 and part2 and part1:IsA("BasePart") and part2:IsA("BasePart") then
             local pos1, onScreen1 = Workspace.CurrentCamera:WorldToViewportPoint(part1.Position)
             local pos2, onScreen2 = Workspace.CurrentCamera:WorldToViewportPoint(part2.Position)
-
+            
             if onScreen1 and onScreen2 then
                 local line = Drawing.new("Line")
                 line.Visible = true
@@ -291,14 +279,14 @@ function CheckIfKiller(player)
     if not player then return false end
     local char = player.Character
     if not char then return false end
-
-    if player:GetAttribute("Role") and string.lower(tostring(player:GetAttribute("Role"))):find("killer") then
+    
+    if player:GetAttribute("Role") and string.lower(player:GetAttribute("Role")):find("killer") then
         return true
     end
-    if player.Team and tostring(player.Team.Name):lower():find("killer") then
+    if player.Team and string.lower(player.Team.Name):find("killer") then
         return true
     end
-    if char:FindFirstChild("Role") and char.Role:IsA("StringValue") and tostring(char.Role.Value):lower():find("killer") then
+    if char:FindFirstChild("Role") and char.Role:IsA("StringValue") and string.lower(char.Role.Value):find("killer") then
         return true
     end
     local killerParts = {"Knife", "Weapon", "Blade", "Sword"}
@@ -315,16 +303,16 @@ function GetPlayerRole(player)
     local gameGui = LocalPlayer:FindFirstChild("PlayerGui")
     if gameGui then
         for _, gui in pairs(gameGui:GetChildren()) do
-            if gui.Name and (gui.Name:lower():find("game") or gui.Name:lower():find("match")
-                or gui.Name:lower():find("survive") or gui.Name:lower():find("ingame")) then
+            if gui.Name:lower():find("game") or gui.Name:lower():find("match") 
+                or gui.Name:lower():find("survive") or gui.Name:lower():find("ingame") then
                 if gui.Enabled then inGame = true break end
             end
         end
     end
     if not inGame then
         for _, obj in pairs(Workspace:GetChildren()) do
-            if obj.Name and (obj.Name:lower():find("generator") or obj.Name:lower():find("gate")
-                or obj.Name:lower():find("survivor") or obj.Name:lower():find("killer")) then
+            if obj.Name:lower():find("generator") or obj.Name:lower():find("gate") 
+                or obj.Name:lower():find("survivor") or obj.Name:lower():find("killer") then
                 inGame = true break
             end
         end
@@ -352,7 +340,7 @@ function GetPlayerRole(player)
         if role:find("killer") then return "Killer" end
         if role:find("survivor") or role:find("survive") then return "Survivor" end
     end
-    if player.Team and player.Team.Name then
+    if player.Team then
         local teamName = player.Team.Name:lower()
         if teamName:find("killer") then return "Killer" end
         if teamName:find("survivor") or teamName:find("survive") then return "Survivor" end
@@ -370,11 +358,10 @@ end
 function IsGenerator(obj)
     if not obj then return false end
     if not (obj:IsA("Model") or obj:IsA("BasePart")) then return false end
-    if not obj.Name then return false end
     local name = obj.Name:lower()
     if name:find("player") or name:find("character") or name:find("npc") or name:find("killer") or name:find("humanoid") then return false end
     if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then return false end
-
+    
     local isGen = false
     if name:find("generator") or name:find("gen%d") or name:find("gen_%d") or name == "gen" then isGen = true end
     if name:find("fusebox") or name:find("powerbox") or name:find("lever") then isGen = true end
@@ -382,24 +369,17 @@ function IsGenerator(obj)
 end
 
 function IsGeneratorCompleted(gen)
-    if not gen then return false end
     if gen:GetAttribute("Completed") == true or gen:GetAttribute("IsCompleted") == true or gen:GetAttribute("Finished") == true then return true end
     local progress = gen:GetAttribute("Progress")
     if progress and (progress >= 1 or progress >= 100) then return true end
-    for _, child in pairs(gen:GetChildren()) do
-        if child.Name and child.Name:lower():find("progress") and (child:IsA("NumberValue") or child:IsA("IntValue")) then
-            return child.Value <= 1 and child.Value * 100 or child.Value
-        end
-    end
     return false
 end
 
 function GetGeneratorProgress(gen)
-    if not gen then return 0 end
     local progress = gen:GetAttribute("Progress")
     if progress then return progress <= 1 and progress * 100 or progress end
     for _, child in pairs(gen:GetChildren()) do
-        if child.Name and child.Name:lower():find("progress") and (child:IsA("NumberValue") or child:IsA("IntValue")) then
+        if child.Name:lower():find("progress") and (child:IsA("NumberValue") or child:IsA("IntValue")) then
             return child.Value <= 1 and child.Value * 100 or child.Value
         end
     end
@@ -407,8 +387,8 @@ function GetGeneratorProgress(gen)
 end
 
 function CreateESPForPlayer(player)
-    if not player or player == LocalPlayer or not player.Character then return end
-
+    if player == LocalPlayer or not player.Character then return end
+    
     if not ESP_Highlights[player] then
         local highlight = Instance.new("Highlight")
         highlight.Name = "MDW_Highlight"
@@ -447,14 +427,14 @@ function ToggleWallHack(enabled)
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") and obj.Material ~= Enum.Material.Neon then
             if enabled then
-                if obj:GetAttribute and not obj:GetAttribute("OriginalTransparency") then
-                    pcall(function() obj:SetAttribute("OriginalTransparency", obj.Transparency) end)
+                if not obj:GetAttribute("OriginalTransparency") then
+                    obj:SetAttribute("OriginalTransparency", obj.Transparency)
                 end
                 if obj.Transparency < 0.7 then
                     obj.Transparency = 0.3
                 end
             else
-                local orig = obj:GetAttribute and obj:GetAttribute("OriginalTransparency")
+                local orig = obj:GetAttribute("OriginalTransparency")
                 if orig then
                     obj.Transparency = orig
                 end
@@ -469,12 +449,12 @@ end
 local function GetPlayerList()
     local list = {}
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= LocalPlayer then
-            table.insert(list, p.Name)
+        if p ~= LocalPlayer then 
+            table.insert(list, p.Name) 
         end
     end
-    if #list == 0 then
-        return {"Tidak ada pemain"}
+    if #list == 0 then 
+        return {"Tidak ada pemain"} 
     end
     table.sort(list)
     return list
@@ -488,13 +468,13 @@ local SpawnAllWeapons = false
 local ShieldTools = {"Shield", "Perisai", "Protector", "PrankShield"}
 local function IsWeaponComplete(tool)
     if not tool or not tool:IsA("Tool") then return false end
-
+    
     -- Cek Handle
     local handle = tool:FindFirstChild("Handle")
     if not handle or not handle:IsA("BasePart") then
         return false
     end
-
+    
     -- Cek apakah ada script (LocalScript atau Script)
     local hasScript = false
     for _, child in pairs(tool:GetChildren()) do
@@ -503,7 +483,7 @@ local function IsWeaponComplete(tool)
             break
         end
     end
-
+    
     -- Tool tetap dianggap lengkap meski tanpa script (beberapa tool hanya fisik)
     return true
 end
@@ -511,7 +491,7 @@ end
 -- Fungsi untuk memperbaiki Tool yang rusak
 local function RepairTool(tool)
     if not tool or not tool:IsA("Tool") then return false end
-
+    
     -- 1. Tambahkan Handle jika tidak ada
     if not tool:FindFirstChild("Handle") then
         local handle = Instance.new("Part")
@@ -526,7 +506,7 @@ local function RepairTool(tool)
         handle.Parent = tool
         print("✅ Handle ditambahkan ke:", tool.Name)
     end
-
+    
     -- 2. Pastikan Handle adalah BasePart
     local handle = tool:FindFirstChild("Handle")
     if handle and not handle:IsA("BasePart") then
@@ -544,7 +524,7 @@ local function RepairTool(tool)
         handle = newHandle
         print("✅ Handle diganti di:", tool.Name)
     end
-
+    
     -- 3. Tambahkan script dasar jika tidak ada
     if not tool:FindFirstChildWhichIsA("LocalScript") and not tool:FindFirstChildWhichIsA("Script") then
         local script = Instance.new("LocalScript")
@@ -554,7 +534,7 @@ local function RepairTool(tool)
             local handle = tool:FindFirstChild("Handle")
             local player = game:GetService("Players").LocalPlayer
             local mouse = player:GetMouse()
-
+            
             -- Efek equip
             tool.Equipped:Connect(function()
                 print("🔫 " .. tool.Name .. " equipped!")
@@ -569,7 +549,7 @@ local function RepairTool(tool)
                     light.Parent = handle
                 end
             end)
-
+            
             -- Efek unequip
             tool.Unequipped:Connect(function()
                 if handle then
@@ -578,7 +558,7 @@ local function RepairTool(tool)
                     if light then light:Destroy() end
                 end
             end)
-
+            
             -- Fungsi utama saat diklik
             tool.Activated:Connect(function()
                 if handle then
@@ -592,23 +572,23 @@ local function RepairTool(tool)
                     projectile.Anchored = false
                     projectile.Position = handle.Position + (mouse.Hit.p - handle.Position).Unit * 2
                     projectile.Parent = workspace
-
+                    
                     -- Cahaya
                     local light = Instance.new("PointLight")
                     light.Range = 15
                     light.Brightness = 5
                     light.Color = Color3.new(1, 0.5, 0)
                     light.Parent = projectile
-
+                    
                     -- Gerakan
                     local velocity = Instance.new("BodyVelocity")
                     velocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
                     velocity.Velocity = (mouse.Hit.p - handle.Position).Unit * 100
                     velocity.Parent = projectile
-
+                    
                     -- Hancurkan setelah 5 detik
                     game:GetService("Debris"):AddItem(projectile, 5)
-
+                    
                     -- Suara
                     local sound = Instance.new("Sound")
                     sound.SoundId = "rbxassetid://9120264714"
@@ -621,20 +601,15 @@ local function RepairTool(tool)
         script.Parent = tool
         print("✅ Script ditambahkan ke:", tool.Name)
     end
-
+    
     return true
-end
-
--- Alias: FixTool (dipakai di CharacterAdded)
-local function FixTool(tool)
-    return RepairTool(tool)
 end
 
 -- Fungsi utama untuk mendapatkan semua senjata (FIXED)
 local function GetAllWeaponsFixed()
     local weapons = {}
     local found = {}
-
+    
     -- 1. Cari semua Tool di workspace
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Tool") then
@@ -652,9 +627,26 @@ local function GetAllWeaponsFixed()
             end
         end
     end
-
+    
     -- 2. Cari di ReplicatedStorage
-    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+        if obj:IsA("Tool") then
+            local name = obj.Name:lower()
+            if not name:find("coin") and not name:find("money") and not name:find("gold") and
+               not name:find("currency") and not name:find("point") and not name:find("checkpoint") and
+               not name:find("cash") and not name:find("score") and not name:find("token") and
+               not name:find("humanoid") and not name:find("character") and not name:find("npc") then
+                if not found[obj.Name] then
+                    table.insert(weapons, obj)
+                    found[obj.Name] = true
+                end
+            end
+        end
+    end
+    
+    -- 3. Cari di ServerStorage
+    local serverStorage = game:GetService("ServerStorage")
+    for _, obj in pairs(serverStorage:GetDescendants()) do
         if obj:IsA("Tool") then
             local name = obj.Name:lower()
             if not name:find("coin") and not name:find("money") and not name:find("gold") and
@@ -667,30 +659,12 @@ local function GetAllWeaponsFixed()
             end
         end
     end
-
-    -- 3. Cari di ServerStorage (jika tersedia)
-    local success, serverStorage = pcall(function() return game:GetService("ServerStorage") end)
-    if success and serverStorage then
-        for _, obj in pairs(serverStorage:GetDescendants()) do
-            if obj:IsA("Tool") then
-                local name = obj.Name:lower()
-                if not name:find("coin") and not name:find("money") and not name:find("gold") and
-                   not name:find("currency") and not name:find("point") and not name:find("checkpoint") and
-                   not name:find("humanoid") and not name:find("character") and not name:find("npc") then
-                    if not found[obj.Name] then
-                        table.insert(weapons, obj)
-                        found[obj.Name] = true
-                    end
-                end
-            end
-        end
-    end
-
+    
     -- 4. Clone dan perbaiki setiap senjata
     local added = 0
     local repaired = 0
     local failed = 0
-
+    
     for _, tool in pairs(weapons) do
         -- Cek apakah sudah ada di backpack
         local exists = false
@@ -700,42 +674,34 @@ local function GetAllWeaponsFixed()
                 break
             end
         end
-
+        
         if not exists then
             -- Clone tool
-            local ok, newTool = pcall(function() return tool:Clone() end)
-            if not ok or not newTool then
-                failed = failed + 1
+            local newTool = tool:Clone()
+            
+            -- Perbaiki jika perlu
+            if RepairTool(newTool) then
+                repaired = repaired + 1
             else
-                -- Perbaiki jika perlu
-                if RepairTool(newTool) then
-                    repaired = repaired + 1
-                else
-                    failed = failed + 1
-                end
-
-                -- Tambahkan ke backpack
-                newTool.Parent = LocalPlayer.Backpack
-                added = added + 1
-                MountPrankWeapons[newTool.Name] = newTool
-
-                print("🔫 Weapon added:", newTool.Name)
+                failed = failed + 1
             end
+            
+            -- Tambahkan ke backpack
+            newTool.Parent = LocalPlayer.Backpack
+            added = added + 1
+            MountPrankWeapons[newTool.Name] = newTool
+            
+            print("🔫 Weapon added:", newTool.Name)
         end
     end
-
+    
     return added, repaired, failed
-end
-
--- Wrapper agar tombol lama yang memanggil GetAndFixAllWeapons tetap berfungsi
-local function GetAndFixAllWeapons()
-    return GetAllWeaponsFixed()
 end
 
 local function FindAllWeapons()
     local weapons = {}
     local found = {}
-
+    
     -- Cari di workspace
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Tool") or (obj:IsA("Model") and obj:FindFirstChildOfClass("Tool")) then
@@ -743,7 +709,7 @@ local function FindAllWeapons()
             if tool then
                 local name = tool.Name:lower()
                 -- Filter senjata yang valid
-                if not name:find("humanoid") and not name:find("character") and
+                if not name:find("humanoid") and not name:find("character") and 
                    not name:find("npc") and not name:find("dummy") then
                     table.insert(weapons, {
                         Tool = tool,
@@ -754,7 +720,7 @@ local function FindAllWeapons()
                 end
             end
         end
-
+        
         -- Cari juga parts yang mungkin berisi senjata
         if obj:IsA("BasePart") and obj:FindFirstChild("Tool") then
             local tool = obj:FindFirstChild("Tool")
@@ -768,7 +734,7 @@ local function FindAllWeapons()
             end
         end
     end
-
+    
     -- Cari di ReplicatedStorage
     for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
         if obj:IsA("Tool") then
@@ -783,7 +749,7 @@ local function FindAllWeapons()
             end
         end
     end
-
+    
     return weapons
 end
 
@@ -791,40 +757,37 @@ end
 local function GetAllWeapons()
     local weapons = FindAllWeapons()
     local count = 0
-
+    
     for _, data in pairs(weapons) do
         local tool = data.Tool
         if tool and tool:IsA("Tool") then
-            local ok, newTool = pcall(function() return tool:Clone() end)
-            if ok and newTool then
-                newTool.Parent = LocalPlayer.Backpack
-                count = count + 1
-                MountPrankWeapons[newTool.Name] = newTool
-
-                print("Weapon added:", newTool.Name)
-            end
+            -- Clone tool ke backpack
+            local newTool = tool:Clone()
+            newTool.Parent = LocalPlayer.Backpack
+            count = count + 1
+            MountPrankWeapons[newTool.Name] = newTool
+            
+            print("Weapon added:", newTool.Name)
         end
     end
-
+    
     return count
 end
 
 -- Fungsi untuk mencari coin di map
 local function FindAllCoins()
     local coins = {}
-
+    
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
-            if obj.Name then
-                local name = obj.Name:lower()
-                if name:find("coin") or name:find("money") or name:find("gold") or
-                   name:find("currency") or name:find("point") or name:find("gem") then
-                    table.insert(coins, obj)
-                end
+            local name = obj.Name:lower()
+            if name:find("coin") or name:find("money") or name:find("gold") or 
+               name:find("currency") or name:find("point") or name:find("gem") then
+                table.insert(coins, obj)
             end
         end
     end
-
+    
     return coins
 end
 
@@ -832,45 +795,43 @@ end
 local function AutoCollectCoinsLoop()
     while AutoCollectCoins do
         task.wait(0.3)
-
+        
         local root = GetRootPart()
         if not root then continue end
-
+        
         local coins = FindAllCoins()
         local collected = 0
-
+        
         for _, coin in pairs(coins) do
             pcall(function()
                 -- Teleport ke coin untuk collect
-                local pos = coin:IsA("BasePart") and coin.Position or
+                local pos = coin:IsA("BasePart") and coin.Position or 
                            (coin:IsA("Model") and coin:GetPivot().Position)
-
+                
                 if pos then
                     local dist = (root.Position - pos).Magnitude
                     if dist < 50 then
                         -- Coba collect dengan proximity prompt jika ada
                         local prompt = coin:FindFirstChildWhichIsA("ProximityPrompt")
                         if prompt then
-                            pcall(function() fireproximityprompt(prompt) end)
+                            fireproximityprompt(prompt)
                             collected = collected + 1
                         end
-
+                        
                         -- Coba dengan touch
-                        local touchPart = coin:IsA("BasePart") and coin or
+                        local touchPart = coin:IsA("BasePart") and coin or 
                                         coin:FindFirstChildWhichIsA("BasePart")
                         if touchPart then
-                            pcall(function()
-                                firetouchinterest(root, touchPart, 0)
-                                task.wait(0.05)
-                                firetouchinterest(root, touchPart, 1)
-                            end)
+                            firetouchinterest(root, touchPart, 0)
+                            task.wait(0.05)
+                            firetouchinterest(root, touchPart, 1)
                             collected = collected + 1
                         end
                     end
                 end
             end)
         end
-
+        
         if collected > 0 then
             -- print("Collected", collected, "coins")
         end
@@ -881,37 +842,65 @@ end
 local function MakeCoinsUnlimited()
     -- Cari dan modifikasi nilai coin
     for _, obj in pairs(game:GetDescendants()) do
-        pcall(function()
-            if obj:IsA("NumberValue") or obj:IsA("IntValue") or obj:IsA("StringValue") then
-                if obj.Name then
-                    local name = obj.Name:lower()
-                    if name:find("coin") or name:find("money") or name:find("gold") or
-                       name:find("currency") or name:find("point") or name:find("gem") or
-                       name:find("cash") or name:find("score") then
-                        if obj:IsA("NumberValue") or obj:IsA("IntValue") then
-                            obj.Value = 999999999
-                            print("Modified coin value:", obj.Name, "-> 999999999")
-                        end
+        if obj:IsA("NumberValue") or obj:IsA("IntValue") or obj:IsA("StringValue") then
+            local name = obj.Name:lower()
+            if name:find("coin") or name:find("money") or name:find("gold") or 
+               name:find("currency") or name:find("point") or name:find("gem") or
+               name:find("cash") or name:find("score") then
+                pcall(function()
+                    if obj:IsA("NumberValue") or obj:IsA("IntValue") then
+                        obj.Value = 999999999
+                        print("Modified coin value:", obj.Name, "-> 999999999")
+                    end
+                end)
+            end
+        end
+        
+        -- Cari juga di player stats
+        if obj:IsA("Folder") and obj.Name:lower():find("stat") then
+            for _, child in pairs(obj:GetChildren()) do
+                if child:IsA("NumberValue") or child:IsA("IntValue") then
+                    local name = child.Name:lower()
+                    if name:find("coin") or name:find("money") or name:find("gold") or 
+                       name:find("point") then
+                        pcall(function()
+                            child.Value = 999999999
+                            print("Modified stat coin:", child.Name)
+                        end)
                     end
                 end
             end
-        end)
+        end
+        
+        -- Modifikasi leaderstats
+        if obj.Name == "leaderstats" and obj:IsA("Folder") then
+            for _, child in pairs(obj:GetChildren()) do
+                if child:IsA("NumberValue") or child:IsA("IntValue") then
+                    local name = child.Name:lower()
+                    if name:find("coin") or name:find("money") or name:find("gold") or 
+                       name:find("currency") or name:find("point") or name:find("cash") then
+                        pcall(function()
+                            child.Value = 999999999
+                            print("Modified leaderstats:", child.Name)
+                        end)
+                    end
+                end
+            end
+        end
     end
-
+    
     -- Modifikasi juga di player
     for _, child in pairs(LocalPlayer:GetChildren()) do
-        pcall(function()
-            if child:IsA("NumberValue") or child:IsA("IntValue") then
-                if child.Name then
-                    local name = child.Name:lower()
-                    if name:find("coin") or name:find("money") or name:find("gold") or
-                       name:find("currency") or name:find("point") then
-                        child.Value = 999999999
-                        print("Modified player value:", child.Name)
-                    end
-                end
+        if child:IsA("NumberValue") or child:IsA("IntValue") then
+            local name = child.Name:lower()
+            if name:find("coin") or name:find("money") or name:find("gold") or 
+               name:find("currency") or name:find("point") then
+                pcall(function()
+                    child.Value = 999999999
+                    print("Modified player value:", child.Name)
+                end)
             end
-        end)
+        end
     end
 end
 
@@ -919,7 +908,7 @@ end
 local function SpawnAllWeaponsToPlayer()
     local weapons = FindAllWeapons()
     local count = 0
-
+    
     for _, data in pairs(weapons) do
         local tool = data.Tool
         if tool and tool:IsA("Tool") then
@@ -931,47 +920,44 @@ local function SpawnAllWeaponsToPlayer()
                     break
                 end
             end
-
+            
             if not exists then
-                local ok, newTool = pcall(function() return tool:Clone() end)
-                if ok and newTool then
-                    newTool.Parent = LocalPlayer.Backpack
-                    count = count + 1
-                    MountPrankWeapons[newTool.Name] = newTool
-                end
+                local newTool = tool:Clone()
+                newTool.Parent = LocalPlayer.Backpack
+                count = count + 1
+                MountPrankWeapons[newTool.Name] = newTool
             end
         end
     end
-
+    
     return count
 end
 
 local function FindAndUseShield()
     local char = LocalPlayer.Character
     if not char then return false end
-
+    
     -- Cek di tangan
     local currentTool = char:FindFirstChildOfClass("Tool")
     if currentTool then
         for _, name in pairs(ShieldTools) do
-            if tostring(currentTool.Name):find(name) then
+            if currentTool.Name:find(name) then
                 return true -- Sudah memegang shield
             end
         end
     end
-
+    
     -- Cari di backpack
     for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
         if tool:IsA("Tool") then
             for _, name in pairs(ShieldTools) do
-                if tostring(tool.Name):find(name) then
+                if tool.Name:find(name) then
                     local hum = char:FindFirstChildOfClass("Humanoid")
                     if hum then
                         hum:EquipTool(tool)
                         task.wait(0.3)
                         -- Aktifkan shield (asumsi klik kanan atau tombol tertentu)
                         pcall(function()
-                            -- Simulasi input jika diperlukan
                             VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.ButtonR1, false, game)
                             task.wait(0.1)
                             VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.ButtonR1, false, game)
@@ -989,31 +975,27 @@ end
 local function DisablePrankScripts()
     local char = LocalPlayer.Character
     if not char then return end
-
+    
     for _, obj in pairs(char:GetDescendants()) do
         if obj:IsA("LocalScript") then
-            if obj.Name then
-                local name = obj.Name:lower()
-                if name:find("prank") or name:find("effect") or name:find("trap") or
-                   name:find("stun") or name:find("push") or name:find("launch") then
-                    pcall(function()
-                        obj.Disabled = true
-                        print("Disabled script:", obj.Name)
-                    end)
-                end
+            local name = obj.Name:lower()
+            if name:find("prank") or name:find("effect") or name:find("trap") or 
+               name:find("stun") or name:find("push") or name:find("launch") then
+                pcall(function()
+                    obj.Disabled = true
+                    print("Disabled script:", obj.Name)
+                end)
             end
         end
-
+        
         -- Nonaktifkan juga beberapa objek yang mencurigakan
         if obj:IsA("ObjectValue") or obj:IsA("StringValue") then
-            if obj.Name then
-                local name = obj.Name:lower()
-                if name:find("prank") or name:find("effect") or name:find("status") then
-                    pcall(function()
-                        obj:Destroy()
-                        print("Removed value:", obj.Name)
-                    end)
-                end
+            local name = obj.Name:lower()
+            if name:find("prank") or name:find("effect") or name:find("status") then
+                pcall(function()
+                    obj:Destroy()
+                    print("Removed value:", obj.Name)
+                end)
             end
         end
     end
@@ -1022,68 +1004,67 @@ end
 -- Fungsi untuk memonitor dan memblokir RemoteEvent prank
 local function BlockPrankRemotes()
     local blocked = 0
-
+    
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-            if obj.Name then
-                local name = obj.Name:lower()
-                if name:find("prank") or name:find("effect") or name:find("trap") or
-                   name:find("stun") or name:find("push") or name:find("launch") or
-                   name:find("damage") or name:find("kill") then
-
-                    -- Coba blokir dengan menimpa fungsi (hanya untuk RemoteEvent FireServer)
-                    pcall(function()
-                        if obj:IsA("RemoteEvent") and obj.FireServer then
-                            local oldFire = obj.FireServer
-                            obj.FireServer = function(...)
-                                if MountPrankActive then
-                                    print("Blocked prank remote:", obj.Name)
-                                    return
-                                end
-                                return oldFire(obj, ...)
+            local name = obj.Name:lower()
+            if name:find("prank") or name:find("effect") or name:find("trap") or 
+               name:find("stun") or name:find("push") or name:find("launch") or
+               name:find("damage") or name:find("kill") then
+                
+                -- Coba blokir dengan menimpa fungsi
+                pcall(function()
+                    if obj:IsA("RemoteEvent") then
+                        local oldFire = obj.FireServer
+                        obj.FireServer = function(...)
+                            if MountPrankActive then
+                                print("Blocked prank remote:", obj.Name)
+                                return
                             end
+                            return oldFire(obj, ...)
                         end
-                        blocked = blocked + 1
-                    end)
-                end
+                    end
+                    blocked = blocked + 1
+                end)
             end
         end
     end
-
+    
     print("Blocked " .. blocked .. " remote events")
 end
 
 -- Fungsi utama Mount Prank Protection
 local function EnableMountPrankProtection()
     MountPrankActive = true
-
+    
     task.spawn(function()
         while MountPrankActive do
             task.wait(0.5)
-
+            
             -- 1. Cari dan aktifkan shield
             FindAndUseShield()
-
+            
             -- 2. Nonaktifkan script prank
             DisablePrankScripts()
-
+            
             -- 3. Cegah ragdoll dan stun
             local hum = GetHumanoid()
             if hum then
                 if hum.PlatformStand then hum.PlatformStand = false end
                 if hum.Sit then hum.Sit = false end
+                -- Cegah state physics (ragdoll)
                 pcall(function()
                     if hum:GetState() == Enum.HumanoidStateType.Physics then
                         hum:ChangeState(Enum.HumanoidStateType.Running)
                     end
                 end)
             end
-
+            
             -- 4. Cegah parts terlempar
             local char = LocalPlayer.Character
             if char then
                 for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
+                    if part:IsA("BasePart") and part:IsA("Part") then
                         pcall(function()
                             if part:FindFirstChild("BodyVelocity") then
                                 part.BodyVelocity:Destroy()
@@ -1102,23 +1083,22 @@ local function EnableMountPrankProtection()
             end
         end
     end)
-
+    
     -- Block remote events sekali saja
     task.wait(2)
     BlockPrankRemotes()
-
-    Library:MakeNotify({
-        Title = "🛡️ Mount Prank Protection",
-        Content = "Perlindungan untuk Mount Prank diaktifkan!",
-        Duration = 3
+    
+    Library:MakeNotify({ 
+        Title = "🛡️ Mount Prank Protection", 
+        Content = "Perlindungan untuk Mount Prank diaktifkan!", 
+        Duration = 3 
     })
 end
-
 local function DoPrank(player)
     if not player or not player.Character then return false end
     local root = player.Character:FindFirstChild("HumanoidRootPart")
     if not root then return false end
-
+    
     local methods = {
         function() root.AssemblyLinearVelocity = Vector3.new(math.random(-60,60), math.random(30,80), math.random(-60,60)) end,
         function() root.AssemblyLinearVelocity = Vector3.new(0, 120, 0) end,
@@ -1241,7 +1221,7 @@ local function ChangeAvatar()
     local id = AvatarIDs[math.random(#AvatarIDs)]
     -- Coba trigger remote
     for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("RemoteEvent") and obj.Name and obj.Name:lower():find("avatar") then
+        if obj:IsA("RemoteEvent") and obj.Name:lower():find("avatar") then
             pcall(function() obj:FireServer(id) end)
             return true
         end
@@ -1258,6 +1238,7 @@ task.spawn(function()
     end
 end)
 
+
 local Checkpoints = {}
 local CurrentCPIndex = 0
 local AutoClimbActive = false
@@ -1267,16 +1248,16 @@ local ClimbDelay = 1.5
 local function ScanMountPrankCheckpoints()
     Checkpoints = {}
     local seen = {}
-
+    
     -- Cari semua part yang kemungkinan adalah checkpoint
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Name then
+        if obj:IsA("BasePart") then
             local name = obj.Name:lower()
             local pos = obj.Position
-
+            
             -- Filter: cek nama yang berhubungan dengan checkpoint
             local isCheckpoint = false
-
+            
             -- Nama-nama yang umum di Mount Prank
             if name:find("checkpoint") or name:find("cp") or name:find("stage") or
                name:find("point") or name:find("zone") or name:find("platform") or
@@ -1285,21 +1266,21 @@ local function ScanMountPrankCheckpoints()
                name:find("save") or name:find("safe") or name:find("check") then
                 isCheckpoint = true
             end
-
+            
             -- Cek attribute
             if obj:GetAttribute("Checkpoint") or obj:GetAttribute("CP") or
                obj:GetAttribute("Stage") or obj:GetAttribute("Point") then
                 isCheckpoint = true
             end
-
+            
             -- Cek ukuran (banyak checkpoint berbentuk platform)
-            if obj.Size and obj.Size.X > 3 and obj.Size.Z > 3 and obj.Size.Y < 2 then
+            if obj.Size.X > 3 and obj.Size.Z > 3 and obj.Size.Y < 2 then
                 if name:find("plate") or name:find("floor") or name:find("ground") or
                    name:find("base") or name:find("platform") then
                     isCheckpoint = true
                 end
             end
-
+            
             -- Jika checkpoint, simpan
             if isCheckpoint and pos.Y > -100 and pos.Y < 10000 then
                 -- Buat key unik untuk menghindari duplikat
@@ -1318,13 +1299,13 @@ local function ScanMountPrankCheckpoints()
             end
         end
     end
-
+    
     -- Urutkan berdasarkan ketinggian (Y) dari bawah ke atas
     table.sort(Checkpoints, function(a, b)
         return a.Y < b.Y
     end)
-
-    -- Hapus duplikat yang terlalu dekat (dalam radius 3 studs)
+    
+    -- Hapus duplikat yang terlalu dekat (dalam radius 5 studs)
     local unique = {}
     for i, cp in ipairs(Checkpoints) do
         local isDuplicate = false
@@ -1339,7 +1320,7 @@ local function ScanMountPrankCheckpoints()
         end
     end
     Checkpoints = unique
-
+    
     -- Update indeks saat ini berdasarkan posisi player
     local root = GetRootPart()
     if root then
@@ -1355,7 +1336,7 @@ local function ScanMountPrankCheckpoints()
         end
         CurrentCPIndex = nearestIndex
     end
-
+    
     return #Checkpoints
 end
 
@@ -1369,7 +1350,7 @@ local function TeleportToCheckpoint(index)
         })
         return false
     end
-
+    
     local cp = Checkpoints[index]
     local root = GetRootPart()
     if not root or not cp then
@@ -1380,21 +1361,21 @@ local function TeleportToCheckpoint(index)
         })
         return false
     end
-
+    
     -- Teleport dengan aman
     local targetCF = CFrame.new(cp.Position + Vector3.new(0, 5, 0))
     root.CFrame = targetCF
     root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
     root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-
+    
     CurrentCPIndex = index
-
+    
     Library:MakeNotify({
         Title = "✅ Teleport!",
         Content = "Ke checkpoint " .. index .. " (" .. cp.Name .. ")",
         Duration = 2
     })
-
+    
     return true
 end
 
@@ -1406,18 +1387,18 @@ local function AutoClimbLoop()
             task.wait(1)
             continue
         end
-
+        
         -- Cari checkpoint berikutnya di atas
         local nextIndex = nil
         local currentY = root.Position.Y
-
+        
         for i, cp in ipairs(Checkpoints) do
             if cp.Y > currentY + 2 then
                 nextIndex = i
                 break
             end
         end
-
+        
         if nextIndex then
             TeleportToCheckpoint(nextIndex)
             task.wait(ClimbDelay)
@@ -1432,6 +1413,7 @@ local function AutoClimbLoop()
         end
     end
 end
+
 
 -- ==========================================
 -- TABS SETUP
@@ -1456,24 +1438,22 @@ QuickSection:AddButton({
         tool.RequiresHandle = false
         tool.Name = "🧲 Gravity Gun"
         tool.Parent = LocalPlayer.Backpack
-
+        
         local mouse = LocalPlayer:GetMouse()
         local target = nil
         local connection = nil
-
+        
         tool.Activated:Connect(function()
             if mouse.Target and not mouse.Target.Anchored and mouse.Target:IsA("BasePart") then
                 target = mouse.Target
-
+                
                 if connection then connection:Disconnect() end
-
+                
                 connection = RunService.RenderStepped:Connect(function()
                     if target and tool.Parent == LocalPlayer.Character then
-                        local head = LocalPlayer.Character:FindFirstChild("Head")
-                        if not head then return end
-                        local holdPos = head.CFrame * CFrame.new(0, 0, -10).p
+                        local holdPos = LocalPlayer.Character.Head.CFrame * CFrame.new(0, 0, -10).p
                         local direction = (holdPos - target.Position)
-
+                        
                         target.AssemblyLinearVelocity = direction * 15
                         target.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
                     else
@@ -1482,28 +1462,28 @@ QuickSection:AddButton({
                 end)
             end
         end)
-
+        
         tool.Deactivated:Connect(function()
             if connection then connection:Disconnect() end
             target = nil
         end)
-
+        
         tool.Unequipped:Connect(function()
             if connection then connection:Disconnect() end
             target = nil
         end)
-
+        
         Library:MakeNotify({ Title = "Success", Content = "Gravity Gun telah ditambahkan ke Backpack!" })
     end
 })
 
 QuickSection:AddButton({
     Title = "Reset Character",
-    Callback = function()
+    Callback = function() 
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.Health = 0
         else
-            LocalPlayer:LoadCharacter()
+            LocalPlayer:LoadCharacter() 
         end
         Library:MakeNotify({ Title = "Success", Content = "Character reset!" })
     end
@@ -1539,20 +1519,12 @@ QuickTpSection:AddToggle({
         task.spawn(function()
             while _G.AutoInteract do
                 for _, obj in pairs(workspace:GetDescendants()) do
-                    pcall(function()
-                        if obj:IsA("ProximityPrompt") then
-                            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                            if root and obj.Parent and obj.Parent:IsA("Model") or obj.Parent:IsA("BasePart") then
-                                local pos = (obj.Parent:GetModelCFrame and obj.Parent:GetModelCFrame().p) or (obj.Parent.Position or nil)
-                                if pos then
-                                    local dist = (root.Position - pos).Magnitude
-                                    if dist < 15 then
-                                        pcall(function() fireproximityprompt(obj) end)
-                                    end
-                                end
-                            end
+                    if obj:IsA("ProximityPrompt") then
+                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - obj.Parent:GetModelCFrame().p).Magnitude
+                        if dist < 15 then
+                            pcall(function() fireproximityprompt(obj) end)
                         end
-                    end)
+                    end
                 end
                 task.wait(0.5)
             end
@@ -1574,8 +1546,8 @@ local PlayerDropdown = QuickTpSection:AddDropdown({
     Description = "Cari atau pilih nama pemain",
     Options = GetPlayerList(),
     Default = "",
-    Callback = function(v)
-        SelectedTarget = v
+    Callback = function(v) 
+        SelectedTarget = v 
     end
 })
 
@@ -1588,37 +1560,37 @@ local function UpdateDropdown()
     end
 end
 
-QuickTpSection:AddButton({
-    Title = "🔄 Refresh Daftar Pemain",
+QuickTpSection:AddButton({ 
+    Title = "🔄 Refresh Daftar Pemain", 
     Callback = function()
         UpdateDropdown()
         Library:MakeNotify({ Title = "MDW", Content = "Daftar pemain telah diperbarui!" })
-    end
+    end 
 })
 
 QuickTpSection:AddButton({
     Title = "Teleport Sekarang",
     Callback = function()
-        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then
+        if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
             Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return
+            return 
         end
-
+        
         local target = Players:FindFirstChild(SelectedTarget)
         local targetChar = (target and target.Character) or workspace:FindFirstChild(SelectedTarget)
-
+        
         if targetChar and targetChar:FindFirstChild("HumanoidRootPart") then
             local myChar = LocalPlayer.Character
             if myChar and myChar:FindFirstChild("HumanoidRootPart") then
                 local myHRP = myChar.HumanoidRootPart
                 local targetHRP = targetChar.HumanoidRootPart
-
+                
                 myHRP.Anchored = true
                 pcall(function() LocalPlayer.ReplicationFocus = targetHRP end)
                 myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
                 task.wait(0.5)
                 myHRP.Anchored = false
-
+                
                 Library:MakeNotify({ Title = "Success", Content = "Berhasil ke " .. SelectedTarget })
             end
         else
@@ -1631,13 +1603,13 @@ QuickTpSection:AddButton({
     Title = "Bring Player (Visual)",
     Description = "Membawa target ke posisi Anda (Hanya terlihat di Anda)",
     Callback = function()
-        if SelectedTarget == "" then
-            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" })
-            return
+        if SelectedTarget == "" then 
+            Library:MakeNotify({ Title = "Warning", Content = "Pilih pemain dulu!" }) 
+            return 
         end
         local target = Players:FindFirstChild(SelectedTarget)
         local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-
+        
         if target and target.Character and myRoot then
             local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
             if tRoot then
@@ -1656,22 +1628,22 @@ QuickTpSection:AddButton({
 local TrollSection = MainTab:AddSection("👿 Troll Mountain")
 
 local function GetTrollTarget()
-    if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then
+    if SelectedTarget == "" or SelectedTarget == "Tidak ada pemain" then 
         Library:MakeNotify({ Title = "⚠️ Error", Content = "Pilih pemain dulu di dropdown!", Duration = 3 })
         return nil
     end
-
+    
     local target = game.Players:FindFirstChild(SelectedTarget)
     if not target then
         Library:MakeNotify({ Title = "⚠️ Error", Content = "Pemain '" .. SelectedTarget .. "' tidak ditemukan!", Duration = 3 })
         return nil
     end
-
+    
     if not target.Character then
         Library:MakeNotify({ Title = "⚠️ Error", Content = "Pemain tidak memiliki karakter!", Duration = 3 })
         return nil
     end
-
+    
     return target
 end
 
@@ -1680,22 +1652,22 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
+        
         local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
+        if not hrp then 
             Library:MakeNotify({ Title = "❌ Error", Content = "Target tidak punya HRP!", Duration = 3 })
-            return
+            return 
         end
-
+        
         local dir = hrp.CFrame.LookVector * -100
         hrp.AssemblyLinearVelocity = Vector3.new(dir.X, 30, dir.Z)
-
+        
         local boom = Instance.new("Explosion")
         boom.Position = hrp.Position
         boom.BlastRadius = 5
         boom.BlastPressure = 0
         boom.Parent = workspace
-
+        
         Library:MakeNotify({ Title = "💨 DORONG!", Content = target.Name .. " didorong!", Duration = 3 })
     end
 })
@@ -1705,25 +1677,25 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
+        
         local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
+        if not hrp then 
             Library:MakeNotify({ Title = "❌ Error", Content = "Target tidak punya HRP!", Duration = 3 })
-            return
+            return 
         end
-
+        
         hrp.AssemblyLinearVelocity = Vector3.new(
             math.random(-150, 150),
             math.random(300, 500),
             math.random(-150, 150)
         )
-
+        
         local boom = Instance.new("Explosion")
         boom.Position = hrp.Position
         boom.BlastRadius = 5
         boom.BlastPressure = 0
         boom.Parent = workspace
-
+        
         Library:MakeNotify({ Title = "🚀 FLING!", Content = target.Name .. " terbang!", Duration = 3 })
     end
 })
@@ -1733,23 +1705,23 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
+        
         local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
+        if not hrp then 
             Library:MakeNotify({ Title = "❌ Error", Content = "Target tidak punya HRP!", Duration = 3 })
-            return
+            return 
         end
-
+        
         local pos = hrp.Position
         local parts = {}
-
+        
         local dinding = {
             {Vector3.new(12, 6, 1), Vector3.new(0, 0, 6)},
             {Vector3.new(12, 6, 1), Vector3.new(0, 0, -6)},
             {Vector3.new(1, 6, 12), Vector3.new(6, 0, 0)},
             {Vector3.new(1, 6, 12), Vector3.new(-6, 0, 0)},
         }
-
+        
         for _, data in pairs(dinding) do
             local p = Instance.new("Part")
             p.Size = data[1]
@@ -1761,7 +1733,7 @@ TrollSection:AddButton({
             p.Parent = workspace
             table.insert(parts, p)
         end
-
+        
         local roof = Instance.new("Part")
         roof.Size = Vector3.new(13, 1, 13)
         roof.Position = pos + Vector3.new(0, 6, 0)
@@ -1771,9 +1743,9 @@ TrollSection:AddButton({
         roof.Material = Enum.Material.Glass
         roof.Parent = workspace
         table.insert(parts, roof)
-
+        
         Library:MakeNotify({ Title = "🧱 KANDANG!", Content = target.Name .. " dikurung!", Duration = 3 })
-
+        
         task.wait(5)
         for _, p in pairs(parts) do
             pcall(function() p:Destroy() end)
@@ -1786,16 +1758,16 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
+        
         local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
+        if not hrp then 
             Library:MakeNotify({ Title = "❌ Error", Content = "Target tidak punya HRP!", Duration = 3 })
-            return
+            return 
         end
-
+        
         local pos = hrp.Position
         local ices = {}
-
+        
         for x = -4, 4 do
             for z = -4, 4 do
                 local ice = Instance.new("Part")
@@ -1807,15 +1779,15 @@ TrollSection:AddButton({
                 ice.Anchored = true
                 ice.CanCollide = true
                 ice.Parent = workspace
-
+                
                 ice.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0.3, 0, 0)
-
+                
                 table.insert(ices, ice)
             end
         end
-
+        
         Library:MakeNotify({ Title = "🧊 LICIN!", Content = "Lantai es di sekitar " .. target.Name, Duration = 3 })
-
+        
         task.wait(5)
         for _, ice in pairs(ices) do
             pcall(function() ice:Destroy() end)
@@ -1828,16 +1800,16 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
+        
         local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
+        if not hrp then 
             Library:MakeNotify({ Title = "❌ Error", Content = "Target tidak punya HRP!", Duration = 3 })
-            return
+            return 
         end
-
+        
         local pos = hrp.Position
         local rocks = {}
-
+        
         for i = 1, 20 do
             local rock = Instance.new("Part")
             rock.Size = Vector3.new(
@@ -1854,17 +1826,17 @@ TrollSection:AddButton({
             rock.Material = Enum.Material.Rock
             rock.Anchored = false
             rock.Parent = workspace
-
+            
             local bv = Instance.new("BodyVelocity")
             bv.Velocity = Vector3.new(0, -80, 0)
             bv.MaxForce = Vector3.new(0, math.huge, 0)
             bv.Parent = rock
-
+            
             table.insert(rocks, rock)
         end
-
+        
         Library:MakeNotify({ Title = "🪨 LONGSOR!", Content = "Batu menimpa " .. target.Name, Duration = 3 })
-
+        
         task.wait(6)
         for _, rock in pairs(rocks) do
             pcall(function() rock:Destroy() end)
@@ -1877,34 +1849,36 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
+        
         local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
+        if not hrp then 
             Library:MakeNotify({ Title = "❌ Error", Content = "Target tidak punya HRP!", Duration = 3 })
-            return
+            return 
         end
-
+        
         local lowest = nil
         local lowY = math.huge
-
+        
         for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (obj.Name and (obj.Name:lower():find("cp") or obj.Name:lower():find("checkpoint") or obj.Name:lower():find("stage") or obj.Name:lower():find("start")))) then
+            if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and 
+                (obj.Name:lower():find("cp") or obj.Name:lower():find("checkpoint") or 
+                 obj.Name:lower():find("stage") or obj.Name:lower():find("start"))) then
                 if obj.Position.Y < lowY then
                     lowY = obj.Position.Y
                     lowest = obj
                 end
             end
         end
-
+        
         if lowest then
             hrp.CFrame = lowest.CFrame * CFrame.new(0, 5, 0)
-
+            
             local boom = Instance.new("Explosion")
             boom.Position = hrp.Position
             boom.BlastRadius = 5
             boom.BlastPressure = 0
             boom.Parent = workspace
-
+            
             Library:MakeNotify({ Title = "🔄 KEMBALI!", Content = target.Name .. " ke awal!", Duration = 3 })
         else
             Library:MakeNotify({ Title = "❌ Error", Content = "Tidak ada checkpoint ditemukan!", Duration = 3 })
@@ -1917,13 +1891,13 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
+        
         local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
+        if not hrp then 
             Library:MakeNotify({ Title = "❌ Error", Content = "Target tidak punya HRP!", Duration = 3 })
-            return
+            return 
         end
-
+        
         for i = 1, 15 do
             for _, player in pairs(Players:GetPlayers()) do
                 if player ~= LocalPlayer and player.Character then
@@ -1944,7 +1918,7 @@ TrollSection:AddButton({
             end
             task.wait(0.05)
         end
-
+        
         Library:MakeNotify({ Title = "🌍 GEMPA!", Content = "Semua player terguncang!", Duration = 3 })
     end
 })
@@ -1954,33 +1928,25 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
+        
         local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
+        if not hrp then 
             Library:MakeNotify({ Title = "❌ Error", Content = "Target tidak punya HRP!", Duration = 3 })
-            return
+            return 
         end
-
+        
         local clone = target.Character:Clone()
         clone.Parent = workspace
-        if clone.PrimaryPart then
-            clone:SetPrimaryPartCFrame(hrp.CFrame + Vector3.new(10, 0, 10))
-        else
-            -- attempt to set CFrame of model parts
-            local rootPart = clone:FindFirstChild("HumanoidRootPart") or clone:FindFirstChildOfClass("BasePart")
-            if rootPart then
-                rootPart.CFrame = hrp.CFrame + Vector3.new(10, 0, 10)
-            end
-        end
+        clone:SetPrimaryPartCFrame(hrp.CFrame + Vector3.new(10, 0, 10))
         clone.Name = "Clone_of_" .. target.Name
-
+        
         local hum = clone:FindFirstChildOfClass("Humanoid")
         if hum then
-            pcall(function() hum.DisplayName = "Clone " .. target.Name end)
+            hum.DisplayName = "Clone " .. target.Name
         end
-
+        
         Library:MakeNotify({ Title = "👥 CLONE!", Content = "Clone " .. target.Name .. " muncul!", Duration = 3 })
-
+        
         task.wait(8)
         pcall(function() clone:Destroy() end)
     end
@@ -1991,15 +1957,15 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
+        
         local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
+        if not hrp then 
             Library:MakeNotify({ Title = "❌ Error", Content = "Target tidak punya HRP!", Duration = 3 })
-            return
+            return 
         end
-
+        
         local pos = hrp.Position
-
+        
         local zone = Instance.new("Part")
         zone.Shape = Enum.PartType.Ball
         zone.Size = Vector3.new(30, 30, 30)
@@ -2009,13 +1975,13 @@ TrollSection:AddButton({
         zone.Anchored = true
         zone.CanCollide = false
         zone.Parent = workspace
-
+        
         local gravity = Instance.new("BodyForce")
         gravity.Force = Vector3.new(0, -5000, 0)
         gravity.Parent = hrp
-
+        
         Library:MakeNotify({ Title = "🌍 GRAVITASI!", Content = target.Name .. " ditarik ke bawah!", Duration = 3 })
-
+        
         task.wait(4)
         pcall(function()
             zone:Destroy()
@@ -2029,24 +1995,19 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
-        if not target:FindFirstChild("PlayerGui") then
-            Library:MakeNotify({ Title = "❌ Error", Content = "Tidak dapat menambahkan GUI (PlayerGui tidak ditemukan)!", Duration = 3 })
-            return
-        end
-
+        
         local gui = Instance.new("ScreenGui")
         gui.Name = "BlindEffect"
         gui.Parent = target.PlayerGui
-
+        
         local frame = Instance.new("Frame")
         frame.Size = UDim2.new(1, 0, 1, 0)
         frame.BackgroundColor3 = Color3.new(0, 0, 0)
         frame.BackgroundTransparency = 0
         frame.Parent = gui
-
+        
         Library:MakeNotify({ Title = "👁️ BUTA!", Content = target.Name .. " dibutakan!", Duration = 3 })
-
+        
         task.wait(4)
         pcall(function() gui:Destroy() end)
     end
@@ -2057,16 +2018,16 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
+        
         local hrp = target.Character:FindFirstChild("HumanoidRootPart")
-        if not hrp then
+        if not hrp then 
             Library:MakeNotify({ Title = "❌ Error", Content = "Target tidak punya HRP!", Duration = 3 })
-            return
+            return 
         end
-
+        
         local pos = hrp.Position
         local look = hrp.CFrame.LookVector
-
+        
         local wall = Instance.new("Part")
         wall.Size = Vector3.new(20, 10, 2)
         wall.Position = pos + (look * 10) + Vector3.new(0, 3, 0)
@@ -2075,9 +2036,9 @@ TrollSection:AddButton({
         wall.Anchored = true
         wall.CanCollide = true
         wall.Parent = workspace
-
+        
         Library:MakeNotify({ Title = "🧱 TEMBOK!", Content = "Tembok di depan " .. target.Name, Duration = 3 })
-
+        
         task.wait(4)
         pcall(function() wall:Destroy() end)
     end
@@ -2101,22 +2062,19 @@ CheckpointSection:AddButton({
             })
             return
         end
-
+        
         -- Highlight checkpoint
         ClearManualHighlights()
         for _, cp in pairs(Checkpoints) do
-            local ok, hl = pcall(function()
-                local h = Instance.new("Highlight")
-                h.FillColor = Color3.fromRGB(0, 200, 255)
-                h.FillTransparency = 0.4
-                h.OutlineColor = Color3.new(1, 1, 1)
-                h.Adornee = cp.Part
-                h.Parent = cp.Part
-                return h
-            end)
-            if ok and hl then table.insert(ManualHighlights, hl) end
+            local hl = Instance.new("Highlight")
+            hl.FillColor = Color3.fromRGB(0, 200, 255)
+            hl.FillTransparency = 0.4
+            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.Adornee = cp.Part
+            hl.Parent = cp.Part
+            table.insert(ManualHighlights, hl)
         end
-
+        
         local msg = "Ditemukan " .. count .. " checkpoint:\n"
         for i, cp in ipairs(Checkpoints) do
             if i <= 10 then
@@ -2126,7 +2084,7 @@ CheckpointSection:AddButton({
         if count > 10 then
             msg = msg .. "... dan " .. (count - 10) .. " lainnya"
         end
-
+        
         Library:MakeNotify({
             Title = "🔍 Scan Selesai",
             Content = msg,
@@ -2180,7 +2138,7 @@ CheckpointSection:AddButton({
             })
             return
         end
-
+        
         local nextIndex = CurrentCPIndex + 1
         if nextIndex > #Checkpoints then
             Library:MakeNotify({
@@ -2190,7 +2148,7 @@ CheckpointSection:AddButton({
             })
             return
         end
-
+        
         TeleportToCheckpoint(nextIndex)
     end
 })
@@ -2207,7 +2165,7 @@ CheckpointSection:AddButton({
             })
             return
         end
-
+        
         local prevIndex = CurrentCPIndex - 1
         if prevIndex < 1 then
             Library:MakeNotify({
@@ -2217,7 +2175,7 @@ CheckpointSection:AddButton({
             })
             return
         end
-
+        
         TeleportToCheckpoint(prevIndex)
     end
 })
@@ -2294,7 +2252,6 @@ CheckpointSection:AddButton({
         })
     end
 })
-
 task.spawn(function()
     while true do
         task.wait(2)
@@ -2546,7 +2503,6 @@ QuickMountSection:AddButton({
         end
     end
 })
-
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
@@ -2561,10 +2517,10 @@ MountPrankSection:AddToggle({
             EnableMountPrankProtection()
         else
             MountPrankActive = false
-            Library:MakeNotify({
-                Title = "🛡️ Mount Prank Protection",
-                Content = "Perlindungan dimatikan",
-                Duration = 2
+            Library:MakeNotify({ 
+                Title = "🛡️ Mount Prank Protection", 
+                Content = "Perlindungan dimatikan", 
+                Duration = 2 
             })
         end
     end
@@ -2574,10 +2530,10 @@ MountPrankSection:AddButton({
     Title = "🔍 Scan & Block Prank Remotes",
     Callback = function()
         BlockPrankRemotes()
-        Library:MakeNotify({
-            Title = "🔍 Scan Selesai",
-            Content = "Remote event prank telah diblokir",
-            Duration = 2
+        Library:MakeNotify({ 
+            Title = "🔍 Scan Selesai", 
+            Content = "Remote event prank telah diblokir", 
+            Duration = 2 
         })
     end
 })
@@ -2586,83 +2542,30 @@ MountPrankSection:AddButton({
     Title = "🛡️ Force Equip Shield",
     Callback = function()
         if FindAndUseShield() then
-            Library:MakeNotify({
-                Title = "✅ Sukses",
-                Content = "Shield ditemukan dan diaktifkan!",
-                Duration = 2
+            Library:MakeNotify({ 
+                Title = "✅ Sukses", 
+                Content = "Shield ditemukan dan diaktifkan!", 
+                Duration = 2 
             })
         else
-            Library:MakeNotify({
-                Title = "❌ Gagal",
-                Content = "Tidak menemukan shield di inventory!",
-                Duration = 2
+            Library:MakeNotify({ 
+                Title = "❌ Gagal", 
+                Content = "Tidak menemukan shield di inventory!", 
+                Duration = 2 
             })
         end
     end
 })
 local WeaponSection = PlayerTab:AddSection("⚔️ Weapons & Coins")
-
--- Implementasi fungsi yang hilang: ForceEquipWeapon, ListWeapons
-local WeaponFixActive = false
-
-local function ForceEquipWeapon(name)
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if not hum then return false end
-
-    -- jika diberikan nama, cari di backpack
-    if name and name ~= "" then
-        for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
-            if tool:IsA("Tool") and tool.Name:lower():find(name:lower()) then
-                hum:EquipTool(tool)
-                Library:MakeNotify({ Title = "🔫 Equipped!", Content = "Menggunakan: " .. tool.Name, Duration = 2 })
-                return true
-            end
-        end
-        Library:MakeNotify({ Title = "❌ Gagal", Content = "Senjata tidak ditemukan: " .. name, Duration = 2 })
-        return false
-    end
-
-    -- jika tidak ada nama, equip tool pertama yang valid
-    for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
-        if tool:IsA("Tool") and IsWeaponComplete(tool) then
-            hum:EquipTool(tool)
-            Library:MakeNotify({ Title = "🔫 Equipped!", Content = "Menggunakan: " .. tool.Name, Duration = 2 })
-            return true
-        end
-    end
-
-    Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak ada senjata yang bisa digunakan!", Duration = 2 })
-    return false
-end
-
-local function ListWeapons()
-    local list = {}
-    for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
-        if tool:IsA("Tool") then
-            table.insert(list, tool.Name)
-        end
-    end
-    if #list == 0 then
-        Library:MakeNotify({ Title = "📋 List Weapons", Content = "Tidak ada senjata di backpack", Duration = 3 })
-    else
-        print("=== Weapons in Backpack ===")
-        for i, name in ipairs(list) do
-            print(i .. ". " .. name)
-        end
-        Library:MakeNotify({ Title = "📋 List Weapons", Content = "Lihat Console (F9) untuk daftar senjata", Duration = 3 })
-    end
-end
-
 WeaponSection:AddButton({
     Title = "🔧 GET & FIX ALL WEAPONS",
     Description = "Dapatkan semua senjata dan perbaiki agar bisa digunakan",
     Callback = function()
         local count, fixed, broken = GetAndFixAllWeapons()
-        Library:MakeNotify({
-            Title = "🔧 Weapons Fixed!",
-            Content = "Total: " .. count .. " | Diperbaiki: " .. fixed .. " | Rusak: " .. broken,
-            Duration = 4
+        Library:MakeNotify({ 
+            Title = "🔧 Weapons Fixed!", 
+            Content = "Total: " .. count .. " | Diperbaiki: " .. fixed .. " | Rusak: " .. broken, 
+            Duration = 4 
         })
         AddLog("=== WEAPON FIX: " .. count .. " weapons, " .. fixed .. " fixed, " .. broken .. " broken ===")
     end
@@ -2701,16 +2604,16 @@ WeaponSection:AddButton({
     Callback = function()
         WeaponFixActive = not WeaponFixActive
         if WeaponFixActive then
-            Library:MakeNotify({
-                Title = "🔄 Auto Equip ON",
-                Content = "Senjata akan otomatis digunakan saat spawn",
-                Duration = 2
+            Library:MakeNotify({ 
+                Title = "🔄 Auto Equip ON", 
+                Content = "Senjata akan otomatis digunakan saat spawn", 
+                Duration = 2 
             })
         else
-            Library:MakeNotify({
-                Title = "🔄 Auto Equip OFF",
-                Content = "Auto equip dimatikan",
-                Duration = 2
+            Library:MakeNotify({ 
+                Title = "🔄 Auto Equip OFF", 
+                Content = "Auto equip dimatikan", 
+                Duration = 2 
             })
         end
     end
@@ -2719,6 +2622,7 @@ WeaponSection:AddButton({
 -- ==========================================
 -- AUTO EQUIP SAAT SPAWN
 -- ==========================================
+
 
 WeaponSection:AddButton({
     Title = "🔫 GET ALL WEAPONS (FIXED)",
@@ -2768,7 +2672,7 @@ WeaponSection:AddButton({
     Description = "Spawn semua senjata secara otomatis setiap 5 detik",
     Callback = function()
         SpawnAllWeapons = not SpawnAllWeapons
-
+        
         if SpawnAllWeapons then
             task.spawn(function()
                 while SpawnAllWeapons do
@@ -2779,16 +2683,16 @@ WeaponSection:AddButton({
                     task.wait(5)
                 end
             end)
-            Library:MakeNotify({
-                Title = "🔄 Auto Spawn ON",
-                Content = "Senjata akan spawn otomatis setiap 5 detik",
-                Duration = 3
+            Library:MakeNotify({ 
+                Title = "🔄 Auto Spawn ON", 
+                Content = "Senjata akan spawn otomatis setiap 5 detik", 
+                Duration = 3 
             })
         else
-            Library:MakeNotify({
-                Title = "🔄 Auto Spawn OFF",
-                Content = "Auto spawn senjata dimatikan",
-                Duration = 2
+            Library:MakeNotify({ 
+                Title = "🔄 Auto Spawn OFF", 
+                Content = "Auto spawn senjata dimatikan", 
+                Duration = 2 
             })
         end
     end
@@ -2801,7 +2705,7 @@ WeaponSection:AddButton({
         local total = 0
         local complete = 0
         local incomplete = 0
-
+        
         for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
             if tool:IsA("Tool") then
                 total = total + 1
@@ -2813,10 +2717,10 @@ WeaponSection:AddButton({
                         break
                     end
                 end
-
+                
                 local status = (hasHandle and hasScript) and "✅ COMPLETE" or "❌ INCOMPLETE"
                 print(tool.Name, "| Handle:", hasHandle, "| Script:", hasScript, "|", status)
-
+                
                 if hasHandle and hasScript then
                     complete = complete + 1
                 else
@@ -2824,14 +2728,14 @@ WeaponSection:AddButton({
                 end
             end
         end
-
+        
         print("=== TOTAL:", total, "| COMPLETE:", complete, "| INCOMPLETE:", incomplete)
         AddLog("=== WEAPON STATUS: " .. total .. " total, " .. complete .. " complete, " .. incomplete .. " incomplete ===")
-
-        Library:MakeNotify({
-            Title = "🔍 Debug",
-            Content = "Status senjata: " .. complete .. "/" .. total .. " siap digunakan",
-            Duration = 3
+        
+        Library:MakeNotify({ 
+            Title = "🔍 Debug", 
+            Content = "Status senjata: " .. complete .. "/" .. total .. " siap digunakan", 
+            Duration = 3 
         })
     end
 })
@@ -2841,21 +2745,20 @@ WeaponSection:AddButton({
     Title = "🗑️ Clear All Highlighted",
     Callback = function()
         ClearManualHighlights()
-        Library:MakeNotify({
-            Title = "✅ Cleared",
-            Content = "Semua highlight telah dihapus",
-            Duration = 2
+        Library:MakeNotify({ 
+            Title = "✅ Cleared", 
+            Content = "Semua highlight telah dihapus", 
+            Duration = 2 
         })
     end
 })
-
 -- Event untuk mengaktifkan ulang perlindungan saat respawn
 local function OnCharacterAdded(char)
     task.wait(1)
     if MountPrankActive then
         FindAndUseShield()
         DisablePrankScripts()
-
+        
         -- Aktifkan kembali God Mode jika aktif
         if _G.GodMode then
             local hum = char:FindFirstChildOfClass("Humanoid")
@@ -2866,13 +2769,12 @@ local function OnCharacterAdded(char)
         end
     end
 end
-
 LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(0.5)
+    task.wait(2)
     if WeaponFixActive then
         ForceEquipWeapon()
     end
-
+    
     -- Perbaiki senjata yang ada di backpack
     for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
         if tool:IsA("Tool") then
@@ -2888,7 +2790,7 @@ local MoveSection = PlayerTab:AddSection("🏃 Movement Settings")
 MoveSection:AddInput({
     Title = "WalkSpeed",
     Default = 16,
-    Callback = function(v)
+    Callback = function(v) 
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
             LocalPlayer.Character.Humanoid.WalkSpeed = tonumber(v) or 16
         end
@@ -2914,7 +2816,7 @@ MoveSection:AddInput({
 MoveSection:AddToggle({
     Title = "Infinite Jump",
     Default = false,
-    Callback = function(v)
+    Callback = function(v) 
         _G.InfJump = v
         if v then
             if not _G.InfJumpCon then
@@ -2936,7 +2838,7 @@ MoveSection:AddToggle({
 MoveSection:AddToggle({
     Title = "NoClip (Tembus Tembok)",
     Default = false,
-    Callback = function(v)
+    Callback = function(v) 
         _G.NC = v
         if v then
             if not _G.NCCon then
@@ -2965,14 +2867,14 @@ MoveSection:AddToggle({
     Default = false,
     Callback = function(v)
         _G.AirWalk = v
-
+        
         if v then
             local char = LocalPlayer.Character
             local root = char and char:FindFirstChild("HumanoidRootPart")
-
+            
             if root then
-                LockedY = root.Position.Y - 3.45
-
+                LockedY = root.Position.Y - 3.45 
+                
                 AirPlatform = Instance.new("Part")
                 AirPlatform.Name = "MDW_SolidAirFloor"
                 AirPlatform.Size = Vector3.new(10, 1, 10)
@@ -2980,22 +2882,22 @@ MoveSection:AddToggle({
                 AirPlatform.Anchored = true
                 AirPlatform.CanCollide = true
                 AirPlatform.Parent = workspace
-
+                
                 task.spawn(function()
                     while _G.AirWalk do
-                        local currentRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        local currentRoot = char and char:FindFirstChild("HumanoidRootPart")
                         if currentRoot and AirPlatform then
                             AirPlatform.CFrame = CFrame.new(currentRoot.Position.X, LockedY, currentRoot.Position.Z)
                         end
                         task.wait()
                     end
                 end)
-
+                
                 Library:MakeNotify({ Title = "Air Walk", Content = "Ketinggian dikunci. Anda bisa berjalan sekarang!" })
             end
         else
             if AirPlatform then
-                pcall(function() AirPlatform:Destroy() end)
+                AirPlatform:Destroy()
                 AirPlatform = nil
             end
             Library:MakeNotify({ Title = "Air Walk", Content = "Fitur Dimatikan." })
@@ -3038,7 +2940,7 @@ AntiSection:AddToggle({
     Default = false,
     Callback = function(v)
         _G.WalkingAntiVoid = v
-
+        
         if v then
             task.spawn(function()
                 local safeHeight = 0
@@ -3048,7 +2950,7 @@ AntiSection:AddToggle({
                 while _G.WalkingAntiVoid do
                     local char = LocalPlayer.Character
                     local hrp = char and char:FindFirstChild("HumanoidRootPart")
-
+                    
                     if hrp then
                         if hrp.Position.Y < (safeHeight - 5) then
                             VoidPart.Parent = workspace
@@ -3061,7 +2963,7 @@ AntiSection:AddToggle({
                     end
                     task.wait()
                 end
-                pcall(function() VoidPart:Destroy() end)
+                VoidPart:Destroy()
             end)
             Library:MakeNotify({ Title = "Anti-Void", Content = "Mode Berjalan di Udara Aktif!" })
         else
@@ -3083,7 +2985,7 @@ AntiSection:AddToggle({
                 plate.Anchored = true
                 plate.Transparency = 1
                 plate.CanCollide = false
-
+                
                 while _G.AntiVoid do
                     task.wait(0.1)
                     local root = GetRootPart()
@@ -3096,7 +2998,7 @@ AntiSection:AddToggle({
                         end
                     end
                 end
-                pcall(function() plate:Destroy() end)
+                plate:Destroy()
             end)
         end
     end
@@ -3157,11 +3059,11 @@ AntiSection:AddToggle({
                             hum.BreakJointsOnDeath = false
                         end
                     end
-
+                    
                     -- Cegah parts terlepas
                     if char then
                         for _, part in pairs(char:GetDescendants()) do
-                            if part:IsA("BasePart") then
+                            if part:IsA("BasePart") and part:IsA("Part") then
                                 pcall(function()
                                     if part:FindFirstChild("BodyVelocity") then
                                         part.BodyVelocity:Destroy()
@@ -3227,7 +3129,7 @@ end
 
 local function StartFly()
     if not _G.Fly then return end
-
+    
     local root = GetRootPart()
     local hum = GetHumanoid()
     if not root or not hum then return end
@@ -3247,24 +3149,24 @@ local function StartFly()
     bodyGyro.CFrame = root.CFrame
     bodyGyro.Parent = root
 
-    hum.PlatformStand = true
+    hum.PlatformStand = true 
 
     _G.FlyCon = RunService.RenderStepped:Connect(function()
         if _G.Fly and root and root.Parent and hum then
             local cam = workspace.CurrentCamera
             local speed = Config.FlySpeed or 100
             local moveVec = Vector3.new(0,0,0)
-
+            
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - cam.CFrame.RightVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + cam.CFrame.RightVector end
-
+            
             if moveVec.Magnitude == 0 and hum.MoveDirection.Magnitude > 0 then
                 local joyDir = hum.MoveDirection
                 moveVec = (cam.CFrame.LookVector * -joyDir.Z) + (cam.CFrame.RightVector * joyDir.X)
             end
-
+            
             local yVel = 0
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) or hum.Jump then
                 yVel = speed
@@ -3278,7 +3180,7 @@ local function StartFly()
             else
                 bodyVel.Velocity = finalVel + Vector3.new(0, yVel, 0)
             end
-
+            
             bodyGyro.CFrame = cam.CFrame
         else
             if _G.FlyCon then _G.FlyCon:Disconnect() end
@@ -3292,10 +3194,10 @@ LocalPlayer.CharacterAdded:Connect(function()
     if _G.Fly then StartFly() end
 end)
 
-FlySection:AddInput({
-    Title = "Fly Speed",
-    Default = 100,
-    Callback = function(v) Config.FlySpeed = tonumber(v) or 100 end
+FlySection:AddInput({ 
+    Title = "Fly Speed", 
+    Default = 100, 
+    Callback = function(v) Config.FlySpeed = tonumber(v) or 100 end 
 })
 
 FlySection:AddToggle({
@@ -3322,28 +3224,28 @@ FlySection:AddToggle({
 local function ScanAllCheckpoints()
     local checkpoints = {}
     local seen = {}
-
+    
     for _, obj in pairs(workspace:GetDescendants()) do
-        if (obj:IsA("BasePart") or obj:IsA("SpawnLocation")) and obj.Name then
+        if obj:IsA("BasePart") or obj:IsA("SpawnLocation") then
             local name = obj.Name:lower()
-            local pos = (obj.Position or Vector3.new(0,0,0))
+            local pos = obj.Position
             local found = false
-
-            if name:find("humanoid") or name:find("player") or
+            
+            if name:find("humanoid") or name:find("player") or 
                name:find("character") or name:find("npc") or
                name:find("particle") or name:find("effect") or
                name:find("attachment") or name:find("handle") then
                 -- Skip
             else
-                if name:find("cp") or
-                   name:find("checkpoint") or
-                   name:find("stage") or
-                   name:find("point") or
-                   name:find("start") or
+                if name:find("cp") or 
+                   name:find("checkpoint") or 
+                   name:find("stage") or 
+                   name:find("point") or 
+                   name:find("start") or 
                    name:find("finish") or
-                   name:find("level") or
+                   name:find("level") or 
                    name:find("zone") or
-                   name:find("spawn") or
+                   name:find("spawn") or 
                    name:find("respawn") or
                    name:find("base") or
                    name:find("platform") or
@@ -3354,29 +3256,29 @@ local function ScanAllCheckpoints()
                    name:find("check") then
                     found = true
                 end
-
-                if obj:GetAttribute("Checkpoint") or
-                   obj:GetAttribute("CP") or
+                
+                if obj:GetAttribute("Checkpoint") or 
+                   obj:GetAttribute("CP") or 
                    obj:GetAttribute("Stage") or
                    obj:GetAttribute("Point") or
                    obj:GetAttribute("Level") then
                     found = true
                 end
-
+                
                 if obj:IsA("SpawnLocation") then
                     found = true
                 end
-
-                if obj:IsA("BasePart") and obj.Size and obj.Size.X > 5 and obj.Size.Z > 5 then
+                
+                if obj:IsA("BasePart") and obj.Size.X > 5 and obj.Size.Z > 5 then
                     if name:find("plate") or name:find("floor") or name:find("ground") then
                         found = true
                     end
                 end
             end
-
+            
             if found and pos.Y > -50 then
                 local num = tonumber(obj.Name:match("%d+")) or 0
-
+                
                 local key = math.floor(pos.X) .. "_" .. math.floor(pos.Y) .. "_" .. math.floor(pos.Z)
                 if not seen[key] then
                     seen[key] = true
@@ -3392,7 +3294,7 @@ local function ScanAllCheckpoints()
             end
         end
     end
-
+    
     local unique = {}
     for _, cp in pairs(checkpoints) do
         local found = false
@@ -3406,11 +3308,11 @@ local function ScanAllCheckpoints()
             table.insert(unique, cp)
         end
     end
-
+    
     table.sort(unique, function(a, b)
         return a.Y < b.Y
     end)
-
+    
     return unique
 end
 
@@ -3424,10 +3326,10 @@ FarmSection:AddButton({
     Description = "Bersihkan highlight dan efek visual",
     Callback = function()
         ClearAllHighlights()
-        Library:MakeNotify({
-            Title = "🧹 Bersih!",
-            Content = "Semua highlight dan efek telah dihapus!",
-            Duration = 3
+        Library:MakeNotify({ 
+            Title = "🧹 Bersih!", 
+            Content = "Semua highlight dan efek telah dihapus!", 
+            Duration = 3 
         })
     end
 })
@@ -3438,99 +3340,94 @@ FarmSection:AddToggle({
     Default = false,
     Callback = function(v)
         _G.AutoCPAll = v
-
+        
         if v then
             task.spawn(function()
                 local cps = ScanAllCheckpoints()
-
+                
                 if #cps == 0 then
-                    Library:MakeNotify({
-                        Title = "⚠️ Error",
-                        Content = "Tidak ada checkpoint ditemukan!",
-                        Duration = 5
+                    Library:MakeNotify({ 
+                        Title = "⚠️ Error", 
+                        Content = "Tidak ada checkpoint ditemukan!", 
+                        Duration = 5 
                     })
                     _G.AutoCPAll = false
                     return
                 end
-
-                Library:MakeNotify({
-                    Title = "🏔️ Auto CP",
-                    Content = "Ditemukan " .. #cps .. " checkpoint! Memulai...",
-                    Duration = 3
+                
+                Library:MakeNotify({ 
+                    Title = "🏔️ Auto CP", 
+                    Content = "Ditemukan " .. #cps .. " checkpoint! Memulai...", 
+                    Duration = 3 
                 })
-
+                
                 local char = LocalPlayer.Character
                 if not char then
-                    Library:MakeNotify({
-                        Title = "⚠️ Error",
-                        Content = "Karakter tidak ditemukan!",
-                        Duration = 3
+                    Library:MakeNotify({ 
+                        Title = "⚠️ Error", 
+                        Content = "Karakter tidak ditemukan!", 
+                        Duration = 3 
                     })
                     _G.AutoCPAll = false
                     return
                 end
-
+                
                 local root = char:FindFirstChild("HumanoidRootPart")
                 if not root then
-                    Library:MakeNotify({
-                        Title = "⚠️ Error",
-                        Content = "RootPart tidak ditemukan!",
-                        Duration = 3
+                    Library:MakeNotify({ 
+                        Title = "⚠️ Error", 
+                        Content = "RootPart tidak ditemukan!", 
+                        Duration = 3 
                     })
                     _G.AutoCPAll = false
                     return
                 end
-
+                
                 local currentIndex = 0
-
+                
                 for i, cp in ipairs(cps) do
-                    if not _G.AutoCPAll then
-                        Library:MakeNotify({
-                            Title = "⏹️ Berhenti",
-                            Content = "Auto CP dimatikan manual",
-                            Duration = 2
+                    if not _G.AutoCPAll then 
+                        Library:MakeNotify({ 
+                            Title = "⏹️ Berhenti", 
+                            Content = "Auto CP dimatikan manual", 
+                            Duration = 2 
                         })
-                        break
+                        break 
                     end
-
+                    
                     char = LocalPlayer.Character
                     if not char then
-                        Library:MakeNotify({
-                            Title = "💀 Mati",
-                            Content = "Karakter mati, berhenti...",
-                            Duration = 3
+                        Library:MakeNotify({ 
+                            Title = "💀 Mati", 
+                            Content = "Karakter mati, berhenti...", 
+                            Duration = 3 
                         })
                         break
                     end
-
+                    
                     root = char:FindFirstChild("HumanoidRootPart")
                     if not root then
-                        Library:MakeNotify({
-                            Title = "⚠️ Error",
-                            Content = "RootPart hilang!",
-                            Duration = 3
+                        Library:MakeNotify({ 
+                            Title = "⚠️ Error", 
+                            Content = "RootPart hilang!", 
+                            Duration = 3 
                         })
                         break
                     end
-
+                    
                     local hum = char:FindFirstChildOfClass("Humanoid")
                     if hum and hum.Health <= 0 then
-                        Library:MakeNotify({
-                            Title = "💀 Mati",
-                            Content = "Karakter mati, berhenti...",
-                            Duration = 3
+                        Library:MakeNotify({ 
+                            Title = "💀 Mati", 
+                            Content = "Karakter mati, berhenti...", 
+                            Duration = 3 
                         })
                         break
                     end
-
-                    local ok, err = pcall(function()
-                        local targetCF = cp.Part.CFrame * CFrame.new(0, 5, 0)
-                        root.CFrame = targetCF
-                    end)
-                    if not ok then
-                        AddLog("Error teleport ke CP: " .. tostring(err))
-                    end
-
+                    
+                    local targetCF = cp.Part.CFrame * CFrame.new(0, 5, 0)
+                    root.CFrame = targetCF
+                    
                     pcall(function()
                         if firetouchinterest then
                             firetouchinterest(root, cp.Part, 0)
@@ -3538,26 +3435,26 @@ FarmSection:AddToggle({
                             firetouchinterest(root, cp.Part, 1)
                         end
                     end)
-
+                    
                     currentIndex = i
-
-                    Library:MakeNotify({
-                        Title = "✅ CP " .. i .. "/" .. #cps,
-                        Content = cp.Name .. " (Y: " .. math.floor(cp.Y) .. ")",
-                        Duration = 1.5
+                    
+                    Library:MakeNotify({ 
+                        Title = "✅ CP " .. i .. "/" .. #cps, 
+                        Content = cp.Name .. " (Y: " .. math.floor(cp.Y) .. ")", 
+                        Duration = 1.5 
                     })
-
+                    
                     task.wait(_G.CPTeleportDelay or 0.8)
                 end
-
+                
                 if _G.AutoCPAll then
-                    Library:MakeNotify({
-                        Title = "🏆 Selesai!",
-                        Content = "Berhasil melewati " .. currentIndex .. " checkpoint!",
-                        Duration = 5
+                    Library:MakeNotify({ 
+                        Title = "🏆 Selesai!", 
+                        Content = "Berhasil melewati " .. currentIndex .. " checkpoint!", 
+                        Duration = 5 
                     })
                 end
-
+                
                 _G.AutoCPAll = false
             end)
         end
@@ -3578,29 +3475,25 @@ FarmSection:AddButton({
     Callback = function()
         ClearAllHighlights()
         local cps = ScanAllCheckpoints()
-
+        
         if #cps == 0 then
-            Library:MakeNotify({
-                Title = "❌ Tidak Ada",
-                Content = "Tidak ada checkpoint ditemukan!",
-                Duration = 3
+            Library:MakeNotify({ 
+                Title = "❌ Tidak Ada", 
+                Content = "Tidak ada checkpoint ditemukan!", 
+                Duration = 3 
             })
             return
         end
-
+        
         for _, cp in pairs(cps) do
-            local ok, hl = pcall(function()
-                local h = Instance.new("Highlight")
-                h.FillColor = Color3.fromRGB(0, 150, 255)
-                h.FillTransparency = 0.6
-                h.OutlineColor = Color3.new(1, 1, 1)
-                h.Adornee = cp.Part
-                h.Parent = cp.Part
-                return h
-            end)
-            if ok and hl then table.insert(ManualHighlights, hl) end
+            local hl = Instance.new("Highlight")
+            hl.FillColor = Color3.fromRGB(0, 150, 255)
+            hl.FillTransparency = 0.6
+            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.Adornee = cp.Part
+            hl.Parent = cp.Part
         end
-
+        
         local msg = "Ditemukan " .. #cps .. " checkpoint:\n"
         for i, cp in ipairs(cps) do
             if i <= 15 then
@@ -3610,11 +3503,11 @@ FarmSection:AddButton({
         if #cps > 15 then
             msg = msg .. "... dan " .. (#cps - 15) .. " lainnya"
         end
-
-        Library:MakeNotify({
-            Title = "🔍 Hasil Scan",
-            Content = msg,
-            Duration = 10
+        
+        Library:MakeNotify({ 
+            Title = "🔍 Hasil Scan", 
+            Content = msg, 
+            Duration = 10 
         })
     end
 })
@@ -3624,41 +3517,41 @@ FarmSection:AddButton({
     Callback = function()
         local cps = ScanAllCheckpoints()
         local root = GetRootPart()
-
+        
         if not root or #cps == 0 then
-            Library:MakeNotify({
-                Title = "❌ Error",
-                Content = "Tidak ada checkpoint!",
-                Duration = 2
+            Library:MakeNotify({ 
+                Title = "❌ Error", 
+                Content = "Tidak ada checkpoint!", 
+                Duration = 2 
             })
             return
         end
-
+        
         local nextCP = nil
         local currentY = root.Position.Y
-
+        
         for _, cp in pairs(cps) do
             if cp.Y > currentY + 2 then
                 nextCP = cp
                 break
             end
         end
-
+        
         if nextCP then
             root.CFrame = nextCP.Part.CFrame * CFrame.new(0, 5, 0)
-            Library:MakeNotify({
-                Title = "⬆️ Naik!",
-                Content = "Ke " .. nextCP.Name,
-                Duration = 2
+            Library:MakeNotify({ 
+                Title = "⬆️ Naik!", 
+                Content = "Ke " .. nextCP.Name, 
+                Duration = 2 
             })
         else
             local highest = cps[#cps]
             if highest then
                 root.CFrame = highest.Part.CFrame * CFrame.new(0, 5, 0)
-                Library:MakeNotify({
-                    Title = "🏔️ Puncak!",
-                    Content = "Sudah di puncak!",
-                    Duration = 2
+                Library:MakeNotify({ 
+                    Title = "🏔️ Puncak!", 
+                    Content = "Sudah di puncak!", 
+                    Duration = 2 
                 })
             end
         end
@@ -3669,25 +3562,25 @@ FarmSection:AddButton({
     Title = "🏔️ TP ke Puncak",
     Callback = function()
         local cps = ScanAllCheckpoints()
-
+        
         if #cps == 0 then
-            Library:MakeNotify({
-                Title = "❌ Error",
-                Content = "Tidak ada checkpoint ditemukan!",
-                Duration = 3
+            Library:MakeNotify({ 
+                Title = "❌ Error", 
+                Content = "Tidak ada checkpoint ditemukan!", 
+                Duration = 3 
             })
             return
         end
-
+        
         local highest = cps[#cps]
         local root = GetRootPart()
-
+        
         if root and highest then
             root.CFrame = highest.Part.CFrame * CFrame.new(0, 5, 0)
-            Library:MakeNotify({
-                Title = "🏔️ Puncak!",
-                Content = "TP ke " .. highest.Name,
-                Duration = 3
+            Library:MakeNotify({ 
+                Title = "🏔️ Puncak!", 
+                Content = "TP ke " .. highest.Name, 
+                Duration = 3 
             })
         end
     end
@@ -3697,16 +3590,16 @@ FarmSection:AddButton({
     Title = "🔢 TP ke CP Nomor Tertentu",
     Callback = function()
         local cps = ScanAllCheckpoints()
-
+        
         if #cps == 0 then
-            Library:MakeNotify({
-                Title = "❌ Error",
-                Content = "Tidak ada checkpoint!",
-                Duration = 3
+            Library:MakeNotify({ 
+                Title = "❌ Error", 
+                Content = "Tidak ada checkpoint!", 
+                Duration = 3 
             })
             return
         end
-
+        
         print("=== DAFTAR CHECKPOINT ===")
         for i, cp in ipairs(cps) do
             print(i .. ". " .. cp.Name .. " (Y: " .. math.floor(cp.Y) .. ")")
@@ -3714,36 +3607,36 @@ FarmSection:AddButton({
         print("============================")
         print("Ketik: /tp [nomor] di chat")
         print("Contoh: /tp 5")
-
-        Library:MakeNotify({
-            Title = "📝 Instruksi",
-            Content = "Cek console (F9) untuk daftar. Ketik /tp [nomor] di chat",
-            Duration = 5
+        
+        Library:MakeNotify({ 
+            Title = "📝 Instruksi", 
+            Content = "Cek console (F9) untuk daftar. Ketik /tp [nomor] di chat", 
+            Duration = 5 
         })
-
+        
         local connection
-        connection = LocalPlayer.Chatted:Connect(function(msg)
-            if type(msg) == "string" and msg:lower():sub(1, 4) == "/tp " then
+        connection = Players:GetPlayers()[1].Chatted:Connect(function(msg)
+            if msg:lower():sub(1, 4) == "/tp " then
                 local num = tonumber(msg:match("%d+"))
                 if num and num >= 1 and num <= #cps then
                     local target = cps[num]
                     local root = GetRootPart()
                     if root then
                         root.CFrame = target.Part.CFrame * CFrame.new(0, 5, 0)
-                        Library:MakeNotify({
-                            Title = "✅ TP!",
-                            Content = "Ke " .. target.Name,
-                            Duration = 3
+                        Library:MakeNotify({ 
+                            Title = "✅ TP!", 
+                            Content = "Ke " .. target.Name, 
+                            Duration = 3 
                         })
                     end
                 else
-                    Library:MakeNotify({
-                        Title = "❌ Error",
-                        Content = "Nomor tidak valid! (1-" .. #cps .. ")",
-                        Duration = 3
+                    Library:MakeNotify({ 
+                        Title = "❌ Error", 
+                        Content = "Nomor tidak valid! (1-" .. #cps .. ")", 
+                        Duration = 3 
                     })
                 end
-                if connection then connection:Disconnect() end
+                connection:Disconnect()
             end
         end)
     end
@@ -3755,8 +3648,8 @@ FarmSection:AddButton({
         local highestPart = nil
         local maxWait = -99999
         for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj.Position and obj.Position.Y > maxWait then
-                if obj.Size and obj.Size.Y > 5 and obj.CanCollide then
+            if obj:IsA("BasePart") and obj.Position.Y > maxWait then
+                if obj.Size.Y > 5 and obj.CanCollide then
                     maxWait = obj.Position.Y
                     highestPart = obj
                 end
@@ -3775,22 +3668,22 @@ FarmSection:AddButton({
 -- ==========================================
 local VisualSection = GameTab:AddSection("🎭 Visual ESP & Tracking")
 
-VisualSection:AddToggle({
-    Title = "ESP Box (2D)",
-    Default = false,
-    Callback = function(v) _G.BoxESP = v end
+VisualSection:AddToggle({ 
+    Title = "ESP Box (2D)", 
+    Default = false, 
+    Callback = function(v) _G.BoxESP = v end 
 })
 
-VisualSection:AddToggle({
-    Title = "ESP Tracers (Line)",
-    Default = false,
-    Callback = function(v) _G.LineESP = v end
+VisualSection:AddToggle({ 
+    Title = "ESP Tracers (Line)", 
+    Default = false, 
+    Callback = function(v) _G.LineESP = v end 
 })
 
-VisualSection:AddToggle({
-    Title = "ESP Skeleton (Bone)",
-    Default = false,
-    Callback = function(v) _G.SkeletonESP = v end
+VisualSection:AddToggle({ 
+    Title = "ESP Skeleton (Bone)", 
+    Default = false, 
+    Callback = function(v) _G.SkeletonESP = v end 
 })
 
 VisualSection:AddToggle({
@@ -3814,7 +3707,7 @@ RunService.RenderStepped:Connect(function()
             if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
                 local head = player.Character.Head
                 local humanoid = player.Character:FindFirstChild("Humanoid")
-
+                
                 if humanoid and humanoid.Health > 0 then
                     local gui = head:FindFirstChild("HealthBarGui")
                     if not gui then
@@ -3823,30 +3716,29 @@ RunService.RenderStepped:Connect(function()
                         bgui.Size = UDim2.new(3, 0, 0.4, 0)
                         bgui.StudsOffset = Vector3.new(0, 2, 0)
                         bgui.AlwaysOnTop = true
-
+                        
                         local back = Instance.new("Frame", bgui)
                         back.Name = "Background"
                         back.Size = UDim2.new(1, 0, 1, 0)
                         back.BackgroundColor3 = Color3.new(0, 0, 0)
                         back.BorderSizePixel = 0
-
+                        
                         local bar = Instance.new("Frame", back)
-                        bar.Name = "Bar"
+                        bar.Name = "Frame"
                         bar.BorderSizePixel = 0
                         bar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
                         bar.BackgroundColor3 = Color3.new(0, 1, 0)
                     else
-                        local back = gui:FindFirstChild("Background")
-                        local bar = back and back:FindFirstChild("Bar")
+                        local frame = gui:FindFirstChild("Frame")
+                        local bar = frame and frame:FindFirstChild("Bar")
                         if bar then
                             local healthPercent = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
                             bar.Size = UDim2.new(healthPercent, 0, 1, 0)
-                            bar.BackgroundColor3 = Color3.fromHSV(healthPercent * 0.3, 1, 1)
+                            bar.BackgroundColor3 = Color3.fromHSV(healthPercent * 0.3, 1, 1) 
                         end
                     end
-                else
-                    local gui = head:FindFirstChild("HealthBarGui")
-                    if gui then pcall(function() gui:Destroy() end) end
+                elseif gui then
+                    pcall(function() gui:Destroy() end)
                 end
             end
         end
@@ -3862,7 +3754,7 @@ VisualSection:AddToggle({
             for _, p in pairs(Players:GetPlayers()) do
                 if p ~= LocalPlayer and p.Character then CreateESPForPlayer(p) end
             end
-
+            
             if not _G.PlayerAddedConn then
                 _G.PlayerAddedConn = Players.PlayerAdded:Connect(function(p)
                     p.CharacterAdded:Connect(function()
@@ -3870,15 +3762,15 @@ VisualSection:AddToggle({
                     end)
                 end)
             end
-
+            
             Library:MakeNotify({ Title = "Enabled", Content = "ESP Highlight Aktif!" })
         else
-            if _G.PlayerAddedConn then
-                _G.PlayerAddedConn:Disconnect()
-                _G.PlayerAddedConn = nil
+            if _G.PlayerAddedConn then 
+                _G.PlayerAddedConn:Disconnect() 
+                _G.PlayerAddedConn = nil 
             end
-            for _, p in pairs(Players:GetPlayers()) do
-                RemoveESPForPlayer(p)
+            for _, p in pairs(Players:GetPlayers()) do 
+                RemoveESPForPlayer(p) 
             end
             Library:MakeNotify({ Title = "Disabled", Content = "ESP Highlight Mati" })
         end
@@ -3934,19 +3826,15 @@ VisualSection:AddToggle({
         for _, obj in pairs(Workspace:GetDescendants()) do
             if obj:IsA("BasePart") and not obj.Parent:FindFirstChild("Humanoid") then
                 if v then
-                    if obj.SetAttribute and not obj:GetAttribute("OldTrans") then obj:SetAttribute("OldTrans", obj.Transparency) end
+                    if not obj:GetAttribute("OldTrans") then obj:SetAttribute("OldTrans", obj.Transparency) end
                     obj.Transparency = 0.5
                 else
-                    if obj.SetAttribute then
-                        obj.Transparency = obj:GetAttribute("OldTrans") or 0
-                    else
-                        obj.Transparency = 0
-                    end
+                    obj.Transparency = obj:GetAttribute("OldTrans") or 0
                 end
             end
         end
     end
-})
+}) 
 
 VisualSection:AddToggle({
     Title = "Fullbright",
@@ -3977,9 +3865,9 @@ VisualSection:AddToggle({
     Default = false,
     Callback = function(v)
         ToggleWallHack(v)
-        Library:MakeNotify({
-            Title = v and "WallHack ON" or "WallHack OFF",
-            Content = v and "Dinding menjadi transparan!" or "Dinding kembali normal"
+        Library:MakeNotify({ 
+            Title = v and "WallHack ON" or "WallHack OFF", 
+            Content = v and "Dinding menjadi transparan!" or "Dinding kembali normal" 
         })
     end
 })
@@ -4026,10 +3914,10 @@ UtilSection:AddToggle({
                             local myChar = LocalPlayer.Character
                             if char and myChar and char:FindFirstChild("HumanoidRootPart") and myChar:FindFirstChild("HumanoidRootPart") then
                                 local dist = (myChar.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
-
+                                
                                 if dist < 50 and tick() - lastWarn > 3 then
-                                    Library:MakeNotify({
-                                        Title = "⚠️ PERINGATAN!",
+                                    Library:MakeNotify({ 
+                                        Title = "⚠️ PERINGATAN!", 
                                         Content = "Killer: " .. p.Name .. " Mendekat! (" .. math.floor(dist) .. " studs)"
                                     })
                                     lastWarn = tick()
@@ -4056,7 +3944,7 @@ UtilSection:AddToggle({
                         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.A, false, game)
                         task.wait(0.05)
                         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.A, false, game)
-
+                        
                         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.D, false, game)
                         task.wait(0.05)
                         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.D, false, game)
@@ -4080,24 +3968,21 @@ FindSection:AddButton({
     Title = "Find Generators",
     Callback = function()
         ClearManualHighlights()
-        local generators = FindAllGenerators()
+        local generators = FindAllGenerators() 
         local count = 0
-
+        
         for _, gen in pairs(generators) do
-            local ok, hl = pcall(function()
-                local h = Instance.new("Highlight")
-                if IsGeneratorCompleted(gen) then
-                    h.FillColor = Color3.fromRGB(0, 255, 100)
-                else
-                    h.FillColor = Color3.fromRGB(255, 170, 0)
-                end
-                h.OutlineColor = Color3.new(1, 1, 1)
-                h.FillTransparency = 0.5
-                h.Adornee = gen
-                h.Parent = gen
-                return h
-            end)
-            if ok and hl then table.insert(ManualHighlights, hl) end
+            local hl = Instance.new("Highlight")
+            if IsGeneratorCompleted(gen) then
+                hl.FillColor = Color3.fromRGB(0, 255, 100)
+            else
+                hl.FillColor = Color3.fromRGB(255, 170, 0)
+            end
+            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.FillTransparency = 0.5
+            hl.Adornee = gen
+            hl.Parent = gen
+            table.insert(ManualHighlights, hl)
             count = count + 1
         end
         Library:MakeNotify({ Title = "Found", Content = count .. " generators highlighted!" })
@@ -4110,17 +3995,14 @@ FindSection:AddButton({
         ClearManualHighlights()
         local count = 0
         for _, o in pairs(workspace:GetDescendants()) do
-            if o.Name and (o.Name:lower():find("gate") or o.Name:lower():find("exit")) and (o:IsA("Model") or o:IsA("BasePart")) then
-                local ok, hl = pcall(function()
-                    local h = Instance.new("Highlight")
-                    h.FillColor = Color3.fromRGB(0, 255, 255)
-                    h.OutlineColor = Color3.new(1, 1, 1)
-                    h.FillTransparency = 0.5
-                    h.Adornee = o
-                    h.Parent = o
-                    return h
-                end)
-                if ok and hl then table.insert(ManualHighlights, hl) end
+            if (o.Name:lower():find("gate") or o.Name:lower():find("exit")) and (o:IsA("Model") or o:IsA("BasePart")) then
+                local hl = Instance.new("Highlight")
+                hl.FillColor = Color3.fromRGB(0, 255, 255)
+                hl.OutlineColor = Color3.new(1, 1, 1)
+                hl.FillTransparency = 0.5
+                hl.Adornee = o
+                hl.Parent = o
+                table.insert(ManualHighlights, hl)
                 count = count + 1
             end
         end
@@ -4151,8 +4033,8 @@ FindSection:AddButton({
                 counted[obj.Name] = (counted[obj.Name] or 0) + 1
             end
         end
-        for name, count in pairs(counted) do
-            print(name .. " [x" .. count .. "]")
+        for name, count in pairs(counted) do 
+            print(name .. " [x" .. count .. "]") 
         end
         Library:MakeNotify({ Title = "Debug", Content = "Daftar objek dikirim ke Console (F9)" })
     end
@@ -4163,10 +4045,10 @@ FindSection:AddButton({
 -- ==========================================
 local ChatSection = ServerTab:AddSection("🌟 Chat Otomatis")
 
-ChatSection:AddInput({
-    Title = "Custom Chat Message",
-    Default = "IKY!",
-    Callback = function(v) msg = v end
+ChatSection:AddInput({ 
+    Title = "Custom Chat Message", 
+    Default = "IKY!", 
+    Callback = function(v) msg = v end 
 })
 
 ChatSection:AddToggle({
@@ -4177,16 +4059,11 @@ ChatSection:AddToggle({
         if v then
             task.spawn(function()
                 while _G.Spam do
-                    pcall(function()
-                        local defaultChat = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-                        if defaultChat and defaultChat:FindFirstChild("SayMessageRequest") then
-                            defaultChat.SayMessageRequest:FireServer(msg, "All")
-                        end
+                    pcall(function() 
+                        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All") 
                     end)
-                    pcall(function()
-                        if TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral then
-                            TextChatService.TextChannels.RBXGeneral:SendAsync(msg)
-                        end
+                    pcall(function() 
+                        TextChatService.TextChannels.RBXGeneral:SendAsync(msg) 
                     end)
                     task.wait(5)
                 end
@@ -4218,19 +4095,18 @@ ProtectSection:AddToggle({
 
 Players.PlayerAdded:Connect(function(player)
     if _G.AdminDetect then
-        local ok, rank = pcall(function() return player:GetRankInGroup(0) end)
-        if (ok and rank and rank > 10) or (player.AccountAge and player.AccountAge < 2) then
-            Library:MakeNotify({
-                Title = "⚠️ WARNING",
+        if player:GetRankInGroup(0) > 10 or player.AccountAge < 2 then
+            Library:MakeNotify({ 
+                Title = "⚠️ WARNING", 
                 Content = "Admin/Pemain Baru Masuk: " .. player.Name
             })
         end
     end
 end)
 
-ProtectSection:AddButton({
-    Title = "Manual Emergency Kick",
-    Callback = function() LocalPlayer:Kick("FCAL HUB End.") end
+ProtectSection:AddButton({ 
+    Title = "Manual Emergency Kick", 
+    Callback = function() LocalPlayer:Kick("FCAL HUB End.") end 
 })
 
 ProtectSection:AddButton({
@@ -4240,27 +4116,19 @@ ProtectSection:AddButton({
         local success, res = pcall(function()
             return game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100")
         end)
-
+        
         if success then
-            local decoded = nil
-            pcall(function() decoded = HttpService:JSONDecode(res) end)
-            local data = decoded and decoded.data
-            if data then
-                for _, v in pairs(data) do
-                    if v.playing < v.maxPlayers and v.id ~= game.JobId then
-                        table.insert(servers, v.id)
-                    end
+            local data = HttpService:JSONDecode(res).data
+            for _, v in pairs(data) do
+                if v.playing < v.maxPlayers and v.id ~= game.JobId then
+                    table.insert(servers, v.id)
                 end
-                if #servers > 0 then
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
-                else
-                    Library:MakeNotify({ Title = "Error", Content = "Tidak ada server tersedia." })
-                end
-            else
-                Library:MakeNotify({ Title = "Error", Content = "Gagal mendapatkan data server." })
             end
-        else
-            Library:MakeNotify({ Title = "Error", Content = "Gagal menghubungi endpoint." })
+            if #servers > 0 then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
+            else
+                Library:MakeNotify({ Title = "Error", Content = "Tidak ada server tersedia." })
+            end
         end
     end
 })
@@ -4270,18 +4138,18 @@ ProtectSection:AddButton({
 -- ==========================================
 local ActionsSection = ServerTab:AddSection("🔪 Actions")
 
-ActionsSection:AddButton({
-    Title = "Rejoin",
-    Callback = function()
-        pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer) end)
-    end
+ActionsSection:AddButton({ 
+    Title = "Rejoin", 
+    Callback = function() 
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer) 
+    end 
 })
 
-ActionsSection:AddButton({
-    Title = "Server Hop (Default)",
-    Callback = function()
-        pcall(function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end)
-    end
+ActionsSection:AddButton({ 
+    Title = "Server Hop (Default)", 
+    Callback = function() 
+        TeleportService:Teleport(game.PlaceId, LocalPlayer) 
+    end 
 })
 
 -- ==========================================
@@ -4289,18 +4157,18 @@ ActionsSection:AddButton({
 -- ==========================================
 local SpectateSection = ServerTab:AddSection("👁️ Spectate")
 
-local SpectateDropdown = SpectateSection:AddDropdown({
+local SpectateDropdown = SpectateSection:AddDropdown({ 
     Title = "Pilih Pemain",
     Options = GetPlayerList(),
-    Callback = function(v) SpecTarget = v end
+    Callback = function(v) SpecTarget = v end 
 })
 
-SpectateSection:AddButton({
-    Title = "🔄 Refresh Daftar Pemain",
+SpectateSection:AddButton({ 
+    Title = "🔄 Refresh Daftar Pemain", 
     Callback = function()
         UpdateDropdown()
         Library:MakeNotify({ Title = "MDW", Content = "Daftar pemain telah diperbarui!" })
-    end
+    end 
 })
 
 SpectateSection:AddButton({
@@ -4315,16 +4183,16 @@ SpectateSection:AddButton({
         end
     end
 })
-
-SpectateSection:AddButton({
-    Title = "Stop Spectating",
-    Callback = function()
-        local h = GetHumanoid()
-        if h then
-            Workspace.CurrentCamera.CameraSubject = h
+ 
+SpectateSection:AddButton({ 
+    Title = "Stop Spectating", 
+    Callback = function() 
+        local h = GetHumanoid() 
+        if h then 
+            Workspace.CurrentCamera.CameraSubject = h 
             Library:MakeNotify({ Title = "Stopped", Content = "Kembali ke karakter sendiri." })
-        end
-    end
+        end 
+    end 
 })
 
 -- ==========================================
@@ -4349,7 +4217,7 @@ pengaturanSection:AddButton({
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if hum then
-            pcall(function() hum.DisplayName = "Anonymous_User" end)
+            hum.DisplayName = "Anonymous_User"
             Library:MakeNotify({ Title = "Success", Content = "Display Name diubah (Hanya kamu yang lihat)" })
         end
     end
@@ -4360,13 +4228,13 @@ pengaturanSection:AddButton({
 -- ==========================================
 local ThemeSection = SettingsTab:AddSection("🎨 Appearance")
 
-ThemeSection:AddDropdown({
-    Title = "Select Theme",
-    Options = {"Dark", "Light", "Midnight", "Rose", "Emerald"},
-    Default = "Midnight",
-    Callback = function(v)
+ThemeSection:AddDropdown({ 
+    Title = "Select Theme", 
+    Options = {"Dark", "Light", "Midnight", "Rose", "Emerald"}, 
+    Default = "Midnight", 
+    Callback = function(v) 
         pcall(function() Window:SetTheme(v) end)
-    end
+    end 
 })
 
 -- ==========================================
@@ -4379,30 +4247,30 @@ keybindSection:AddKeybind({
     Default = Enum.KeyCode.RightControl,
     Callback = function()
         _G.MenuVisible = not _G.MenuVisible
-
+        
         local gui = nil
-
+        
         for _, child in pairs(CoreGui:GetChildren()) do
-            if child.Name and (child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub")) then
+            if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
                 gui = child
                 break
             end
         end
-
+        
         if not gui then
             for _, child in pairs(LocalPlayer.PlayerGui:GetChildren()) do
-                if child.Name and (child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub")) then
+                if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
                     gui = child
                     break
                 end
             end
         end
-
+        
         if gui then
-            pcall(function() gui.Enabled = _G.MenuVisible end)
-            Library:MakeNotify({
-                Title = "Menu",
-                Content = _G.MenuVisible and "Menu Ditampilkan" or "Menu Disembunyikan"
+            gui.Enabled = _G.MenuVisible
+            Library:MakeNotify({ 
+                Title = "Menu", 
+                Content = _G.MenuVisible and "Menu Ditampilkan" or "Menu Disembunyikan" 
             })
         else
             pcall(function()
@@ -4417,25 +4285,25 @@ keybindSection:AddButton({
     Callback = function()
         _G.MenuVisible = not _G.MenuVisible
         local gui = nil
-
+        
         for _, child in pairs(CoreGui:GetChildren()) do
-            if child.Name and (child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub")) then
+            if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
                 gui = child
                 break
             end
         end
-
+        
         if not gui then
             for _, child in pairs(LocalPlayer.PlayerGui:GetChildren()) do
-                if child.Name and (child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub")) then
+                if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
                     gui = child
                     break
                 end
             end
         end
-
+        
         if gui then
-            pcall(function() gui.Enabled = _G.MenuVisible end)
+            gui.Enabled = _G.MenuVisible
         end
     end
 })
@@ -4455,11 +4323,11 @@ ClearSection:AddButton({
                 pcall(function() o:Destroy() end)
             end
         end
-
+        
         local toRemove = {}
         for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj ~= workspace.Terrain and obj.Name then
-                if obj.Name:find("MDW") or obj.Name:find("Cage") or obj.Name:find("Troll") or
+            if obj:IsA("BasePart") and obj ~= workspace.Terrain then
+                if obj.Name:find("MDW") or obj.Name:find("Cage") or obj.Name:find("Troll") or 
                    obj.Name:find("Wall") or obj.Name:find("Ice") or obj.Name:find("Trap") or
                    obj.Name:find("Clone") or obj.Name:find("Smoke") or obj.Name:find("Rockslide") or
                    obj.Name:find("AntiVoidPlatform") or obj.Name:find("MDW_SolidAirFloor") or
@@ -4468,21 +4336,21 @@ ClearSection:AddButton({
                 end
             end
         end
-
+        
         for _, obj in pairs(toRemove) do
             pcall(function() obj:Destroy() end)
         end
-
+        
         for _, obj in pairs(workspace:GetChildren()) do
             if obj:IsA("Explosion") then
                 pcall(function() obj:Destroy() end)
             end
         end
-
+        
         if _G.WallHack then
             ToggleWallHack(false)
         end
-
+        
         Library:MakeNotify({ Title = "Cleared", Content = "Semua efek visual telah dihapus!" })
     end
 })
@@ -4525,23 +4393,23 @@ ExitSection:AddButton({
         _G.AutoWalkJSON = false
         _G.WallHack = false
         _G.GodMode = false
-
+        
         ToggleWallHack(false)
-
+        
         ClearManualHighlights()
-
+        
         Library:MakeNotify({ Title = "MDW HUB", Content = "Shutdown...", Duration = 2 })
         task.wait(1)
-        pcall(function() Window:Destroy() end)
+        Window:Destroy()
     end
 })
-
+local oldDestroy = ExitSection.AddButton.Callback
 -- ==========================================
 -- RENDER LOOP FOR ESP
 -- ==========================================
 RunService.RenderStepped:Connect(function()
     if not (_G.BoxESP or _G.LineESP or _G.SkeletonESP) then
-        for _, obj in pairs(ESP_Objects) do
+        for _, obj in pairs(ESP_Objects) do 
             pcall(function()
                 if obj.Box then obj.Box.Visible = false end
                 if obj.Line then obj.Line.Visible = false end
@@ -4559,23 +4427,23 @@ RunService.RenderStepped:Connect(function()
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local rootPart = player.Character.HumanoidRootPart
             local pos, onScreen = Workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
-
+            
             if onScreen then
                 if not ESP_Objects[player] then
-                    ESP_Objects[player] = {
-                        Box = Drawing.new("Square"),
+                    ESP_Objects[player] = { 
+                        Box = Drawing.new("Square"), 
                         Line = Drawing.new("Line"),
                         Skeleton = {}
                     }
                 end
-
+                
                 local obj = ESP_Objects[player]
                 local color = GetESPColor(player)
-
+                
                 if _G.BoxESP then
                     local sizeX = math.clamp(2000 / pos.Z, 10, 500)
                     local sizeY = math.clamp(3000 / pos.Z, 10, 700)
-
+                    
                     obj.Box.Visible = true
                     obj.Box.Color = color
                     obj.Box.Size = Vector2.new(sizeX, sizeY)
@@ -4585,7 +4453,7 @@ RunService.RenderStepped:Connect(function()
                 else
                     obj.Box.Visible = false
                 end
-
+                
                 if _G.LineESP then
                     obj.Line.Visible = true
                     obj.Line.Color = color
@@ -4595,7 +4463,7 @@ RunService.RenderStepped:Connect(function()
                 else
                     obj.Line.Visible = false
                 end
-
+                
                 if _G.SkeletonESP then
                     UpdateSkeletonESP(player, obj)
                 else
@@ -4604,7 +4472,7 @@ RunService.RenderStepped:Connect(function()
                     end
                 end
             else
-                if ESP_Objects[player] then
+                if ESP_Objects[player] then 
                     if ESP_Objects[player].Box then ESP_Objects[player].Box.Visible = false end
                     if ESP_Objects[player].Line then ESP_Objects[player].Line.Visible = false end
                     if ESP_Objects[player].Skeleton then
@@ -4617,16 +4485,16 @@ RunService.RenderStepped:Connect(function()
         else
             ClearESP(player)
         end
-    end
+    end 
 end)
 
 -- Click TP
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
-
+    
     if _G.TapTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
         local root = GetRootPart()
-        if root then
+        if root then  
             local mouse = LocalPlayer:GetMouse()
             local targetPos = mouse.Hit.p
             root.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
@@ -4637,10 +4505,10 @@ end)
 -- NoClip Loop
 RunService.Stepped:Connect(function()
     if _G.NC and LocalPlayer.Character then
-        for _, p in pairs(LocalPlayer.Character:GetChildren()) do
-            if p:IsA("BasePart") then
-                p.CanCollide = false
-            end
+        for _, p in pairs(LocalPlayer.Character:GetChildren()) do 
+            if p:IsA("BasePart") then 
+                p.CanCollide = false 
+            end 
             for _, child in pairs(p:GetDescendants()) do
                 if child:IsA("BasePart") then child.CanCollide = false end
             end
