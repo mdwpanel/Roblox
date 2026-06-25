@@ -3,7 +3,7 @@
     Version: 1.0.9 | FULL FEATURES + TROLL MOUNTAIN + ESP IMPROVED + GOD MODE
     FIX: Removed getrawmetatable Anti-Kick (penyebab error 267)
     ADDED: God Mode (Kebal Serangan)
-    FIXES: Various function definitions and chat handler fixes
+    FIXED: Added missing functions and HealthBar UI bug fixes
 --]]
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/mdwpanel/Roblox/refs/heads/main/main_ui_modern.lua"))()
@@ -85,13 +85,13 @@ local Config = {
     FlySpeed = 100,
 }
 
--- Helper: simple logger
-local Logs = {}
-local function AddLog(s)
-    pcall(function()
-        table.insert(Logs, tostring(s))
-        print(s)
-    end)
+-- Local state that was missing
+local WeaponFixActive = false
+
+-- Simple logger helper (used by several places)
+local function AddLog(text)
+    -- Simple console log; you can extend to write to a file or GUI if needed
+    pcall(function() print(tostring(text)) end)
 end
 
 -- ==========================================
@@ -116,8 +116,8 @@ function ClearESP(player)
                         line.Visible = false
                     end
                 end
-                if obj.Remove and type(obj.Remove) == "function" then
-                    pcall(obj.Remove)
+                if obj.Remove then
+                    pcall(obj.Remove, obj)
                 end
             end)
         end
@@ -195,9 +195,9 @@ function UpdateESP()
                     end
                 else
                     if ESP_Objects[player] then
-                        if ESP_Objects[player].Box then ESP_Objects[player].Box.Visible = false end
-                        if ESP_Objects[player].Line then ESP_Objects[player].Line.Visible = false end
-                        for _, line in pairs(ESP_Objects[player].Skeleton or {}) do
+                        ESP_Objects[player].Box.Visible = false
+                        ESP_Objects[player].Line.Visible = false
+                        for _, line in pairs(ESP_Objects[player].Skeleton) do
                             line.Visible = false
                         end
                     end
@@ -292,13 +292,13 @@ function CheckIfKiller(player)
     local char = player.Character
     if not char then return false end
 
-    if player:GetAttribute("Role") and string.lower(tostring(player:GetAttribute("Role"))):find("killer") then
+    if player:GetAttribute("Role") and string.lower(player:GetAttribute("Role")):find("killer") then
         return true
     end
-    if player.Team and tostring(player.Team.Name):lower():find("killer") then
+    if player.Team and string.lower(player.Team.Name):find("killer") then
         return true
     end
-    if char:FindFirstChild("Role") and char.Role:IsA("StringValue") and tostring(char.Role.Value):lower():find("killer") then
+    if char:FindFirstChild("Role") and char.Role:IsA("StringValue") and string.lower(char.Role.Value):find("killer") then
         return true
     end
     local killerParts = {"Knife", "Weapon", "Blade", "Sword"}
@@ -315,16 +315,16 @@ function GetPlayerRole(player)
     local gameGui = LocalPlayer:FindFirstChild("PlayerGui")
     if gameGui then
         for _, gui in pairs(gameGui:GetChildren()) do
-            if gui.Name and (gui.Name:lower():find("game") or gui.Name:lower():find("match")
-                or gui.Name:lower():find("survive") or gui.Name:lower():find("ingame")) then
+            if gui.Name:lower():find("game") or gui.Name:lower():find("match")
+                or gui.Name:lower():find("survive") or gui.Name:lower():find("ingame") then
                 if gui.Enabled then inGame = true break end
             end
         end
     end
     if not inGame then
         for _, obj in pairs(Workspace:GetChildren()) do
-            if obj.Name and (obj.Name:lower():find("generator") or obj.Name:lower():find("gate")
-                or obj.Name:lower():find("survivor") or obj.Name:lower():find("killer")) then
+            if obj.Name:lower():find("generator") or obj.Name:lower():find("gate")
+                or obj.Name:lower():find("survivor") or obj.Name:lower():find("killer") then
                 inGame = true break
             end
         end
@@ -352,7 +352,7 @@ function GetPlayerRole(player)
         if role:find("killer") then return "Killer" end
         if role:find("survivor") or role:find("survive") then return "Survivor" end
     end
-    if player.Team and player.Team.Name then
+    if player.Team then
         local teamName = player.Team.Name:lower()
         if teamName:find("killer") then return "Killer" end
         if teamName:find("survivor") or teamName:find("survive") then return "Survivor" end
@@ -370,7 +370,6 @@ end
 function IsGenerator(obj)
     if not obj then return false end
     if not (obj:IsA("Model") or obj:IsA("BasePart")) then return false end
-    if not obj.Name then return false end
     local name = obj.Name:lower()
     if name:find("player") or name:find("character") or name:find("npc") or name:find("killer") or name:find("humanoid") then return false end
     if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then return false end
@@ -382,24 +381,17 @@ function IsGenerator(obj)
 end
 
 function IsGeneratorCompleted(gen)
-    if not gen then return false end
     if gen:GetAttribute("Completed") == true or gen:GetAttribute("IsCompleted") == true or gen:GetAttribute("Finished") == true then return true end
     local progress = gen:GetAttribute("Progress")
     if progress and (progress >= 1 or progress >= 100) then return true end
-    for _, child in pairs(gen:GetChildren()) do
-        if child.Name and child.Name:lower():find("progress") and (child:IsA("NumberValue") or child:IsA("IntValue")) then
-            return child.Value <= 1 and child.Value * 100 or child.Value
-        end
-    end
     return false
 end
 
 function GetGeneratorProgress(gen)
-    if not gen then return 0 end
     local progress = gen:GetAttribute("Progress")
     if progress then return progress <= 1 and progress * 100 or progress end
     for _, child in pairs(gen:GetChildren()) do
-        if child.Name and child.Name:lower():find("progress") and (child:IsA("NumberValue") or child:IsA("IntValue")) then
+        if child.Name:lower():find("progress") and (child:IsA("NumberValue") or child:IsA("IntValue")) then
             return child.Value <= 1 and child.Value * 100 or child.Value
         end
     end
@@ -407,7 +399,7 @@ function GetGeneratorProgress(gen)
 end
 
 function CreateESPForPlayer(player)
-    if not player or player == LocalPlayer or not player.Character then return end
+    if player == LocalPlayer or not player.Character then return end
 
     if not ESP_Highlights[player] then
         local highlight = Instance.new("Highlight")
@@ -447,14 +439,14 @@ function ToggleWallHack(enabled)
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj:IsA("BasePart") and obj.Material ~= Enum.Material.Neon then
             if enabled then
-                if obj:GetAttribute and not obj:GetAttribute("OriginalTransparency") then
-                    pcall(function() obj:SetAttribute("OriginalTransparency", obj.Transparency) end)
+                if not obj:GetAttribute("OriginalTransparency") then
+                    obj:SetAttribute("OriginalTransparency", obj.Transparency)
                 end
                 if obj.Transparency < 0.7 then
                     obj.Transparency = 0.3
                 end
             else
-                local orig = obj:GetAttribute and obj:GetAttribute("OriginalTransparency")
+                local orig = obj:GetAttribute("OriginalTransparency")
                 if orig then
                     obj.Transparency = orig
                 end
@@ -547,14 +539,14 @@ local function RepairTool(tool)
 
     -- 3. Tambahkan script dasar jika tidak ada
     if not tool:FindFirstChildWhichIsA("LocalScript") and not tool:FindFirstChildWhichIsA("Script") then
-        local script = Instance.new("LocalScript")
-        script.Name = "WeaponController"
-        script.Source = [[
+        local scriptObj = Instance.new("LocalScript")
+        scriptObj.Name = "WeaponController"
+        scriptObj.Source = [[
             local tool = script.Parent
             local handle = tool:FindFirstChild("Handle")
             local player = game:GetService("Players").LocalPlayer
             local mouse = player:GetMouse()
-
+            
             -- Efek equip
             tool.Equipped:Connect(function()
                 print("🔫 " .. tool.Name .. " equipped!")
@@ -569,7 +561,7 @@ local function RepairTool(tool)
                     light.Parent = handle
                 end
             end)
-
+            
             -- Efek unequip
             tool.Unequipped:Connect(function()
                 if handle then
@@ -578,7 +570,7 @@ local function RepairTool(tool)
                     if light then light:Destroy() end
                 end
             end)
-
+            
             -- Fungsi utama saat diklik
             tool.Activated:Connect(function()
                 if handle then
@@ -592,23 +584,23 @@ local function RepairTool(tool)
                     projectile.Anchored = false
                     projectile.Position = handle.Position + (mouse.Hit.p - handle.Position).Unit * 2
                     projectile.Parent = workspace
-
+                    
                     -- Cahaya
                     local light = Instance.new("PointLight")
                     light.Range = 15
                     light.Brightness = 5
                     light.Color = Color3.new(1, 0.5, 0)
                     light.Parent = projectile
-
+                    
                     -- Gerakan
                     local velocity = Instance.new("BodyVelocity")
                     velocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
                     velocity.Velocity = (mouse.Hit.p - handle.Position).Unit * 100
                     velocity.Parent = projectile
-
+                    
                     -- Hancurkan setelah 5 detik
                     game:GetService("Debris"):AddItem(projectile, 5)
-
+                    
                     -- Suara
                     local sound = Instance.new("Sound")
                     sound.SoundId = "rbxassetid://9120264714"
@@ -618,14 +610,14 @@ local function RepairTool(tool)
                 end
             end)
         ]]
-        script.Parent = tool
+        scriptObj.Parent = tool
         print("✅ Script ditambahkan ke:", tool.Name)
     end
 
     return true
 end
 
--- Alias: FixTool (dipakai di CharacterAdded)
+-- Alias for compatibility with other parts of script
 local function FixTool(tool)
     return RepairTool(tool)
 end
@@ -654,7 +646,7 @@ local function GetAllWeaponsFixed()
     end
 
     -- 2. Cari di ReplicatedStorage
-    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+    for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
         if obj:IsA("Tool") then
             local name = obj.Name:lower()
             if not name:find("coin") and not name:find("money") and not name:find("gold") and
@@ -668,9 +660,9 @@ local function GetAllWeaponsFixed()
         end
     end
 
-    -- 3. Cari di ServerStorage (jika tersedia)
-    local success, serverStorage = pcall(function() return game:GetService("ServerStorage") end)
-    if success and serverStorage then
+    -- 3. Cari di ServerStorage (may error if not available in client - protected by pcall)
+    pcall(function()
+        local serverStorage = game:GetService("ServerStorage")
         for _, obj in pairs(serverStorage:GetDescendants()) do
             if obj:IsA("Tool") then
                 local name = obj.Name:lower()
@@ -684,7 +676,7 @@ local function GetAllWeaponsFixed()
                 end
             end
         end
-    end
+    end)
 
     -- 4. Clone dan perbaiki setiap senjata
     local added = 0
@@ -703,31 +695,28 @@ local function GetAllWeaponsFixed()
 
         if not exists then
             -- Clone tool
-            local ok, newTool = pcall(function() return tool:Clone() end)
-            if not ok or not newTool then
-                failed = failed + 1
+            local newTool = tool:Clone()
+
+            -- Perbaiki jika perlu
+            if RepairTool(newTool) then
+                repaired = repaired + 1
             else
-                -- Perbaiki jika perlu
-                if RepairTool(newTool) then
-                    repaired = repaired + 1
-                else
-                    failed = failed + 1
-                end
-
-                -- Tambahkan ke backpack
-                newTool.Parent = LocalPlayer.Backpack
-                added = added + 1
-                MountPrankWeapons[newTool.Name] = newTool
-
-                print("🔫 Weapon added:", newTool.Name)
+                failed = failed + 1
             end
+
+            -- Tambahkan ke backpack
+            newTool.Parent = LocalPlayer.Backpack
+            added = added + 1
+            MountPrankWeapons[newTool.Name] = newTool
+
+            print("🔫 Weapon added:", newTool.Name)
         end
     end
 
     return added, repaired, failed
 end
 
--- Wrapper agar tombol lama yang memanggil GetAndFixAllWeapons tetap berfungsi
+-- Compatibility wrapper used elsewhere
 local function GetAndFixAllWeapons()
     return GetAllWeaponsFixed()
 end
@@ -795,12 +784,12 @@ local function GetAllWeapons()
     for _, data in pairs(weapons) do
         local tool = data.Tool
         if tool and tool:IsA("Tool") then
-            local ok, newTool = pcall(function() return tool:Clone() end)
-            if ok and newTool then
+            -- Clone tool ke backpack
+            local success, newTool = pcall(function() return tool:Clone() end)
+            if success and newTool then
                 newTool.Parent = LocalPlayer.Backpack
                 count = count + 1
                 MountPrankWeapons[newTool.Name] = newTool
-
                 print("Weapon added:", newTool.Name)
             end
         end
@@ -815,12 +804,10 @@ local function FindAllCoins()
 
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") or obj:IsA("Model") then
-            if obj.Name then
-                local name = obj.Name:lower()
-                if name:find("coin") or name:find("money") or name:find("gold") or
-                   name:find("currency") or name:find("point") or name:find("gem") then
-                    table.insert(coins, obj)
-                end
+            local name = obj.Name:lower()
+            if name:find("coin") or name:find("money") or name:find("gold") or
+               name:find("currency") or name:find("point") or name:find("gem") then
+                table.insert(coins, obj)
             end
         end
     end
@@ -843,7 +830,7 @@ local function AutoCollectCoinsLoop()
             pcall(function()
                 -- Teleport ke coin untuk collect
                 local pos = coin:IsA("BasePart") and coin.Position or
-                           (coin:IsA("Model") and coin:GetPivot().Position)
+                           (coin:IsA("Model") and coin:GetPivot().p)
 
                 if pos then
                     local dist = (root.Position - pos).Magnitude
@@ -851,7 +838,7 @@ local function AutoCollectCoinsLoop()
                         -- Coba collect dengan proximity prompt jika ada
                         local prompt = coin:FindFirstChildWhichIsA("ProximityPrompt")
                         if prompt then
-                            pcall(function() fireproximityprompt(prompt) end)
+                            fireproximityprompt(prompt)
                             collected = collected + 1
                         end
 
@@ -859,11 +846,9 @@ local function AutoCollectCoinsLoop()
                         local touchPart = coin:IsA("BasePart") and coin or
                                         coin:FindFirstChildWhichIsA("BasePart")
                         if touchPart then
-                            pcall(function()
-                                firetouchinterest(root, touchPart, 0)
-                                task.wait(0.05)
-                                firetouchinterest(root, touchPart, 1)
-                            end)
+                            firetouchinterest(root, touchPart, 0)
+                            task.wait(0.05)
+                            firetouchinterest(root, touchPart, 1)
                             collected = collected + 1
                         end
                     end
@@ -881,37 +866,65 @@ end
 local function MakeCoinsUnlimited()
     -- Cari dan modifikasi nilai coin
     for _, obj in pairs(game:GetDescendants()) do
-        pcall(function()
-            if obj:IsA("NumberValue") or obj:IsA("IntValue") or obj:IsA("StringValue") then
-                if obj.Name then
-                    local name = obj.Name:lower()
+        if obj:IsA("NumberValue") or obj:IsA("IntValue") or obj:IsA("StringValue") then
+            local name = obj.Name:lower()
+            if name:find("coin") or name:find("money") or name:find("gold") or
+               name:find("currency") or name:find("point") or name:find("gem") or
+               name:find("cash") or name:find("score") then
+                pcall(function()
+                    if obj:IsA("NumberValue") or obj:IsA("IntValue") then
+                        obj.Value = 999999999
+                        print("Modified coin value:", obj.Name, "-> 999999999")
+                    end
+                end)
+            end
+        end
+
+        -- Cari juga di player stats
+        if obj:IsA("Folder") and obj.Name:lower():find("stat") then
+            for _, child in pairs(obj:GetChildren()) do
+                if child:IsA("NumberValue") or child:IsA("IntValue") then
+                    local name = child.Name:lower()
                     if name:find("coin") or name:find("money") or name:find("gold") or
-                       name:find("currency") or name:find("point") or name:find("gem") or
-                       name:find("cash") or name:find("score") then
-                        if obj:IsA("NumberValue") or obj:IsA("IntValue") then
-                            obj.Value = 999999999
-                            print("Modified coin value:", obj.Name, "-> 999999999")
-                        end
+                       name:find("point") then
+                        pcall(function()
+                            child.Value = 999999999
+                            print("Modified stat coin:", child.Name)
+                        end)
                     end
                 end
             end
-        end)
+        end
+
+        -- Modifikasi leaderstats
+        if obj.Name == "leaderstats" and obj:IsA("Folder") then
+            for _, child in pairs(obj:GetChildren()) do
+                if child:IsA("NumberValue") or child:IsA("IntValue") then
+                    local name = child.Name:lower()
+                    if name:find("coin") or name:find("money") or name:find("gold") or
+                       name:find("currency") or name:find("point") or name:find("cash") then
+                        pcall(function()
+                            child.Value = 999999999
+                            print("Modified leaderstats:", child.Name)
+                        end)
+                    end
+                end
+            end
+        end
     end
 
     -- Modifikasi juga di player
     for _, child in pairs(LocalPlayer:GetChildren()) do
-        pcall(function()
-            if child:IsA("NumberValue") or child:IsA("IntValue") then
-                if child.Name then
-                    local name = child.Name:lower()
-                    if name:find("coin") or name:find("money") or name:find("gold") or
-                       name:find("currency") or name:find("point") then
-                        child.Value = 999999999
-                        print("Modified player value:", child.Name)
-                    end
-                end
+        if child:IsA("NumberValue") or child:IsA("IntValue") then
+            local name = child.Name:lower()
+            if name:find("coin") or name:find("money") or name:find("gold") or
+               name:find("currency") or name:find("point") then
+                pcall(function()
+                    child.Value = 999999999
+                    print("Modified player value:", child.Name)
+                end)
             end
-        end)
+        end
     end
 end
 
@@ -954,7 +967,7 @@ local function FindAndUseShield()
     local currentTool = char:FindFirstChildOfClass("Tool")
     if currentTool then
         for _, name in pairs(ShieldTools) do
-            if tostring(currentTool.Name):find(name) then
+            if currentTool.Name:find(name) then
                 return true -- Sudah memegang shield
             end
         end
@@ -964,14 +977,13 @@ local function FindAndUseShield()
     for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
         if tool:IsA("Tool") then
             for _, name in pairs(ShieldTools) do
-                if tostring(tool.Name):find(name) then
+                if tool.Name:find(name) then
                     local hum = char:FindFirstChildOfClass("Humanoid")
                     if hum then
                         hum:EquipTool(tool)
                         task.wait(0.3)
                         -- Aktifkan shield (asumsi klik kanan atau tombol tertentu)
                         pcall(function()
-                            -- Simulasi input jika diperlukan
                             VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.ButtonR1, false, game)
                             task.wait(0.1)
                             VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.ButtonR1, false, game)
@@ -992,28 +1004,24 @@ local function DisablePrankScripts()
 
     for _, obj in pairs(char:GetDescendants()) do
         if obj:IsA("LocalScript") then
-            if obj.Name then
-                local name = obj.Name:lower()
-                if name:find("prank") or name:find("effect") or name:find("trap") or
-                   name:find("stun") or name:find("push") or name:find("launch") then
-                    pcall(function()
-                        obj.Disabled = true
-                        print("Disabled script:", obj.Name)
-                    end)
-                end
+            local name = obj.Name:lower()
+            if name:find("prank") or name:find("effect") or name:find("trap") or
+               name:find("stun") or name:find("push") or name:find("launch") then
+                pcall(function()
+                    obj.Disabled = true
+                    print("Disabled script:", obj.Name)
+                end)
             end
         end
 
         -- Nonaktifkan juga beberapa objek yang mencurigakan
         if obj:IsA("ObjectValue") or obj:IsA("StringValue") then
-            if obj.Name then
-                local name = obj.Name:lower()
-                if name:find("prank") or name:find("effect") or name:find("status") then
-                    pcall(function()
-                        obj:Destroy()
-                        print("Removed value:", obj.Name)
-                    end)
-                end
+            local name = obj.Name:lower()
+            if name:find("prank") or name:find("effect") or name:find("status") then
+                pcall(function()
+                    obj:Destroy()
+                    print("Removed value:", obj.Name)
+                end)
             end
         end
     end
@@ -1025,27 +1033,25 @@ local function BlockPrankRemotes()
 
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-            if obj.Name then
-                local name = obj.Name:lower()
-                if name:find("prank") or name:find("effect") or name:find("trap") or
-                   name:find("stun") or name:find("push") or name:find("launch") or
-                   name:find("damage") or name:find("kill") then
+            local name = obj.Name:lower()
+            if name:find("prank") or name:find("effect") or name:find("trap") or
+               name:find("stun") or name:find("push") or name:find("launch") or
+               name:find("damage") or name:find("kill") then
 
-                    -- Coba blokir dengan menimpa fungsi (hanya untuk RemoteEvent FireServer)
-                    pcall(function()
-                        if obj:IsA("RemoteEvent") and obj.FireServer then
-                            local oldFire = obj.FireServer
-                            obj.FireServer = function(...)
-                                if MountPrankActive then
-                                    print("Blocked prank remote:", obj.Name)
-                                    return
-                                end
-                                return oldFire(obj, ...)
+                -- Coba blokir dengan menimpa fungsi
+                pcall(function()
+                    if obj:IsA("RemoteEvent") then
+                        local oldFire = obj.FireServer
+                        obj.FireServer = function(...)
+                            if MountPrankActive then
+                                print("Blocked prank remote:", obj.Name)
+                                return
                             end
+                            return oldFire(obj, ...)
                         end
-                        blocked = blocked + 1
-                    end)
-                end
+                    end
+                    blocked = blocked + 1
+                end)
             end
         end
     end
@@ -1072,6 +1078,7 @@ local function EnableMountPrankProtection()
             if hum then
                 if hum.PlatformStand then hum.PlatformStand = false end
                 if hum.Sit then hum.Sit = false end
+                -- Cegah state physics (ragdoll)
                 pcall(function()
                     if hum:GetState() == Enum.HumanoidStateType.Physics then
                         hum:ChangeState(Enum.HumanoidStateType.Running)
@@ -1241,7 +1248,7 @@ local function ChangeAvatar()
     local id = AvatarIDs[math.random(#AvatarIDs)]
     -- Coba trigger remote
     for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("RemoteEvent") and obj.Name and obj.Name:lower():find("avatar") then
+        if obj:IsA("RemoteEvent") and obj.Name:lower():find("avatar") then
             pcall(function() obj:FireServer(id) end)
             return true
         end
@@ -1258,6 +1265,7 @@ task.spawn(function()
     end
 end)
 
+
 local Checkpoints = {}
 local CurrentCPIndex = 0
 local AutoClimbActive = false
@@ -1270,7 +1278,7 @@ local function ScanMountPrankCheckpoints()
 
     -- Cari semua part yang kemungkinan adalah checkpoint
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Name then
+        if obj:IsA("BasePart") then
             local name = obj.Name:lower()
             local pos = obj.Position
 
@@ -1293,7 +1301,7 @@ local function ScanMountPrankCheckpoints()
             end
 
             -- Cek ukuran (banyak checkpoint berbentuk platform)
-            if obj.Size and obj.Size.X > 3 and obj.Size.Z > 3 and obj.Size.Y < 2 then
+            if obj.Size.X > 3 and obj.Size.Z > 3 and obj.Size.Y < 2 then
                 if name:find("plate") or name:find("floor") or name:find("ground") or
                    name:find("base") or name:find("platform") then
                     isCheckpoint = true
@@ -1324,7 +1332,7 @@ local function ScanMountPrankCheckpoints()
         return a.Y < b.Y
     end)
 
-    -- Hapus duplikat yang terlalu dekat (dalam radius 3 studs)
+    -- Hapus duplikat yang terlalu dekat (dalam radius 5 studs)
     local unique = {}
     for i, cp in ipairs(Checkpoints) do
         local isDuplicate = false
@@ -1433,6 +1441,7 @@ local function AutoClimbLoop()
     end
 end
 
+
 -- ==========================================
 -- TABS SETUP
 -- ==========================================
@@ -1539,20 +1548,14 @@ QuickTpSection:AddToggle({
         task.spawn(function()
             while _G.AutoInteract do
                 for _, obj in pairs(workspace:GetDescendants()) do
-                    pcall(function()
-                        if obj:IsA("ProximityPrompt") then
-                            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                            if root and obj.Parent and obj.Parent:IsA("Model") or obj.Parent:IsA("BasePart") then
-                                local pos = (obj.Parent:GetModelCFrame and obj.Parent:GetModelCFrame().p) or (obj.Parent.Position or nil)
-                                if pos then
-                                    local dist = (root.Position - pos).Magnitude
-                                    if dist < 15 then
-                                        pcall(function() fireproximityprompt(obj) end)
-                                    end
-                                end
-                            end
+                    if obj:IsA("ProximityPrompt") then
+                        local ok, dist = pcall(function()
+                            return (LocalPlayer.Character.HumanoidRootPart.Position - obj.Parent:GetModelCFrame().p).Magnitude
+                        end)
+                        if ok and dist and dist < 15 then
+                            pcall(function() fireproximityprompt(obj) end)
                         end
-                    end)
+                    end
                 end
                 task.wait(0.5)
             end
@@ -1888,7 +1891,9 @@ TrollSection:AddButton({
         local lowY = math.huge
 
         for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and (obj.Name and (obj.Name:lower():find("cp") or obj.Name:lower():find("checkpoint") or obj.Name:lower():find("stage") or obj.Name:lower():find("start")))) then
+            if obj:IsA("SpawnLocation") or (obj:IsA("BasePart") and
+                (obj.Name:lower():find("cp") or obj.Name:lower():find("checkpoint") or
+                 obj.Name:lower():find("stage") or obj.Name:lower():find("start"))) then
                 if obj.Position.Y < lowY then
                     lowY = obj.Position.Y
                     lowest = obj
@@ -1963,20 +1968,14 @@ TrollSection:AddButton({
 
         local clone = target.Character:Clone()
         clone.Parent = workspace
-        if clone.PrimaryPart then
+        pcall(function()
             clone:SetPrimaryPartCFrame(hrp.CFrame + Vector3.new(10, 0, 10))
-        else
-            -- attempt to set CFrame of model parts
-            local rootPart = clone:FindFirstChild("HumanoidRootPart") or clone:FindFirstChildOfClass("BasePart")
-            if rootPart then
-                rootPart.CFrame = hrp.CFrame + Vector3.new(10, 0, 10)
-            end
-        end
+        end)
         clone.Name = "Clone_of_" .. target.Name
 
         local hum = clone:FindFirstChildOfClass("Humanoid")
         if hum then
-            pcall(function() hum.DisplayName = "Clone " .. target.Name end)
+            hum.DisplayName = "Clone " .. target.Name
         end
 
         Library:MakeNotify({ Title = "👥 CLONE!", Content = "Clone " .. target.Name .. " muncul!", Duration = 3 })
@@ -2029,11 +2028,6 @@ TrollSection:AddButton({
     Callback = function()
         local target = GetTrollTarget()
         if not target then return end
-
-        if not target:FindFirstChild("PlayerGui") then
-            Library:MakeNotify({ Title = "❌ Error", Content = "Tidak dapat menambahkan GUI (PlayerGui tidak ditemukan)!", Duration = 3 })
-            return
-        end
 
         local gui = Instance.new("ScreenGui")
         gui.Name = "BlindEffect"
@@ -2105,16 +2099,13 @@ CheckpointSection:AddButton({
         -- Highlight checkpoint
         ClearManualHighlights()
         for _, cp in pairs(Checkpoints) do
-            local ok, hl = pcall(function()
-                local h = Instance.new("Highlight")
-                h.FillColor = Color3.fromRGB(0, 200, 255)
-                h.FillTransparency = 0.4
-                h.OutlineColor = Color3.new(1, 1, 1)
-                h.Adornee = cp.Part
-                h.Parent = cp.Part
-                return h
-            end)
-            if ok and hl then table.insert(ManualHighlights, hl) end
+            local hl = Instance.new("Highlight")
+            hl.FillColor = Color3.fromRGB(0, 200, 255)
+            hl.FillTransparency = 0.4
+            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.Adornee = cp.Part
+            hl.Parent = cp.Part
+            table.insert(ManualHighlights, hl)
         end
 
         local msg = "Ditemukan " .. count .. " checkpoint:\n"
@@ -2294,7 +2285,6 @@ CheckpointSection:AddButton({
         })
     end
 })
-
 task.spawn(function()
     while true do
         task.wait(2)
@@ -2546,7 +2536,6 @@ QuickMountSection:AddButton({
         end
     end
 })
-
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
@@ -2602,37 +2591,43 @@ MountPrankSection:AddButton({
 })
 local WeaponSection = PlayerTab:AddSection("⚔️ Weapons & Coins")
 
--- Implementasi fungsi yang hilang: ForceEquipWeapon, ListWeapons
-local WeaponFixActive = false
-
+-- Helper functions added: ForceEquipWeapon, ListWeapons
 local function ForceEquipWeapon(name)
     local char = LocalPlayer.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
     if not hum then return false end
 
-    -- jika diberikan nama, cari di backpack
-    if name and name ~= "" then
+    -- If name provided, try find in backpack or character
+    if name and type(name) == "string" and name ~= "" then
+        -- Search backpack
         for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
             if tool:IsA("Tool") and tool.Name:lower():find(name:lower()) then
-                hum:EquipTool(tool)
-                Library:MakeNotify({ Title = "🔫 Equipped!", Content = "Menggunakan: " .. tool.Name, Duration = 2 })
+                pcall(function() hum:EquipTool(tool) end)
+                Library:MakeNotify({ Title = "🔫 Equipped", Content = "Menggunakan: " .. tool.Name, Duration = 2 })
                 return true
             end
         end
-        Library:MakeNotify({ Title = "❌ Gagal", Content = "Senjata tidak ditemukan: " .. name, Duration = 2 })
+        -- Search character
+        for _, tool in pairs(char:GetChildren()) do
+            if tool:IsA("Tool") and tool.Name:lower():find(name:lower()) then
+                pcall(function() hum:EquipTool(tool) end)
+                Library:MakeNotify({ Title = "🔫 Equipped", Content = "Menggunakan: " .. tool.Name, Duration = 2 })
+                return true
+            end
+        end
+        Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak menemukan senjata: " .. name, Duration = 2 })
         return false
     end
 
-    -- jika tidak ada nama, equip tool pertama yang valid
+    -- If no name, equip first usable tool
     for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
         if tool:IsA("Tool") and IsWeaponComplete(tool) then
-            hum:EquipTool(tool)
-            Library:MakeNotify({ Title = "🔫 Equipped!", Content = "Menggunakan: " .. tool.Name, Duration = 2 })
+            pcall(function() hum:EquipTool(tool) end)
+            Library:MakeNotify({ Title = "🔫 Equipped", Content = "Menggunakan: " .. tool.Name, Duration = 2 })
             return true
         end
     end
-
-    Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak ada senjata yang bisa digunakan!", Duration = 2 })
+    Library:MakeNotify({ Title = "❌ Gagal", Content = "Tidak ada senjata untuk equip!", Duration = 2 })
     return false
 end
 
@@ -2644,14 +2639,14 @@ local function ListWeapons()
         end
     end
     if #list == 0 then
-        Library:MakeNotify({ Title = "📋 List Weapons", Content = "Tidak ada senjata di backpack", Duration = 3 })
-    else
-        print("=== Weapons in Backpack ===")
-        for i, name in ipairs(list) do
-            print(i .. ". " .. name)
-        end
-        Library:MakeNotify({ Title = "📋 List Weapons", Content = "Lihat Console (F9) untuk daftar senjata", Duration = 3 })
+        Library:MakeNotify({ Title = "List Weapons", Content = "Backpack kosong", Duration = 2 })
+        return
     end
+    print("=== Weapons in Backpack ===")
+    for i, name in ipairs(list) do
+        print(i .. ". " .. name)
+    end
+    Library:MakeNotify({ Title = "List Weapons", Content = "Daftar weapons dikirim ke Console (F9)", Duration = 2 })
 end
 
 WeaponSection:AddButton({
@@ -2719,6 +2714,7 @@ WeaponSection:AddButton({
 -- ==========================================
 -- AUTO EQUIP SAAT SPAWN
 -- ==========================================
+
 
 WeaponSection:AddButton({
     Title = "🔫 GET ALL WEAPONS (FIXED)",
@@ -2848,7 +2844,6 @@ WeaponSection:AddButton({
         })
     end
 })
-
 -- Event untuk mengaktifkan ulang perlindungan saat respawn
 local function OnCharacterAdded(char)
     task.wait(1)
@@ -2866,9 +2861,8 @@ local function OnCharacterAdded(char)
         end
     end
 end
-
 LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(0.5)
+    task.wait(2)
     if WeaponFixActive then
         ForceEquipWeapon()
     end
@@ -2983,7 +2977,7 @@ MoveSection:AddToggle({
 
                 task.spawn(function()
                     while _G.AirWalk do
-                        local currentRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        local currentRoot = char and char:FindFirstChild("HumanoidRootPart")
                         if currentRoot and AirPlatform then
                             AirPlatform.CFrame = CFrame.new(currentRoot.Position.X, LockedY, currentRoot.Position.Z)
                         end
@@ -2995,7 +2989,7 @@ MoveSection:AddToggle({
             end
         else
             if AirPlatform then
-                pcall(function() AirPlatform:Destroy() end)
+                AirPlatform:Destroy()
                 AirPlatform = nil
             end
             Library:MakeNotify({ Title = "Air Walk", Content = "Fitur Dimatikan." })
@@ -3061,7 +3055,7 @@ AntiSection:AddToggle({
                     end
                     task.wait()
                 end
-                pcall(function() VoidPart:Destroy() end)
+                VoidPart:Destroy()
             end)
             Library:MakeNotify({ Title = "Anti-Void", Content = "Mode Berjalan di Udara Aktif!" })
         else
@@ -3096,7 +3090,7 @@ AntiSection:AddToggle({
                         end
                     end
                 end
-                pcall(function() plate:Destroy() end)
+                plate:Destroy()
             end)
         end
     end
@@ -3324,9 +3318,9 @@ local function ScanAllCheckpoints()
     local seen = {}
 
     for _, obj in pairs(workspace:GetDescendants()) do
-        if (obj:IsA("BasePart") or obj:IsA("SpawnLocation")) and obj.Name then
+        if obj:IsA("BasePart") or obj:IsA("SpawnLocation") then
             local name = obj.Name:lower()
-            local pos = (obj.Position or Vector3.new(0,0,0))
+            local pos = obj.Position
             local found = false
 
             if name:find("humanoid") or name:find("player") or
@@ -3367,7 +3361,7 @@ local function ScanAllCheckpoints()
                     found = true
                 end
 
-                if obj:IsA("BasePart") and obj.Size and obj.Size.X > 5 and obj.Size.Z > 5 then
+                if obj:IsA("BasePart") and obj.Size.X > 5 and obj.Size.Z > 5 then
                     if name:find("plate") or name:find("floor") or name:find("ground") then
                         found = true
                     end
@@ -3523,13 +3517,8 @@ FarmSection:AddToggle({
                         break
                     end
 
-                    local ok, err = pcall(function()
-                        local targetCF = cp.Part.CFrame * CFrame.new(0, 5, 0)
-                        root.CFrame = targetCF
-                    end)
-                    if not ok then
-                        AddLog("Error teleport ke CP: " .. tostring(err))
-                    end
+                    local targetCF = cp.Part.CFrame * CFrame.new(0, 5, 0)
+                    root.CFrame = targetCF
 
                     pcall(function()
                         if firetouchinterest then
@@ -3589,16 +3578,12 @@ FarmSection:AddButton({
         end
 
         for _, cp in pairs(cps) do
-            local ok, hl = pcall(function()
-                local h = Instance.new("Highlight")
-                h.FillColor = Color3.fromRGB(0, 150, 255)
-                h.FillTransparency = 0.6
-                h.OutlineColor = Color3.new(1, 1, 1)
-                h.Adornee = cp.Part
-                h.Parent = cp.Part
-                return h
-            end)
-            if ok and hl then table.insert(ManualHighlights, hl) end
+            local hl = Instance.new("Highlight")
+            hl.FillColor = Color3.fromRGB(0, 150, 255)
+            hl.FillTransparency = 0.6
+            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.Adornee = cp.Part
+            hl.Parent = cp.Part
         end
 
         local msg = "Ditemukan " .. #cps .. " checkpoint:\n"
@@ -3723,7 +3708,7 @@ FarmSection:AddButton({
 
         local connection
         connection = LocalPlayer.Chatted:Connect(function(msg)
-            if type(msg) == "string" and msg:lower():sub(1, 4) == "/tp " then
+            if msg:lower():sub(1, 4) == "/tp " then
                 local num = tonumber(msg:match("%d+"))
                 if num and num >= 1 and num <= #cps then
                     local target = cps[num]
@@ -3743,7 +3728,7 @@ FarmSection:AddButton({
                         Duration = 3
                     })
                 end
-                if connection then connection:Disconnect() end
+                connection:Disconnect()
             end
         end)
     end
@@ -3755,8 +3740,8 @@ FarmSection:AddButton({
         local highestPart = nil
         local maxWait = -99999
         for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj.Position and obj.Position.Y > maxWait then
-                if obj.Size and obj.Size.Y > 5 and obj.CanCollide then
+            if obj:IsA("BasePart") and obj.Position.Y > maxWait then
+                if obj.Size.Y > 5 and obj.CanCollide then
                     maxWait = obj.Position.Y
                     highestPart = obj
                 end
@@ -3808,6 +3793,7 @@ VisualSection:AddToggle({
     end
 })
 
+-- Health ESP fixed: create Background and Bar with consistent names
 RunService.RenderStepped:Connect(function()
     if _G.HealthESP then
         for _, player in pairs(Players:GetPlayers()) do
@@ -3818,23 +3804,26 @@ RunService.RenderStepped:Connect(function()
                 if humanoid and humanoid.Health > 0 then
                     local gui = head:FindFirstChild("HealthBarGui")
                     if not gui then
-                        local bgui = Instance.new("BillboardGui", head)
+                        local bgui = Instance.new("BillboardGui")
                         bgui.Name = "HealthBarGui"
+                        bgui.Parent = head
                         bgui.Size = UDim2.new(3, 0, 0.4, 0)
                         bgui.StudsOffset = Vector3.new(0, 2, 0)
                         bgui.AlwaysOnTop = true
 
-                        local back = Instance.new("Frame", bgui)
+                        local back = Instance.new("Frame")
                         back.Name = "Background"
                         back.Size = UDim2.new(1, 0, 1, 0)
                         back.BackgroundColor3 = Color3.new(0, 0, 0)
                         back.BorderSizePixel = 0
+                        back.Parent = bgui
 
-                        local bar = Instance.new("Frame", back)
+                        local bar = Instance.new("Frame")
                         bar.Name = "Bar"
                         bar.BorderSizePixel = 0
-                        bar.Size = UDim2.new(humanoid.Health / humanoid.MaxHealth, 0, 1, 0)
+                        bar.Size = UDim2.new(math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1), 0, 1, 0)
                         bar.BackgroundColor3 = Color3.new(0, 1, 0)
+                        bar.Parent = back
                     else
                         local back = gui:FindFirstChild("Background")
                         local bar = back and back:FindFirstChild("Bar")
@@ -3846,7 +3835,9 @@ RunService.RenderStepped:Connect(function()
                     end
                 else
                     local gui = head:FindFirstChild("HealthBarGui")
-                    if gui then pcall(function() gui:Destroy() end) end
+                    if gui then
+                        pcall(function() gui:Destroy() end)
+                    end
                 end
             end
         end
@@ -3934,14 +3925,10 @@ VisualSection:AddToggle({
         for _, obj in pairs(Workspace:GetDescendants()) do
             if obj:IsA("BasePart") and not obj.Parent:FindFirstChild("Humanoid") then
                 if v then
-                    if obj.SetAttribute and not obj:GetAttribute("OldTrans") then obj:SetAttribute("OldTrans", obj.Transparency) end
+                    if not obj:GetAttribute("OldTrans") then obj:SetAttribute("OldTrans", obj.Transparency) end
                     obj.Transparency = 0.5
                 else
-                    if obj.SetAttribute then
-                        obj.Transparency = obj:GetAttribute("OldTrans") or 0
-                    else
-                        obj.Transparency = 0
-                    end
+                    obj.Transparency = obj:GetAttribute("OldTrans") or 0
                 end
             end
         end
@@ -4084,20 +4071,17 @@ FindSection:AddButton({
         local count = 0
 
         for _, gen in pairs(generators) do
-            local ok, hl = pcall(function()
-                local h = Instance.new("Highlight")
-                if IsGeneratorCompleted(gen) then
-                    h.FillColor = Color3.fromRGB(0, 255, 100)
-                else
-                    h.FillColor = Color3.fromRGB(255, 170, 0)
-                end
-                h.OutlineColor = Color3.new(1, 1, 1)
-                h.FillTransparency = 0.5
-                h.Adornee = gen
-                h.Parent = gen
-                return h
-            end)
-            if ok and hl then table.insert(ManualHighlights, hl) end
+            local hl = Instance.new("Highlight")
+            if IsGeneratorCompleted(gen) then
+                hl.FillColor = Color3.fromRGB(0, 255, 100)
+            else
+                hl.FillColor = Color3.fromRGB(255, 170, 0)
+            end
+            hl.OutlineColor = Color3.new(1, 1, 1)
+            hl.FillTransparency = 0.5
+            hl.Adornee = gen
+            hl.Parent = gen
+            table.insert(ManualHighlights, hl)
             count = count + 1
         end
         Library:MakeNotify({ Title = "Found", Content = count .. " generators highlighted!" })
@@ -4110,17 +4094,14 @@ FindSection:AddButton({
         ClearManualHighlights()
         local count = 0
         for _, o in pairs(workspace:GetDescendants()) do
-            if o.Name and (o.Name:lower():find("gate") or o.Name:lower():find("exit")) and (o:IsA("Model") or o:IsA("BasePart")) then
-                local ok, hl = pcall(function()
-                    local h = Instance.new("Highlight")
-                    h.FillColor = Color3.fromRGB(0, 255, 255)
-                    h.OutlineColor = Color3.new(1, 1, 1)
-                    h.FillTransparency = 0.5
-                    h.Adornee = o
-                    h.Parent = o
-                    return h
-                end)
-                if ok and hl then table.insert(ManualHighlights, hl) end
+            if (o.Name:lower():find("gate") or o.Name:lower():find("exit")) and (o:IsA("Model") or o:IsA("BasePart")) then
+                local hl = Instance.new("Highlight")
+                hl.FillColor = Color3.fromRGB(0, 255, 255)
+                hl.OutlineColor = Color3.new(1, 1, 1)
+                hl.FillTransparency = 0.5
+                hl.Adornee = o
+                hl.Parent = o
+                table.insert(ManualHighlights, hl)
                 count = count + 1
             end
         end
@@ -4178,15 +4159,10 @@ ChatSection:AddToggle({
             task.spawn(function()
                 while _G.Spam do
                     pcall(function()
-                        local defaultChat = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
-                        if defaultChat and defaultChat:FindFirstChild("SayMessageRequest") then
-                            defaultChat.SayMessageRequest:FireServer(msg, "All")
-                        end
+                        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All")
                     end)
                     pcall(function()
-                        if TextChatService.TextChannels and TextChatService.TextChannels.RBXGeneral then
-                            TextChatService.TextChannels.RBXGeneral:SendAsync(msg)
-                        end
+                        TextChatService.TextChannels.RBXGeneral:SendAsync(msg)
                     end)
                     task.wait(5)
                 end
@@ -4218,8 +4194,7 @@ ProtectSection:AddToggle({
 
 Players.PlayerAdded:Connect(function(player)
     if _G.AdminDetect then
-        local ok, rank = pcall(function() return player:GetRankInGroup(0) end)
-        if (ok and rank and rank > 10) or (player.AccountAge and player.AccountAge < 2) then
+        if player:GetRankInGroup(0) > 10 or player.AccountAge < 2 then
             Library:MakeNotify({
                 Title = "⚠️ WARNING",
                 Content = "Admin/Pemain Baru Masuk: " .. player.Name
@@ -4241,26 +4216,20 @@ ProtectSection:AddButton({
             return game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100")
         end)
 
-        if success then
-            local decoded = nil
-            pcall(function() decoded = HttpService:JSONDecode(res) end)
-            local data = decoded and decoded.data
-            if data then
+        if success and res then
+            local ok, data = pcall(function() return HttpService:JSONDecode(res).data end)
+            if ok and data then
                 for _, v in pairs(data) do
                     if v.playing < v.maxPlayers and v.id ~= game.JobId then
                         table.insert(servers, v.id)
                     end
                 end
-                if #servers > 0 then
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
-                else
-                    Library:MakeNotify({ Title = "Error", Content = "Tidak ada server tersedia." })
-                end
-            else
-                Library:MakeNotify({ Title = "Error", Content = "Gagal mendapatkan data server." })
             end
-        else
-            Library:MakeNotify({ Title = "Error", Content = "Gagal menghubungi endpoint." })
+            if #servers > 0 then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)])
+            else
+                Library:MakeNotify({ Title = "Error", Content = "Tidak ada server tersedia." })
+            end
         end
     end
 })
@@ -4273,14 +4242,14 @@ local ActionsSection = ServerTab:AddSection("🔪 Actions")
 ActionsSection:AddButton({
     Title = "Rejoin",
     Callback = function()
-        pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer) end)
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
     end
 })
 
 ActionsSection:AddButton({
     Title = "Server Hop (Default)",
     Callback = function()
-        pcall(function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end)
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
     end
 })
 
@@ -4349,7 +4318,7 @@ pengaturanSection:AddButton({
         local char = LocalPlayer.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         if hum then
-            pcall(function() hum.DisplayName = "Anonymous_User" end)
+            hum.DisplayName = "Anonymous_User"
             Library:MakeNotify({ Title = "Success", Content = "Display Name diubah (Hanya kamu yang lihat)" })
         end
     end
@@ -4383,7 +4352,7 @@ keybindSection:AddKeybind({
         local gui = nil
 
         for _, child in pairs(CoreGui:GetChildren()) do
-            if child.Name and (child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub")) then
+            if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
                 gui = child
                 break
             end
@@ -4391,7 +4360,7 @@ keybindSection:AddKeybind({
 
         if not gui then
             for _, child in pairs(LocalPlayer.PlayerGui:GetChildren()) do
-                if child.Name and (child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub")) then
+                if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
                     gui = child
                     break
                 end
@@ -4399,7 +4368,7 @@ keybindSection:AddKeybind({
         end
 
         if gui then
-            pcall(function() gui.Enabled = _G.MenuVisible end)
+            gui.Enabled = _G.MenuVisible
             Library:MakeNotify({
                 Title = "Menu",
                 Content = _G.MenuVisible and "Menu Ditampilkan" or "Menu Disembunyikan"
@@ -4419,7 +4388,7 @@ keybindSection:AddButton({
         local gui = nil
 
         for _, child in pairs(CoreGui:GetChildren()) do
-            if child.Name and (child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub")) then
+            if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
                 gui = child
                 break
             end
@@ -4427,7 +4396,7 @@ keybindSection:AddButton({
 
         if not gui then
             for _, child in pairs(LocalPlayer.PlayerGui:GetChildren()) do
-                if child.Name and (child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub")) then
+                if child.Name:find("MDW") or child.Name:find("Lynx") or child.Name:find("Window") or child.Name:find("Hub") then
                     gui = child
                     break
                 end
@@ -4435,7 +4404,7 @@ keybindSection:AddButton({
         end
 
         if gui then
-            pcall(function() gui.Enabled = _G.MenuVisible end)
+            gui.Enabled = _G.MenuVisible
         end
     end
 })
@@ -4458,7 +4427,7 @@ ClearSection:AddButton({
 
         local toRemove = {}
         for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and obj ~= workspace.Terrain and obj.Name then
+            if obj:IsA("BasePart") and obj ~= workspace.Terrain then
                 if obj.Name:find("MDW") or obj.Name:find("Cage") or obj.Name:find("Troll") or
                    obj.Name:find("Wall") or obj.Name:find("Ice") or obj.Name:find("Trap") or
                    obj.Name:find("Clone") or obj.Name:find("Smoke") or obj.Name:find("Rockslide") or
@@ -4532,10 +4501,10 @@ ExitSection:AddButton({
 
         Library:MakeNotify({ Title = "MDW HUB", Content = "Shutdown...", Duration = 2 })
         task.wait(1)
-        pcall(function() Window:Destroy() end)
+        Window:Destroy()
     end
 })
-
+local oldDestroy = ExitSection.AddButton.Callback
 -- ==========================================
 -- RENDER LOOP FOR ESP
 -- ==========================================
@@ -4627,34 +4596,4 @@ UserInputService.InputBegan:Connect(function(input, processed)
     if _G.TapTP and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
         local root = GetRootPart()
         if root then
-            local mouse = LocalPlayer:GetMouse()
-            local targetPos = mouse.Hit.p
-            root.CFrame = CFrame.new(targetPos + Vector3.new(0, 3, 0))
-        end
-    end
-end)
-
--- NoClip Loop
-RunService.Stepped:Connect(function()
-    if _G.NC and LocalPlayer.Character then
-        for _, p in pairs(LocalPlayer.Character:GetChildren()) do
-            if p:IsA("BasePart") then
-                p.CanCollide = false
-            end
-            for _, child in pairs(p:GetDescendants()) do
-                if child:IsA("BasePart") then child.CanCollide = false end
-            end
-        end
-    end
-end)
-
--- ==========================================
--- INITIALIZE
--- ==========================================
-Library:Initialize()
-Library:MakeNotify({ Title = "FCAL HUB", Content = "Script Loaded Successfully! (Anti-Kick Removed + God Mode Added)", Duration = 5 })
-
--- Auto update dropdown
-Players.PlayerAdded:Connect(UpdateDropdown)
-Players.PlayerRemoving:Connect(UpdateDropdown)
-Players.PlayerRemoving:Connect(ClearESP)
+            local mouse = LocalPlayer:GetMouse
