@@ -1,1388 +1,1330 @@
 -- ============================================
--- FISH IT MEGA - FULLY FIXED & ENHANCED
--- Dengan Library MDW Modern
+-- ULTIMATE FISH-IT SCRIPT v5.0 COMPLETE EDITION
+-- SEMUA FITUR DARI SEMUA 10 LINK DIGABUNG
 -- ============================================
 
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/mdwpanel/Roblox/refs/heads/main/main_ui_modern.lua"))()
 
--- Services
+-- ============================================
+-- SERVICES
+-- ============================================
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-local camera = Workspace.CurrentCamera
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local TeleportService = game:GetService("TeleportService")
-local Lighting = game:GetService("Lighting")
-local HttpService = game:GetService("HttpService")
-local TweenService = game:GetService("TweenService")
-local CollectionService = game:GetService("CollectionService")
+local userInput = game:GetService("UserInputService")
+local runService = game:GetService("RunService")
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local workspace = game:GetService("Workspace")
+local camera = workspace.CurrentCamera
+local virtualInput = game:GetService("VirtualInputManager")
+local teleportService = game:GetService("TeleportService")
+local lighting = game:GetService("Lighting")
+local coreGui = game:GetService("CoreGui")
+local httpService = game:GetService("HttpService")
+local tweenService = game:GetService("TweenService")
+local soundService = game:GetService("SoundService")
 
 -- ============================================
--- KONFIGURASI UTAMA
+-- ADVANCED REMOTE DETECTION SYSTEM
+-- ============================================
+local remotes = {}
+local detectedRemotes = {}
+
+local function findAllRemotes()
+    local function searchFolder(folder, depth, path)
+        if depth > 6 then return end
+        
+        for _, obj in pairs(folder:GetChildren()) do
+            local fullPath = path .. "/" .. obj.Name
+            
+            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+                local name = obj.Name:lower()
+                table.insert(detectedRemotes, {name = obj.Name, path = fullPath, obj = obj, type = obj.ClassName})
+                
+                -- Comprehensive remote mapping from all sources
+                if name:find("fish") or name:find("cast") then remotes.fish = obj end
+                if name:find("reel") or name:find("catch") or name:find("complete") then remotes.reel = obj end
+                if name:find("sell") or name:find("shop") or name:find("sellall") then remotes.sell = obj end
+                if name:find("enchant") then remotes.enchant = obj end
+                if name:find("crate") or name:find("open") then remotes.crate = obj end
+                if name:find("equip") or name:find("skin") or name:find("hotbar") then remotes.equipSkin = obj end
+                if name:find("buy") or name:find("purchase") then remotes.buy = obj end
+                if name:find("trade") or name:find("accept") then remotes.trade = obj end
+                if name:find("totem") then remotes.totem = obj end
+                if name:find("weather") or name:find("storm") then remotes.weather = obj end
+                if name:find("quest") or name:find("complete") then remotes.quest = obj end
+                if name:find("artifact") or name:find("collect") then remotes.artifact = obj end
+                if name:find("event") then remotes.event = obj end
+                if name:find("bobber") or name:find("handle") then remotes.bobber = obj end
+                if name:find("charge") or name:find("charging") then remotes.charge = obj end
+                if name:find("minigame") or name:find("fishing") then remotes.minigame = obj end
+                if name:find("auto") or name:find("state") then remotes.auto = obj end
+                if name:find("radar") then remotes.radar = obj end
+                if name:find("oxygen") or name:find("diving") then remotes.oxygen = obj end
+                if name:find("dialog") or name:find("event") then remotes.dialog = obj end
+                if name:find("notification") or name:find("notify") then remotes.notify = obj end
+            elseif obj:IsA("Folder") then
+                searchFolder(obj, depth + 1, fullPath)
+            end
+        end
+    end
+    
+    -- Search ReplicatedStorage
+    searchFolder(replicatedStorage, 0, "RS")
+    
+    -- Search player character for rod remotes
+    if player.Character then
+        for _, tool in pairs(player.Character:GetChildren()) do
+            if tool:IsA("Tool") then
+                searchFolder(tool, 0, "Tool")
+            end
+        end
+    end
+end
+
+findAllRemotes()
+
+-- ============================================
+-- CONFIGURATION
 -- ============================================
 local CONFIG = {
-    -- Remote Names (coba berbagai variasi nama)
-    FishingRemotes = {"FishingEvent", "Fish", "CastRod", "StartFishing", "Cast", "Reel", "CatchFish"},
-    SellRemotes = {"SellFish", "Sell", "SellAll", "SellInventory"},
-    EnchantRemotes = {"EnchantRod", "Enchant", "ApplyEnchant"},
-    CrateRemotes = {"OpenCrate", "OpenBox", "Crate", "Unbox"},
-    EquipRemotes = {"EquipSkin", "Equip", "EquipRod", "ChangeSkin"},
-    BuyRemotes = {"BuyItem", "Buy", "Purchase"},
-    TradeRemotes = {"Trade", "RequestTrade"},
-    AcceptTradeRemotes = {"AcceptTrade", "Accept", "ConfirmTrade"},
-    TotemRemotes = {"PlaceTotem", "UseTotem", "Totem"},
-    WeatherRemotes = {"BuyWeather", "ChangeWeather", "Weather"},
-    QuestRemotes = {"CompleteQuest", "Quest", "FinishQuest"},
-    ArtifactRemotes = {"CollectArtifact", "Artifact", "Collect"},
-    EventRemotes = {"JoinEvent", "Event", "Participate"},
-    
-    -- Timing
-    FishDelay = 1.5,
-    SellDelay = 3,
-    CrateDelay = 2,
-    EnchantDelay = 3,
-    TotemDelay = 120,
-    HealThreshold = 0.4,
-    
-    -- Default Positions
-    SafePosition = Vector3.new(0, 50, 0),
-    FishingSpots = {
-        Vector3.new(0, 5, 0),
-        Vector3.new(50, 5, 50),
-        Vector3.new(-50, 5, -50)
-    }
+    FishDelay = 1.0,
+    SellDelay = 2,
+    CrateDelay = 1.5,
+    EnchantDelay = 2,
+    TotemDelay = 60,
+    CallMinDelay = 0.18,
+    CallBackoff = 1.5,
+    MaxBobberDistance = 25,
+    InstantDelay = 0.35,
 }
 
--- ============================================
--- VARIABEL STATE (semua fitur dimatikan secara default)
--- ============================================
-local Features = {
-    -- Automation
-    AutoFish = false,
-    AutoSell = false,
-    AutoEnchant = false,
-    AutoOpenCrate = false,
-    AutoEquipSkin = false,
-    AutoBuy = false,
-    AutoTrade = false,
-    AutoAcceptTrade = false,
-    AutoTotem = false,
-    AutoWeather = false,
-    AutoQuest = false,
-    AutoArtifact = false,
-    AutoEvent = false,
+local lastCall = {}
+
+local features = {
+    -- Fishing
+    autoFish = false,
+    autoSell = false,
+    autoEnchant = false,
+    autoOpenCrate = false,
+    autoEquipSkin = false,
+    autoBuy = false,
+    autoTrade = false,
+    autoAcceptTrade = false,
+    autoTotem = false,
+    autoWeather = false,
+    autoQuest = false,
+    autoArtifact = false,
+    autoEvent = false,
+    autoRejoin = false,
+    autoServerHop = false,
     
-    -- Server
-    AutoRejoin = false,
-    AutoServerHop = false,
-    
-    -- Protection
-    AntiAFK = false,
-    AntiDrown = false,
-    AntiKick = false,
-    AutoHeal = false,
-    
-    -- Visual
-    ESP = false,
-    FishESP = false,
-    CrateESP = false,
-    NPCESP = false,
+    -- Character
+    antiAFK = false,
+    antiDrown = false,
+    autoHeal = false,
+    infiniteJump = false,
     
     -- Movement
-    Fly = false,
-    Noclip = false,
-    SpeedHack = false,
-    InfiniteJump = false,
+    flyEnabled = false,
+    noclipEnabled = false,
+    speedHack = false,
+    freezeCharacter = false,
     
-    -- Misc
-    FPSBoost = false,
-    FullBright = false,
-    InstantCatch = false,
-    PerfectReel = false,
-    AutoReCast = true,
-    AutoCollect = false,
+    -- Visual
+    espEnabled = false,
+    fpsBoost = false,
+    disableNotif = false,
+    blackScreen = false,
+    
+    -- Advanced Fishing (STREE HUB)
+    kaitunMode = false,
+    autoCharge = false,
+    autoMinigame = false,
+    disableAnimations = false,
+    autoRadar = false,
+    divingGear = false,
+    
+    -- SimpleAJA
+    instantReel = false,
+    fastBobber = false,
+    zeroAnimation = false,
+    instantCast = false,
+    autoShake = false,
+    silentMode = false,
+    
+    -- SkuyyHub
+    autoShell = false,
+    autoFishComplete = false,
+    legacyPerfect = false,
 }
 
--- Settings
-local Settings = {
-    FishMode = "Stable",
-    SellFilter = "All",
-    FlySpeed = 100,
-    WalkSpeed = 50,
-    JumpPower = 100,
-    ESPColor = Color3.fromRGB(255, 0, 0),
-    FishESPColor = Color3.fromRGB(0, 255, 255),
-    SelectedIsland = "Spawn",
-    AutoSave = true,
-}
-
--- ============================================
--- REMOTE FINDER (IMPROVED)
--- ============================================
-local Remotes = {}
-
-local function FindRemote(namePatterns)
-    for _, pattern in ipairs(namePatterns) do
-        -- Cari di ReplicatedStorage
-        for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                if obj.Name:lower():find(pattern:lower()) then
-                    return obj
-                end
-            end
-        end
-        
-        -- Cari di workspace
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                if obj.Name:lower():find(pattern:lower()) then
-                    return obj
-                end
-            end
-        end
-    end
-    return nil
-end
-
--- Initialize Remotes
-local function InitializeRemotes()
-    Remotes.Fish = FindRemote(CONFIG.FishingRemotes)
-    Remotes.Sell = FindRemote(CONFIG.SellRemotes)
-    Remotes.Enchant = FindRemote(CONFIG.EnchantRemotes)
-    Remotes.Crate = FindRemote(CONFIG.CrateRemotes)
-    Remotes.Equip = FindRemote(CONFIG.EquipRemotes)
-    Remotes.Buy = FindRemote(CONFIG.BuyRemotes)
-    Remotes.Trade = FindRemote(CONFIG.TradeRemotes)
-    Remotes.AcceptTrade = FindRemote(CONFIG.AcceptTradeRemotes)
-    Remotes.Totem = FindRemote(CONFIG.TotemRemotes)
-    Remotes.Weather = FindRemote(CONFIG.WeatherRemotes)
-    Remotes.Quest = FindRemote(CONFIG.QuestRemotes)
-    Remotes.Artifact = FindRemote(CONFIG.ArtifactRemotes)
-    Remotes.Event = FindRemote(CONFIG.EventRemotes)
-    
-    -- Debug info
-    for name, remote in pairs(Remotes) do
-        if remote then
-            print("[] Remote found:", name, "->", remote.Name)
-        else
-            warn("[] Remote not found:", name)
-        end
-    end
-end
+local fishMode = "Legit"
+local sellFilter = "All"
+local flySpeed = 100
+local fishingMode = "Instant"
+local kaitunDelay = 0.35
+local customJumpPower = 50
 
 -- ============================================
 -- HELPER FUNCTIONS
 -- ============================================
-local function GetCharacter()
-    return player.Character or player.CharacterAdded:Wait()
-end
-
 local function GetHumanoid()
-    local char = GetCharacter()
-    return char and char:FindFirstChildOfClass("Humanoid")
+    return player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 end
 
 local function GetRootPart()
-    local char = GetCharacter()
-    return char and char:FindFirstChild("HumanoidRootPart")
+    return player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 end
 
 local function Notify(title, desc, duration)
-    pcall(function()
-        Library:MakeNotify({
-            Title = title or "Notification",
-            Content = desc or "",
-            Duration = duration or 3
-        })
-    end)
+    if not features.disableNotif then
+        Library:MakeNotify({Title = title, Content = desc, Duration = duration or 3})
+    end
 end
 
 local function SafeFireServer(remote, ...)
-    if remote and remote:IsA("RemoteEvent") then
-        pcall(function()
-            remote:FireServer(...)
-        end)
-        return true
-    elseif remote and remote:IsA("RemoteFunction") then
-        pcall(function()
-            remote:InvokeServer(...)
-        end)
-        return true
-    end
-    return false
-end
-
--- ============================================
--- CONNECTION MANAGER (Anti Memory Leak)
--- ============================================
-local ActiveConnections = {}
-
-local function AddConnection(name, connection)
-    if ActiveConnections[name] then
-        pcall(function() ActiveConnections[name]:Disconnect() end)
-    end
-    ActiveConnections[name] = connection
-end
-
-local function RemoveConnection(name)
-    if ActiveConnections[name] then
-        pcall(function() ActiveConnections[name]:Disconnect() end)
-        ActiveConnections[name] = nil
+    if remote then
+        pcall(function() remote:FireServer(...) end)
     end
 end
 
-local function StopAllFeatures()
-    for feature, _ in pairs(Features) do
-        Features[feature] = false
+local function SafeInvokeServer(remote, ...)
+    if remote then
+        return pcall(function() return remote:InvokeServer(...) end)
     end
-    
-    for name, _ in pairs(ActiveConnections) do
-        RemoveConnection(name)
-    end
-    
-    -- Reset character
-    local hum = GetHumanoid()
-    if hum then
-        hum.WalkSpeed = 16
-        hum.JumpPower = 50
-        hum.PlatformStand = false
-    end
-    
-    -- Clear ESP
-    ClearESP()
-    
-    Notify(" System", "All features stopped!")
 end
 
--- ============================================
--- 1. AUTO FISHING (FIXED)
--- ============================================
-local function StartAutoFish()
-    if not Remotes.Fish then
-        Notify(" Error", "Fishing remote not found!")
-        return
+local function SafeCall(key, func)
+    local now = os.clock()
+    local minDelay = CONFIG.CallMinDelay
+    if lastCall[key] and now - lastCall[key] < minDelay then
+        wait(minDelay - (now - lastCall[key]))
     end
-    
-    Features.AutoFish = true
-    Notify(" Auto Fishing", "ON [" .. Settings.FishMode .. "]")
-    
-    AddConnection("AutoFish", task.spawn(function()
-        while Features.AutoFish do
-            task.wait()
-            
-            local char = GetCharacter()
-            local hum = GetHumanoid()
-            if not hum or hum.Health <= 0 then
-                task.wait(2)
-                continue
-            end
-            
-            -- Check if already fishing
-            local isFishing = char:FindFirstChild("Fishing") or 
-                             char:FindFirstChild("FishingRod") or
-                             player:FindFirstChild("Fishing")
-            
-            if not isFishing then
-                SafeFireServer(Remotes.Fish)
-                task.wait(0.5)
-            end
-            
-            -- Reel logic based on mode
-            if Settings.FishMode == "Instant" then
-                SafeFireServer(Remotes.Fish, "Reel") -- Try different args
-                SafeFireServer(Remotes.Fish, "Catch")
-                task.wait(0.3)
-            elseif Settings.FishMode == "Extreme" then
-                task.wait(0.8)
-                SafeFireServer(Remotes.Fish, "Reel")
-                task.wait(0.2)
-            elseif Settings.FishMode == "Blatant" then
-                task.wait(1.2)
-                SafeFireServer(Remotes.Fish, "Reel")
-                task.wait(0.5)
-            else -- Stable
-                task.wait(CONFIG.FishDelay)
-                SafeFireServer(Remotes.Fish, "Reel")
-                task.wait(1)
-            end
-            
-            -- Auto re-cast
-            if Features.AutoReCast then
-                task.wait(0.5)
-            else
-                task.wait(1.5)
-            end
+    local success, result = pcall(func)
+    lastCall[key] = os.clock()
+    if not success then
+        local msg = tostring(result):lower()
+        if msg:find("429") or msg:find("too many requests") then
+            wait(CONFIG.CallBackoff)
         end
-    end))
+    end
+    return success, result
 end
 
-local function StopAutoFish()
-    Features.AutoFish = false
-    RemoveConnection("AutoFish")
+-- ============================================
+-- 1. AUTO FISHING SYSTEM (MAIN)
+-- ============================================
+local fishingLoop = nil
+
+local function startAutoFish()
+    features.autoFish = true
+    Notify(" Auto Fishing", "ON - Mode: " .. fishMode)
+    
+    if fishingLoop then pcall(function() fishingLoop:Disconnect() end) end
+    
+    fishingLoop = runService.Heartbeat:Connect(function()
+        if not features.autoFish then
+            if fishingLoop then fishingLoop:Disconnect() end
+            return
+        end
+        
+        local character = player.Character
+        if not character then return end
+        
+        local humanoid = GetHumanoid()
+        if not humanoid then return end
+        
+        -- Method 1: STREE HUB Auto State
+        if remotes.auto then
+            SafeCall("autoon", function()
+                SafeInvokeServer(remotes.auto, true)
+            end)
+        end
+        
+        -- Method 2: Fire fishing remote
+        if remotes.fish then
+            SafeCall("fish", function()
+                SafeFireServer(remotes.fish)
+            end)
+        end
+        
+        -- Method 3: Equip rod from hotbar
+        if remotes.equipSkin then
+            SafeCall("equiprod", function()
+                SafeFireServer(remotes.equipSkin, 1)
+            end)
+        end
+        
+        -- Calculate delay based on mode
+        local delay_time = fishMode == "Instant" and 0.3 or 
+                          fishMode == "Blatant" and 0.8 or 
+                          fishMode == "Extreme" and 0.5 or 1.5
+        
+        wait(delay_time)
+        
+        -- Reel in fish
+        if remotes.reel then
+            SafeCall("reel", function()
+                SafeFireServer(remotes.reel)
+            end)
+        end
+        
+        -- Auto charge for minigames
+        if features.autoCharge and remotes.charge then
+            SafeCall("charge", function()
+                SafeInvokeServer(remotes.charge, 1762631511.436375)
+            end)
+        end
+    end)
+end
+
+local function stopAutoFish()
+    features.autoFish = false
+    if fishingLoop then
+        pcall(function() fishingLoop:Disconnect() end)
+        fishingLoop = nil
+    end
     Notify(" Auto Fishing", "OFF")
 end
 
 -- ============================================
--- 2. AUTO SELL (FIXED)
+-- 2. AUTO SELL SYSTEM
 -- ============================================
-local function StartAutoSell()
-    if not Remotes.Sell then
-        Notify(" Error", "Sell remote not found!")
-        return
-    end
+local function startAutoSell()
+    features.autoSell = true
+    Notify(" Auto Sell", "ON - Filter: " .. sellFilter)
     
-    Features.AutoSell = true
-    Notify(" Auto Sell", "ON [" .. Settings.SellFilter .. "]")
-    
-    AddConnection("AutoSell", task.spawn(function()
-        while Features.AutoSell do
-            local args = Settings.SellFilter == "All" and "All" or {Settings.SellFilter}
-            SafeFireServer(Remotes.Sell, args)
-            task.wait(CONFIG.SellDelay)
+    spawn(function()
+        while features.autoSell do
+            if remotes.sell then
+                SafeCall("sell", function()
+                    SafeInvokeServer(remotes.sell)
+                    SafeFireServer(remotes.sell, sellFilter)
+                    SafeFireServer(remotes.sell)
+                end)
+            end
+            wait(CONFIG.SellDelay)
         end
-    end))
+    end)
 end
 
-local function StopAutoSell()
-    Features.AutoSell = false
-    RemoveConnection("AutoSell")
+local function stopAutoSell()
+    features.autoSell = false
     Notify(" Auto Sell", "OFF")
 end
 
 -- ============================================
--- 3. AUTO ENCHANT (FIXED)
+-- 3. KAITUN SYSTEM (STREE HUB PREMIUM)
 -- ============================================
-local function StartAutoEnchant()
-    if not Remotes.Enchant then
-        Notify(" Error", "Enchant remote not found!")
-        return
+local kaitunScreenGui = nil
+
+local function CreateKaitunBackground()
+    if kaitunScreenGui then kaitunScreenGui:Destroy() end
+    kaitunScreenGui = Instance.new("ScreenGui")
+    kaitunScreenGui.IgnoreGuiInset = true
+    kaitunScreenGui.ResetOnSpawn = false
+    kaitunScreenGui.Name = "KAITUN_BG"
+    kaitunScreenGui.Parent = coreGui
+    
+    local bg = Instance.new("Frame")
+    bg.BackgroundColor3 = Color3.new(0, 0, 0)
+    bg.BackgroundTransparency = 0.5
+    bg.Size = UDim2.new(1, 0, 1, 0)
+    bg.ZIndex = 0
+    bg.Parent = kaitunScreenGui
+    
+    -- Add stars
+    for i = 1, 80 do
+        local star = Instance.new("Frame")
+        star.Size = UDim2.new(0, math.random(3, 5), 0, math.random(3, 5))
+        star.Position = UDim2.new(math.random(), 0, math.random(), 0)
+        star.BackgroundTransparency = 1
+        star.ZIndex = 0
+        star.Parent = bg
+        
+        local circle = Instance.new("UICorner", star)
+        circle.CornerRadius = UDim.new(1, 0)
+        
+        local glow = Instance.new("UIStroke", star)
+        glow.Thickness = 1
+        glow.Color = Color3.fromRGB(0, 255, 0)
+        glow.Transparency = math.random(40, 80) / 100
+        
+        task.spawn(function()
+            local tweenInfo = TweenInfo.new(math.random(2, 4), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+            tweenService:Create(glow, tweenInfo, {Transparency = math.random(0, 60) / 100}):Play()
+        end)
     end
     
-    Features.AutoEnchant = true
-    Notify(" Auto Enchant", "ON")
+    -- Add Saturn image
+    local saturn = Instance.new("ImageLabel")
+    saturn.Image = "rbxassetid://122683047852451"
+    saturn.BackgroundTransparency = 1
+    saturn.Size = UDim2.new(0, 320, 0, 320)
+    saturn.Position = UDim2.new(0.7, 0, 0.15, 0)
+    saturn.ImageTransparency = 0.05
+    saturn.ZIndex = 0
+    saturn.Parent = bg
     
-    AddConnection("AutoEnchant", task.spawn(function()
-        while Features.AutoEnchant do
-            SafeFireServer(Remotes.Enchant, "Enchant")
-            task.wait(CONFIG.EnchantDelay)
-        end
-    end))
-end
-
-local function StopAutoEnchant()
-    Features.AutoEnchant = false
-    RemoveConnection("AutoEnchant")
-    Notify(" Auto Enchant", "OFF")
-end
-
--- ============================================
--- 4. AUTO OPEN CRATE (FIXED)
--- ============================================
-local function StartAutoOpenCrate()
-    if not Remotes.Crate then
-        Notify(" Error", "Crate remote not found!")
-        return
-    end
-    
-    Features.AutoOpenCrate = true
-    Notify(" Auto Open Crate", "ON")
-    
-    AddConnection("AutoOpenCrate", task.spawn(function()
-        while Features.AutoOpenCrate do
-            SafeFireServer(Remotes.Crate, "Open")
-            task.wait(CONFIG.CrateDelay)
-        end
-    end))
-end
-
-local function StopAutoOpenCrate()
-    Features.AutoOpenCrate = false
-    RemoveConnection("AutoOpenCrate")
-    Notify(" Auto Open Crate", "OFF")
-end
-
--- ============================================
--- 5. AUTO EQUIP SKIN (FIXED)
--- ============================================
-local function StartAutoEquipSkin()
-    if not Remotes.Equip then
-        Notify(" Error", "Equip remote not found!")
-        return
-    end
-    
-    Features.AutoEquipSkin = true
-    Notify(" Auto Equip Skin", "ON")
-    
-    AddConnection("AutoEquipSkin", task.spawn(function()
-        while Features.AutoEquipSkin do
-            SafeFireServer(Remotes.Equip, "Best")
-            task.wait(5)
-        end
-    end))
-end
-
-local function StopAutoEquipSkin()
-    Features.AutoEquipSkin = false
-    RemoveConnection("AutoEquipSkin")
-    Notify(" Auto Equip Skin", "OFF")
-end
-
--- ============================================
--- 6. AUTO BUY (FIXED)
--- ============================================
-local function StartAutoBuy()
-    if not Remotes.Buy then
-        Notify(" Error", "Buy remote not found!")
-        return
-    end
-    
-    Features.AutoBuy = true
-    Notify(" Auto Buy", "ON")
-    
-    AddConnection("AutoBuy", task.spawn(function()
-        while Features.AutoBuy do
-            SafeFireServer(Remotes.Buy, "Bait", "Best")
-            task.wait(10)
-            SafeFireServer(Remotes.Buy, "Rod", "Upgrade")
-            task.wait(5)
-        end
-    end))
-end
-
-local function StopAutoBuy()
-    Features.AutoBuy = false
-    RemoveConnection("AutoBuy")
-    Notify(" Auto Buy", "OFF")
-end
-
--- ============================================
--- 7. AUTO TRADE (FIXED)
--- ============================================
-local function StartAutoTrade()
-    if not Remotes.Trade then
-        Notify(" Error", "Trade remote not found!")
-        return
-    end
-    
-    Features.AutoTrade = true
-    Notify(" Auto Trade", "ON")
-    
-    AddConnection("AutoTrade", task.spawn(function()
-        while Features.AutoTrade do
-            for _, target in pairs(Players:GetPlayers()) do
-                if target ~= player then
-                    SafeFireServer(Remotes.Trade, target)
-                    break
-                end
+    task.spawn(function()
+        while kaitunScreenGui and features.kaitunMode do
+            for i = 0, 180, 2 do
+                if not kaitunScreenGui then break end
+                saturn.Rotation = i
+                task.wait(0.02)
             end
-            task.wait(30)
-        end
-    end))
-end
-
-local function StopAutoTrade()
-    Features.AutoTrade = false
-    RemoveConnection("AutoTrade")
-    Notify(" Auto Trade", "OFF")
-end
-
--- ============================================
--- 8. AUTO ACCEPT TRADE (FIXED)
--- ============================================
-local function StartAutoAcceptTrade()
-    if not Remotes.AcceptTrade then
-        Notify(" Error", "AcceptTrade remote not found!")
-        return
-    end
-    
-    Features.AutoAcceptTrade = true
-    Notify(" Auto Accept Trade", "ON")
-    
-    AddConnection("AutoAcceptTrade", Remotes.AcceptTrade.OnClientEvent:Connect(function(...)
-        if Features.AutoAcceptTrade then
-            task.wait(1)
-            SafeFireServer(Remotes.AcceptTrade, true)
-        end
-    end))
-end
-
-local function StopAutoAcceptTrade()
-    Features.AutoAcceptTrade = false
-    RemoveConnection("AutoAcceptTrade")
-    Notify(" Auto Accept Trade", "OFF")
-end
-
--- ============================================
--- 9. AUTO TOTEM (FIXED)
--- ============================================
-local function StartAutoTotem()
-    if not Remotes.Totem then
-        Notify(" Error", "Totem remote not found!")
-        return
-    end
-    
-    Features.AutoTotem = true
-    Notify(" Auto Totem", "ON")
-    
-    AddConnection("AutoTotem", task.spawn(function()
-        while Features.AutoTotem do
-            SafeFireServer(Remotes.Totem, "Place")
-            task.wait(CONFIG.TotemDelay)
-        end
-    end))
-end
-
-local function StopAutoTotem()
-    Features.AutoTotem = false
-    RemoveConnection("AutoTotem")
-    Notify(" Auto Totem", "OFF")
-end
-
--- ============================================
--- 10. AUTO WEATHER (FIXED)
--- ============================================
-local WeatherTypes = {"Storm", "Cloudy", "Wind", "Snow", "Rain", "Sunny"}
-
-local function StartAutoWeather()
-    if not Remotes.Weather then
-        Notify(" Error", "Weather remote not found!")
-        return
-    end
-    
-    Features.AutoWeather = true
-    Notify(" Auto Weather", "ON")
-    
-    AddConnection("AutoWeather", task.spawn(function()
-        local idx = 1
-        while Features.AutoWeather do
-            SafeFireServer(Remotes.Weather, WeatherTypes[idx])
-            idx = idx % #WeatherTypes + 1
-            task.wait(60)
-        end
-    end))
-end
-
-local function StopAutoWeather()
-    Features.AutoWeather = false
-    RemoveConnection("AutoWeather")
-    Notify(" Auto Weather", "OFF")
-end
-
--- ============================================
--- 11. AUTO QUEST (FIXED)
--- ============================================
-local QuestTypes = {"Daily", "Weekly", "DeepSea", "Legendary", "Event"}
-
-local function StartAutoQuest()
-    if not Remotes.Quest then
-        Notify(" Error", "Quest remote not found!")
-        return
-    end
-    
-    Features.AutoQuest = true
-    Notify(" Auto Quest", "ON")
-    
-    AddConnection("AutoQuest", task.spawn(function()
-        while Features.AutoQuest do
-            for _, quest in ipairs(QuestTypes) do
-                SafeFireServer(Remotes.Quest, "Complete", quest)
-                task.wait(2)
+            for i = 180, 0, -2 do
+                if not kaitunScreenGui then break end
+                saturn.Rotation = i
+                task.wait(0.02)
             end
-            task.wait(10)
         end
-    end))
+    end)
+    
+    -- Add text
+    local text = Instance.new("TextLabel")
+    text.Parent = bg
+    text.Position = UDim2.new(0.5, 0, 0.5, 0)
+    text.AnchorPoint = Vector2.new(0.5, 0.5)
+    text.Size = UDim2.new(0, 400, 0, 100)
+    text.BackgroundTransparency = 1
+    text.Text = " KAITUN SYSTEM\nAuto Fishing Active"
+    text.TextColor3 = Color3.fromRGB(0, 255, 0)
+    text.Font = Enum.Font.GothamBold
+    text.TextSize = 24
+    text.ZIndex = 1
+    
+    -- Add sound
+    local spaceSound = Instance.new("Sound")
+    spaceSound.SoundId = "rbxassetid://1846351427"
+    spaceSound.Volume = 0.2
+    spaceSound.Looped = true
+    spaceSound.Parent = soundService
+    spaceSound:Play()
+    
+    kaitunScreenGui:SetAttribute("Sound", spaceSound)
 end
 
-local function StopAutoQuest()
-    Features.AutoQuest = false
-    RemoveConnection("AutoQuest")
-    Notify(" Auto Quest", "OFF")
-end
-
--- ============================================
--- 12. AUTO ARTIFACT (FIXED)
--- ============================================
-local function StartAutoArtifact()
-    if not Remotes.Artifact then
-        Notify(" Error", "Artifact remote not found!")
-        return
+local function RemoveKaitunBackground()
+    if kaitunScreenGui then
+        local sound = kaitunScreenGui:GetAttribute("Sound")
+        if sound then
+            sound:Stop()
+            sound:Destroy()
+        end
+        kaitunScreenGui:Destroy()
+        kaitunScreenGui = nil
     end
+end
+
+local function startKaitun()
+    features.kaitunMode = true
+    Notify(" Kaitun System", "ACTIVATED!")
+    CreateKaitunBackground()
     
-    Features.AutoArtifact = true
-    Notify(" Auto Artifact", "ON")
-    
-    AddConnection("AutoArtifact", task.spawn(function()
-        while Features.AutoArtifact do
-            SafeFireServer(Remotes.Artifact, "Collect")
-            task.wait(5)
+    spawn(function()
+        while features.kaitunMode do
+            -- Equip rod
+            if remotes.equipSkin then
+                SafeCall("eq", function()
+                    SafeFireServer(remotes.equipSkin, 1)
+                end)
+            end
+            
+            -- Charge rod
+            if remotes.charge then
+                SafeCall("ch", function()
+                    SafeInvokeServer(remotes.charge, 1762631511.436375)
+                end)
+            end
+            
+            -- Request minigame
+            if remotes.minigame then
+                SafeCall("mg", function()
+                    SafeInvokeServer(remotes.minigame, -1.233, 0.996, 1761532005.497)
+                end)
+            end
+            
+            wait(kaitunDelay)
+            
+            -- Complete fishing
+            if remotes.reel then
+                SafeCall("ct", function()
+                    SafeFireServer(remotes.reel)
+                end)
+            end
+            
+            -- Sell fish
+            if remotes.sell then
+                SafeCall("sl", function()
+                    SafeInvokeServer(remotes.sell)
+                end)
+            end
+            
+            wait(kaitunDelay)
         end
-    end))
+    end)
 end
 
-local function StopAutoArtifact()
-    Features.AutoArtifact = false
-    RemoveConnection("AutoArtifact")
-    Notify(" Auto Artifact", "OFF")
+local function stopKaitun()
+    features.kaitunMode = false
+    RemoveKaitunBackground()
+    Notify(" Kaitun System", "DEACTIVATED")
 end
 
 -- ============================================
--- 13. AUTO EVENT (FIXED)
+-- 4. INSTANT REEL SYSTEM (SimpleAJA)
 -- ============================================
-local function StartAutoEvent()
-    if not Remotes.Event then
-        Notify(" Error", "Event remote not found!")
-        return
+local isReelRunning = false
+
+local function setupGUIListener()
+    local playerGui = player.PlayerGui
+    
+    playerGui.ChildAdded:Connect(function(child)
+        if (child.Name == "FishingGUI" or child.Name == "reel") and isReelRunning then
+            task.wait(0.01)
+            instantReelAction()
+        end
+    end)
+    
+    local fishingGui = playerGui:FindFirstChild("FishingGUI") or playerGui:FindFirstChild("reel")
+    if fishingGui then
+        fishingGui.ChildAdded:Connect(function(child)
+            if isReelRunning and (child.Name == "Reel" or child.Name == "Shake") then
+                task.wait(0.01)
+                instantReelAction()
+            end
+        end)
+        
+        fishingGui.DescendantAdded:Connect(function(descendant)
+            if isReelRunning and descendant:IsA("GuiButton") and (descendant.Name == "Reel" or descendant.Name == "Shake") then
+                task.wait(0.01)
+                instantReelAction()
+            end
+        end)
     end
+end
+
+local function instantReelAction()
+    if not isReelRunning or not features.instantReel then return end
     
-    Features.AutoEvent = true
-    Notify(" Auto Event", "ON")
+    local playerGui = player.PlayerGui
+    local fishingGui = playerGui:FindFirstChild("FishingGUI") or playerGui:FindFirstChild("reel")
     
-    AddConnection("AutoEvent", task.spawn(function()
-        while Features.AutoEvent do
-            SafeFireServer(Remotes.Event, "Join")
-            task.wait(30)
+    if fishingGui then
+        local reelButton = fishingGui:FindFirstChild("Reel")
+        if reelButton and reelButton.Visible and reelButton.AbsoluteSize.X > 0 then
+            pcall(function()
+                firesignal(reelButton.Activated)
+                firesignal(reelButton.MouseButton1Click)
+            end)
+            return
         end
-    end))
-end
-
-local function StopAutoEvent()
-    Features.AutoEvent = false
-    RemoveConnection("AutoEvent")
-    Notify(" Auto Event", "OFF")
-end
-
--- ============================================
--- 14. AUTO REJOIN (FIXED)
--- ============================================
-local function StartAutoRejoin()
-    Features.AutoRejoin = true
-    Notify(" Auto Rejoin", "ON")
-    
-    AddConnection("AutoRejoin", player.OnTeleport:Connect(function(state)
-        if Features.AutoRejoin and state == Enum.TeleportState.Failed then
-            task.wait(5)
-            TeleportService:Teleport(game.PlaceId)
-        end
-    end))
-end
-
-local function StopAutoRejoin()
-    Features.AutoRejoin = false
-    RemoveConnection("AutoRejoin")
-    Notify(" Auto Rejoin", "OFF")
-end
-
--- ============================================
--- 15. AUTO SERVER HOP (FIXED)
--- ============================================
-local function StartAutoServerHop()
-    Features.AutoServerHop = true
-    Notify(" Auto Server Hop", "ON")
-    
-    AddConnection("AutoServerHop", task.spawn(function()
-        while Features.AutoServerHop do
-            task.wait(300) -- 5 menit
-            if Features.AutoServerHop then
+        
+        if features.autoShake then
+            local shakeButton = fishingGui:FindFirstChild("Shake")
+            if shakeButton and shakeButton.Visible and shakeButton.AbsoluteSize.X > 0 then
                 pcall(function()
-                    TeleportService:Teleport(game.PlaceId)
+                    firesignal(shakeButton.Activated)
+                    firesignal(shakeButton.MouseButton1Click)
                 end)
             end
         end
-    end))
-end
-
-local function StopAutoServerHop()
-    Features.AutoServerHop = false
-    RemoveConnection("AutoServerHop")
-    Notify(" Auto Server Hop", "OFF")
-end
-
--- ============================================
--- 16. ANTI-AFK (FIXED)
--- ============================================
-local function StartAntiAFK()
-    Features.AntiAFK = true
-    Notify(" Anti-AFK", "ON")
+    end
     
-    AddConnection("AntiAFK", RunService.Heartbeat:Connect(function()
-        if Features.AntiAFK then
-            local hum = GetHumanoid()
-            if hum then
-                hum:Move(Vector3.new(math.random(-1,1), 0, math.random(-1,1)), false)
-            end
-            
-            -- Simulate mouse activity
-            pcall(function()
-                VirtualInputManager:SendMouseMovementEvent(0, 0, 0, game)
-            end)
+    -- Fire remotes
+    pcall(function()
+        if remotes.bobber then
+            remotes.bobber:FireServer("reel")
         end
-    end))
-end
-
-local function StopAntiAFK()
-    Features.AntiAFK = false
-    RemoveConnection("AntiAFK")
-    Notify(" Anti-AFK", "OFF")
-end
-
--- ============================================
--- 17. ANTI-DROWN (FIXED)
--- ============================================
-local function StartAntiDrown()
-    Features.AntiDrown = true
-    Notify(" Anti-Drown", "ON")
-    
-    AddConnection("AntiDrown", RunService.Heartbeat:Connect(function()
-        if Features.AntiDrown then
-            local hum = GetHumanoid()
-            if hum and hum:GetState() == Enum.HumanoidStateType.Swimming then
-                -- Keep health full while swimming
-                if hum.Health < hum.MaxHealth then
-                    hum.Health = hum.MaxHealth
-                end
-                -- Auto jump to surface
-                hum:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
+        if remotes.reel then
+            remotes.reel:FireServer()
         end
-    end))
-end
-
-local function StopAntiDrown()
-    Features.AntiDrown = false
-    RemoveConnection("AntiDrown")
-    Notify(" Anti-Drown", "OFF")
-end
-
--- ============================================
--- 18. ANTI-KICK (NEW)
--- ============================================
-local function StartAntiKick()
-    Features.AntiKick = true
-    Notify(" Anti-Kick", "ON")
-    
-    -- Hook kick function
-    local mt = getrawmetatable(game)
-    local oldNamecall = mt.__namecall
-    setreadonly(mt, false)
-    
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        if method == "Kick" and Features.AntiKick then
-            Notify(" Anti-Kick", "Kick blocked!")
-            return nil
-        end
-        return oldNamecall(self, ...)
     end)
+end
+
+local function enableInstantReel()
+    features.instantReel = true
+    isReelRunning = true
+    Notify(" Instant Reel", "ON")
     
-    setreadonly(mt, true)
+    setupGUIListener()
+    
+    local renderConnection = runService.RenderStepped:Connect(function()
+        if isReelRunning then
+            instantReelAction()
+        end
+    end)
+end
+
+local function disableInstantReel()
+    features.instantReel = false
+    isReelRunning = false
+    Notify(" Instant Reel", "OFF")
 end
 
 -- ============================================
--- 19. AUTO HEAL (FIXED)
+-- 5. FAST BOBBER SYSTEM (SimpleAJA)
 -- ============================================
-local function StartAutoHeal()
-    Features.AutoHeal = true
-    Notify(" Auto Heal", "ON")
+local function enableFastBobber()
+    features.fastBobber = true
+    Notify(" Fast Bobber", "ON")
     
-    AddConnection("AutoHeal", task.spawn(function()
-        while Features.AutoHeal do
-            local hum = GetHumanoid()
-            if hum and hum.Health < hum.MaxHealth * CONFIG.HealThreshold then
-                -- Search for healing items
-                local backpack = player:FindFirstChild("Backpack")
-                if backpack then
-                    for _, item in pairs(backpack:GetChildren()) do
-                        if item:IsA("Tool") then
-                            local name = item.Name:lower()
-                            if name:find("heal") or name:find("pot") or name:find("med") or 
-                               name:find("food") or name:find("bandage") then
-                                pcall(function()
-                                    hum:EquipTool(item)
-                                    task.wait(0.5)
-                                    item:Activate()
+    runService.Heartbeat:Connect(function()
+        if not features.fastBobber then return end
+        
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj.Name:lower():find("bobber") or obj.Name:lower():find("float") then
+                if obj:IsA("BasePart") then
+                    if obj.AssemblyLinearVelocity then
+                        obj.AssemblyLinearVelocity = Vector3.new(0, -120, 0)
+                    end
+                    
+                    if not obj:FindFirstChild("BodyVelocity") then
+                        local bodyVel = Instance.new("BodyVelocity")
+                        bodyVel.MaxForce = Vector3.new(4000, 4000, 4000)
+                        bodyVel.Velocity = Vector3.new(0, -120, 0)
+                        bodyVel.Parent = obj
+                        game:GetService("Debris"):AddItem(bodyVel, 2)
+                    end
+                    
+                    -- Instant bobber teleport
+                    if features.instantCast and obj.Position.Y > 10 then
+                        local character = player.Character
+                        if character and character:FindFirstChild("HumanoidRootPart") then
+                            local lookVec = character.HumanoidRootPart.CFrame.LookVector
+                            local maxDist = CONFIG.MaxBobberDistance
+                            local targetPos = character.HumanoidRootPart.Position + lookVec * maxDist
+                            obj.CFrame = CFrame.new(targetPos.X, 5, targetPos.Z)
+                            obj.AssemblyLinearVelocity = Vector3.new(0, -10, 0)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- ============================================
+-- 6. INSTANT CAST SYSTEM
+-- ============================================
+local function enableInstantCast()
+    features.instantCast = true
+    Notify(" Instant Cast", "ON")
+    
+    runService.Heartbeat:Connect(function()
+        if not features.instantCast then return end
+        
+        local character = player.Character
+        if not character then return end
+        
+        local tool = character:FindFirstChildOfClass("Tool")
+        if tool and (tool.Name:lower():find("rod") or tool.Name:lower():find("fish")) then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+                    if track.Animation and track.Animation.AnimationId then
+                        local animId = track.Animation.AnimationId:lower()
+                        if animId:find("cast") or animId:find("throw") or animId:find("fish") then
+                            track.Speed = 5
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- ============================================
+-- 7. BLOCK ANIMATIONS
+-- ============================================
+local function blockAnimations()
+    if not features.zeroAnimation then return end
+    
+    local character = player.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
+    for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+        if track.Animation and track.Animation.AnimationId then
+            local animId = track.Animation.AnimationId
+            if animId:find("fish") or animId:find("reel") or animId:find("cast") then
+                track:Stop()
+            end
+        end
+    end
+end
+
+-- ============================================
+-- 8. UPGRADE SYSTEMS
+-- ============================================
+local function startAutoEnchant()
+    features.autoEnchant = true
+    Notify(" Auto Enchant", "ON")
+    
+    spawn(function()
+        while features.autoEnchant do
+            if remotes.enchant then
+                SafeCall("ench", function()
+                    SafeFireServer(remotes.enchant)
+                end)
+            end
+            wait(CONFIG.EnchantDelay)
+        end
+    end)
+end
+
+local function startAutoOpenCrate()
+    features.autoOpenCrate = true
+    Notify(" Auto Crate", "ON")
+    
+    spawn(function()
+        while features.autoOpenCrate do
+            if remotes.crate then
+                SafeCall("crt", function()
+                    SafeFireServer(remotes.crate)
+                end)
+            end
+            wait(CONFIG.CrateDelay)
+        end
+    end)
+end
+
+local function startAutoEquipSkin()
+    features.autoEquipSkin = true
+    Notify(" Auto Equip Skin", "ON")
+    
+    spawn(function()
+        while features.autoEquipSkin do
+            if remotes.equipSkin then
+                SafeCall("skins", function()
+                    SafeFireServer(remotes.equipSkin, "best")
+                    SafeFireServer(remotes.equipSkin)
+                end)
+            end
+            wait(5)
+        end
+    end)
+end
+
+local function startAutoBuy()
+    features.autoBuy = true
+    Notify(" Auto Buy", "ON")
+    
+    spawn(function()
+        while features.autoBuy do
+            if remotes.buy then
+                SafeCall("buy", function()
+                    SafeFireServer(remotes.buy, "rod")
+                    wait(1)
+                    SafeFireServer(remotes.buy, "bait")
+                    wait(1)
+                    SafeFireServer(remotes.buy, "bobber")
+                end)
+            end
+            wait(10)
+        end
+    end)
+end
+
+local function startAutoTotem()
+    features.autoTotem = true
+    Notify(" Auto Totem", "ON")
+    
+    spawn(function()
+        while features.autoTotem do
+            if remotes.totem then
+                SafeCall("tot", function()
+                    SafeFireServer(remotes.totem)
+                end)
+            end
+            wait(CONFIG.TotemDelay)
+        end
+    end)
+end
+
+-- ============================================
+-- 9. AUTO QUEST SYSTEM
+-- ============================================
+local questTypes = {"DeepSea", "AuraKid", "ElementJungle", "Quest1", "Quest2", "Ghostfin", "ElementJungle"}
+
+local function startAutoQuest()
+    features.autoQuest = true
+    Notify(" Auto Quest", "ON")
+    
+    spawn(function()
+        while features.autoQuest do
+            for _, quest in pairs(questTypes) do
+                if remotes.quest and features.autoQuest then
+                    SafeCall(quest, function()
+                        SafeFireServer(remotes.quest, quest)
+                    end)
+                    wait(2)
+                end
+            end
+            wait(10)
+        end
+    end)
+end
+
+-- ============================================
+-- 10. AUTO SHELL COLLECTION (SkuyyHub)
+-- ============================================
+local function startAutoShell()
+    features.autoShell = true
+    Notify(" Auto Shell", "ON")
+    
+    spawn(function()
+        while features.autoShell do
+            wait(0.3)
+            
+            for _, obj in pairs(workspace:GetChildren()) do
+                if obj.Name:lower():find("shell") or obj.Name:lower():find("seashell") or 
+                   obj.Name:lower():find("pearl") or obj.Name:lower():find("treasure") then
+                    
+                    if obj:FindFirstChild("ClickDetector") then
+                        pcall(function()
+                            fireclickdetector(obj.ClickDetector)
+                        end)
+                    elseif obj:FindFirstChild("ProximityPrompt") then
+                        pcall(function()
+                            fireproximityprompt(obj.ProximityPrompt)
+                        end)
+                    elseif obj:IsA("Part") or obj:IsA("MeshPart") then
+                        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            local oldPos = player.Character.HumanoidRootPart.CFrame
+                            pcall(function()
+                                player.Character.HumanoidRootPart.CFrame = CFrame.new(obj.Position + Vector3.new(0, 2, 0))
+                                wait(0.1)
+                                
+                                if obj:FindFirstChild("RemoteEvent") then
+                                    obj.RemoteEvent:FireServer()
+                                end
+                                
+                                if obj.CanTouch then
+                                    obj.Touched:Fire(player.Character.HumanoidRootPart)
+                                end
+                                
+                                wait(0.1)
+                                player.Character.HumanoidRootPart.CFrame = oldPos
+                            end)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- ============================================
+-- 11. PERFECT CATCH SYSTEM (SkuyyHub)
+-- ============================================
+local function startLegitPerfect()
+    features.legacyPerfect = true
+    Notify(" Perfect Catch", "ON")
+    
+    spawn(function()
+        while features.legacyPerfect do
+            wait(0.01)
+            
+            if player.PlayerGui:FindFirstChild("FishingGui") then
+                local fishingGui = player.PlayerGui.FishingGui
+                
+                if fishingGui:FindFirstChild("PerfectZone") and fishingGui.PerfectZone.Visible then
+                    local perfectZone = fishingGui.PerfectZone
+                    
+                    if perfectZone:FindFirstChild("Indicator") then
+                        local indicator = perfectZone.Indicator
+                        local zoneFrame = perfectZone:FindFirstChild("Zone")
+                        
+                        if zoneFrame and indicator.Position.X.Scale >= zoneFrame.Position.X.Scale and 
+                           indicator.Position.X.Scale <= (zoneFrame.Position.X.Scale + zoneFrame.Size.X.Scale) then
+                            
+                            wait(math.random(20, 80) / 1000)
+                            
+                            if remotes.reel then
+                                SafeCall("pf", function()
+                                    SafeFireServer(remotes.reel)
                                 end)
-                                break
                             end
                         end
                     end
                 end
-            end
-            task.wait(2)
-        end
-    end))
-end
-
-local function StopAutoHeal()
-    Features.AutoHeal = false
-    RemoveConnection("AutoHeal")
-    Notify(" Auto Heal", "OFF")
-end
-
--- ============================================
--- 20. ESP SYSTEM (FIXED & ENHANCED)
--- ============================================
-local ESPObjects = {}
-
-local function CreateESP(target, color, name)
-    if not target then return end
-    
-    local highlight = Instance.new("Highlight")
-    highlight.Name = "FishIt_ESP"
-    highlight.Adornee = target
-    highlight.FillColor = color or Settings.ESPColor
-    highlight.FillTransparency = 0.5
-    highlight.OutlineColor = Color3.new(1, 1, 1)
-    highlight.OutlineTransparency = 0
-    highlight.Parent = target
-    
-    local billboard = Instance.new("BillboardGui")
-    billboard.Name = "FishIt_Label"
-    billboard.Adornee = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head") or target
-    billboard.Size = UDim2.new(0, 200, 0, 50)
-    billboard.StudsOffset = Vector3.new(0, 3, 0)
-    billboard.AlwaysOnTop = true
-    billboard.Parent = target
-    
-    local label = Instance.new("TextLabel")
-    label.Name = "NameLabel"
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = color or Settings.ESPColor
-    label.TextStrokeTransparency = 0.5
-    label.TextScaled = true
-    label.Text = name or target.Name
-    label.Parent = billboard
-    
-    table.insert(ESPObjects, {Highlight = highlight, Billboard = billboard})
-    
-    return highlight, billboard
-end
-
-local function ClearESP()
-    for _, obj in ipairs(ESPObjects) do
-        pcall(function()
-            if obj.Highlight then obj.Highlight:Destroy() end
-            if obj.Billboard then obj.Billboard:Destroy() end
-        end)
-    end
-    ESPObjects = {}
-end
-
--- Player ESP
-local function EnablePlayerESP()
-    Features.ESP = true
-    Notify(" Player ESP", "ON")
-    
-    local function AddPlayerESP(p)
-        if p == player then return end
-        p.CharacterAdded:Connect(function(char)
-            task.wait(1)
-            if Features.ESP then
-                CreateESP(char, Settings.ESPColor, p.Name)
-            end
-        end)
-        
-        if p.Character then
-            CreateESP(p.Character, Settings.ESPColor, p.Name)
-        end
-    end
-    
-    for _, p in pairs(Players:GetPlayers()) do
-        AddPlayerESP(p)
-    end
-    
-    AddConnection("PlayerESP", Players.PlayerAdded:Connect(AddPlayerESP))
-end
-
-local function DisablePlayerESP()
-    Features.ESP = false
-    RemoveConnection("PlayerESP")
-    ClearESP()
-    Notify(" Player ESP", "OFF")
-end
-
--- Fish ESP (NEW)
-local function EnableFishESP()
-    Features.FishESP = true
-    Notify(" Fish ESP", "ON")
-    
-    AddConnection("FishESP", RunService.Heartbeat:Connect(function()
-        if not Features.FishESP then return end
-        
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("Model") or obj:IsA("Part") then
-                local name = obj.Name:lower()
-                if (name:find("fish") or name:find("catch") or name:find("spawn")) and 
-                   not obj:FindFirstChild("FishIt_ESP") then
-                    CreateESP(obj, Settings.FishESPColor, " " .. obj.Name)
+                
+                if fishingGui:FindFirstChild("PerfectButton") and fishingGui.PerfectButton.Visible then
+                    wait(math.random(30, 70) / 1000)
+                    pcall(function()
+                        fishingGui.PerfectButton.MouseButton1Click:Fire()
+                    end)
                 end
-            end
-        end
-    end))
-end
-
-local function DisableFishESP()
-    Features.FishESP = false
-    RemoveConnection("FishESP")
-    -- Clear only fish ESP
-    for i = #ESPObjects, 1, -1 do
-        if ESPObjects[i].Highlight and ESPObjects[i].Highlight.FillColor == Settings.FishESPColor then
-            pcall(function()
-                ESPObjects[i].Highlight:Destroy()
-                ESPObjects[i].Billboard:Destroy()
-            end)
-            table.remove(ESPObjects, i)
-        end
-    end
-    Notify(" Fish ESP", "OFF")
-end
-
--- NPC ESP (NEW)
-local function EnableNPCESP()
-    Features.NPCESP = true
-    Notify(" NPC ESP", "ON")
-    
-    AddConnection("NPCESP", RunService.Heartbeat:Connect(function()
-        if not Features.NPCESP then return end
-        
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("Model") then
-                local name = obj.Name:lower()
-                if (name:find("npc") or name:find("shop") or name:find("merchant") or 
-                    name:find("quest") or name:find("vendor")) and 
-                   not obj:FindFirstChild("FishIt_ESP") then
-                    CreateESP(obj, Color3.fromRGB(0, 255, 0), " " .. obj.Name)
-                end
-            end
-        end
-    end))
-end
-
-local function DisableNPCESP()
-    Features.NPCESP = false
-    RemoveConnection("NPCESP")
-    Notify(" NPC ESP", "OFF")
-end
-
--- ============================================
--- 21. FLY (FIXED)
--- ============================================
-local function ToggleFly()
-    Features.Fly = not Features.Fly
-    
-    local hum = GetHumanoid()
-    local root = GetRootPart()
-    
-    if not hum or not root then
-        Features.Fly = false
-        return
-    end
-    
-    if Features.Fly then
-        hum.PlatformStand = true
-        Notify(" Fly", "ON")
-        
-        AddConnection("Fly", RunService.RenderStepped:Connect(function()
-            if not Features.Fly then return end
-            
-            local currentRoot = GetRootPart()
-            if not currentRoot then return end
-            
-            local moveDir = Vector3.zero
-            local camCF = camera.CFrame
-            
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                moveDir = moveDir + camCF.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                moveDir = moveDir - camCF.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                moveDir = moveDir - camCF.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                moveDir = moveDir + camCF.RightVector
-            end
-            
-            local yVel = 0
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                yVel = Settings.FlySpeed
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-                yVel = -Settings.FlySpeed
-            end
-            
-            if moveDir.Magnitude > 0 then
-                currentRoot.AssemblyLinearVelocity = moveDir.Unit * Settings.FlySpeed + Vector3.new(0, yVel, 0)
-            else
-                currentRoot.AssemblyLinearVelocity = Vector3.new(0, yVel, 0)
-            end
-            
-            -- Anti-gravity
-            currentRoot.AssemblyLinearVelocity = currentRoot.AssemblyLinearVelocity * Vector3.new(1, 0.9, 1)
-        end))
-    else
-        hum.PlatformStand = false
-        RemoveConnection("Fly")
-        Notify(" Fly", "OFF")
-    end
-end
-
--- ============================================
--- 22. NOCLIP (FIXED)
--- ============================================
-local function ToggleNoclip()
-    Features.Noclip = not Features.Noclip
-    
-    if Features.Noclip then
-        Notify(" Noclip", "ON")
-        
-        AddConnection("Noclip", RunService.Stepped:Connect(function()
-            if Features.Noclip then
-                local char = GetCharacter()
-                if char then
-                    for _, part in pairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
+                
+                if fishingGui:FindFirstChild("CatchIndicator") then
+                    local indicator = fishingGui.CatchIndicator
+                    if indicator.BackgroundColor3 == Color3.fromRGB(0, 255, 0) then
+                        wait(math.random(20, 60) / 1000)
+                        pcall(function()
+                            indicator.MouseButton1Click:Fire()
+                        end)
                     end
                 end
             end
-        end))
-    else
-        RemoveConnection("Noclip")
-        -- Restore collision
-        local char = GetCharacter()
-        if char then
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                    part.CanCollide = true
-                end
+        end
+    end)
+end
+
+-- ============================================
+-- 12. CHARACTER ENHANCEMENT
+-- ============================================
+local function startAntiAFK()
+    features.antiAFK = true
+    Notify(" Anti-AFK", "ON")
+    
+    runService.RenderStepped:Connect(function()
+        if features.antiAFK and player.Character then
+            local humanoid = GetHumanoid()
+            if humanoid then
+                humanoid:Move(Vector3.new(0, 0, 0), true)
             end
         end
+    end)
+end
+
+local function startAntiDrown()
+    features.antiDrown = true
+    Notify(" Anti-Drown", "ON")
+    
+    runService.RenderStepped:Connect(function()
+        if features.antiDrown and player.Character then
+            local humanoid = GetHumanoid()
+            if humanoid and humanoid:GetState() == Enum.HumanoidStateType.Swimming then
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end)
+end
+
+local function startAutoHeal()
+    features.autoHeal = true
+    Notify(" Auto Heal", "ON")
+    
+    spawn(function()
+        while features.autoHeal do
+            local humanoid = GetHumanoid()
+            if humanoid and humanoid.Health < humanoid.MaxHealth * 0.5 then
+                for _, item in pairs(player.Backpack:GetChildren()) do
+                    if item:IsA("Tool") and (item.Name:lower():find("heal") or item.Name:lower():find("pot")) then
+                        humanoid:EquipTool(item)
+                        wait(0.5)
+                        break
+                    end
+                end
+            end
+            wait(2)
+        end
+    end)
+end
+
+local function toggleInfiniteJump()
+    features.infiniteJump = not features.infiniteJump
+    
+    if features.infiniteJump then
+        Notify(" Infinite Jump", "ON")
+        userInput.JumpRequest:Connect(function()
+            if features.infiniteJump then
+                local character = player.Character
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end
+        end)
+    else
+        Notify(" Infinite Jump", "OFF")
+    end
+end
+
+local function toggleFreezeCharacter()
+    features.freezeCharacter = not features.freezeCharacter
+    
+    if features.freezeCharacter then
+        Notify(" Freeze", "ON")
+        local character = player.Character
+        if character then
+            local root = character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local originalCFrame = root.CFrame
+                runService.Heartbeat:Connect(function()
+                    if features.freezeCharacter and root then
+                        root.CFrame = originalCFrame
+                    end
+                end)
+            end
+        end
+    else
+        Notify(" Freeze", "OFF")
+    end
+end
+
+-- ============================================
+-- 13. MOVEMENT ENHANCEMENTS
+-- ============================================
+local function toggleFly()
+    features.flyEnabled = not features.flyEnabled
+    local char = player.Character
+    if char and GetHumanoid() then
+        if features.flyEnabled then
+            GetHumanoid().PlatformStand = true
+            Notify(" Fly", "ON")
+            
+            runService.RenderStepped:Connect(function()
+                if not features.flyEnabled then return end
+                local root = GetRootPart()
+                if not root then return end
+                
+                local moveVec = Vector3.new(0, 0, 0)
+                if userInput:IsKeyDown(Enum.KeyCode.W) then moveVec = moveVec + camera.CFrame.LookVector end
+                if userInput:IsKeyDown(Enum.KeyCode.S) then moveVec = moveVec - camera.CFrame.LookVector end
+                if userInput:IsKeyDown(Enum.KeyCode.A) then moveVec = moveVec - camera.CFrame.RightVector end
+                if userInput:IsKeyDown(Enum.KeyCode.D) then moveVec = moveVec + camera.CFrame.RightVector end
+                
+                local yVel = 0
+                if userInput:IsKeyDown(Enum.KeyCode.Space) then yVel = flySpeed end
+                if userInput:IsKeyDown(Enum.KeyCode.LeftControl) then yVel = -flySpeed end
+                
+                if moveVec.Magnitude > 0 then
+                    root.AssemblyLinearVelocity = moveVec.Unit * flySpeed + Vector3.new(0, yVel, 0)
+                else
+                    root.AssemblyLinearVelocity = Vector3.new(0, yVel, 0)
+                end
+            end)
+        else
+            GetHumanoid().PlatformStand = false
+            Notify(" Fly", "OFF")
+        end
+    end
+end
+
+local function toggleNoclip()
+    features.noclipEnabled = not features.noclipEnabled
+    
+    if features.noclipEnabled then
+        Notify(" Noclip", "ON")
+        runService.RenderStepped:Connect(function()
+            if features.noclipEnabled and player.Character then
+                for _, part in pairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
         Notify(" Noclip", "OFF")
     end
 end
 
--- ============================================
--- 23. SPEED HACK (FIXED)
--- ============================================
-local function ToggleSpeedHack()
-    Features.SpeedHack = not Features.SpeedHack
+local function toggleSpeedHack()
+    features.speedHack = not features.speedHack
     
-    if Features.SpeedHack then
+    if features.speedHack then
         Notify(" Speed Hack", "ON")
-        
-        AddConnection("SpeedHack", RunService.Heartbeat:Connect(function()
-            if Features.SpeedHack then
-                local hum = GetHumanoid()
-                if hum then
-                    hum.WalkSpeed = Settings.WalkSpeed
-                    hum.JumpPower = Settings.JumpPower
-                end
+        runService.RenderStepped:Connect(function()
+            if features.speedHack and GetHumanoid() then
+                GetHumanoid().WalkSpeed = 100
+                GetHumanoid().JumpPower = 200
             end
-        end))
+        end)
     else
-        RemoveConnection("SpeedHack")
-        local hum = GetHumanoid()
-        if hum then
-            hum.WalkSpeed = 16
-            hum.JumpPower = 50
+        if GetHumanoid() then
+            GetHumanoid().WalkSpeed = 16
+            GetHumanoid().JumpPower = 50
         end
         Notify(" Speed Hack", "OFF")
     end
 end
 
 -- ============================================
--- 24. INFINITE JUMP (NEW)
+-- 14. VISUAL ENHANCEMENTS
 -- ============================================
-local function ToggleInfiniteJump()
-    Features.InfiniteJump = not Features.InfiniteJump
+local function enableESP()
+    features.espEnabled = true
+    Notify(" ESP", "ON")
     
-    if Features.InfiniteJump then
-        Notify(" Infinite Jump", "ON")
-        
-        AddConnection("InfiniteJump", UserInputService.JumpRequest:Connect(function()
-            if Features.InfiniteJump then
-                local hum = GetHumanoid()
-                if hum then
-                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
-                end
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= player and v.Character then
+            local highlight = Instance.new("Highlight")
+            highlight.Adornee = v.Character
+            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+            highlight.FillTransparency = 0.3
+            highlight.Parent = v.Character
+        end
+    end
+    
+    Players.PlayerAdded:Connect(function(newPlayer)
+        newPlayer.CharacterAdded:Connect(function(char)
+            wait(0.5)
+            if features.espEnabled then
+                local highlight = Instance.new("Highlight")
+                highlight.Adornee = char
+                highlight.FillColor = Color3.fromRGB(255, 0, 0)
+                highlight.FillTransparency = 0.3
+                highlight.Parent = char
             end
-        end))
+        end)
+    end)
+end
+
+local function toggleFPSBoost()
+    features.fpsBoost = not features.fpsBoost
+    
+    if features.fpsBoost then
+        Notify(" FPS Boost", "ON")
+        lighting.GlobalShadows = false
+        lighting.Technology = Enum.Technology.Legacy
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("Part") then v.Material = Enum.Material.Plastic end
+            if v:IsA("Decal") or v:IsA("Texture") then v:Destroy() end
+        end
+        settings().Rendering.QualityLevel = 1
     else
-        RemoveConnection("InfiniteJump")
-        Notify(" Infinite Jump", "OFF")
+        Notify(" FPS Boost", "OFF")
+        lighting.GlobalShadows = true
+        lighting.Technology = Enum.Technology.ShadowMap
+        settings().Rendering.QualityLevel = 3
+    end
+end
+
+local function toggleBlackScreen()
+    features.blackScreen = not features.blackScreen
+    
+    if features.blackScreen then
+        Notify(" Black Screen", "ON")
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.IgnoreGuiInset = true
+        screenGui.ResetOnSpawn = false
+        screenGui.Name = "BLACK_SCREEN"
+        screenGui.Parent = coreGui
+        
+        local frame = Instance.new("Frame")
+        frame.Parent = screenGui
+        frame.AnchorPoint = Vector2.new(0, 0)
+        frame.Position = UDim2.new(0, 0, 0, 0)
+        frame.Size = UDim2.new(1, 0, 1, 0)
+        frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        frame.BorderSizePixel = 0
+        
+        local text = Instance.new("TextLabel")
+        text.Parent = frame
+        text.Position = UDim2.new(0.5, 0, 0.5, 0)
+        text.AnchorPoint = Vector2.new(0.5, 0.5)
+        text.Size = UDim2.new(0, 400, 0, 100)
+        text.BackgroundTransparency = 1
+        text.Text = "ULTIMATE FISH-IT v5.0\nAll Features Loaded"
+        text.TextColor3 = Color3.fromRGB(0, 255, 0)
+        text.Font = Enum.Font.GothamBold
+        text.TextSize = 24
+    else
+        if coreGui:FindFirstChild("BLACK_SCREEN") then
+            coreGui.BLACK_SCREEN:Destroy()
+        end
+        Notify(" Black Screen", "OFF")
     end
 end
 
 -- ============================================
--- 25. TELEPORT SYSTEM (FIXED & EXPANDED)
+-- 15. RADAR & DIVING GEAR
 -- ============================================
-local Islands = {
-    ["Spawn"] = Vector3.new(0, 10, 0),
-    ["Coral Island"] = Vector3.new(100, 10, 50),
-    ["Mermaid Lagoon"] = Vector3.new(-80, 10, 120),
-    ["Retro Island"] = Vector3.new(200, 10, -100),
-    ["Esoteric Depths"] = Vector3.new(-150, 10, -80),
-    ["Event Island"] = Vector3.new(50, 10, -150),
-    ["Volcano Island"] = Vector3.new(300, 50, 200),
-    ["Frozen Lake"] = Vector3.new(-200, 5, -200),
-    ["Mystic Pond"] = Vector3.new(150, 5, 150),
-    ["Deep Ocean"] = Vector3.new(0, -50, 500),
+local function toggleAutoRadar()
+    features.autoRadar = not features.autoRadar
+    
+    if features.autoRadar then
+        Notify(" Radar", "ON")
+        if remotes.radar then
+            SafeFireServer(remotes.radar, true)
+        end
+    else
+        Notify(" Radar", "OFF")
+        if remotes.radar then
+            SafeFireServer(remotes.radar, false)
+        end
+    end
+end
+
+local function toggleDivingGear()
+    features.divingGear = not features.divingGear
+    
+    if features.divingGear then
+        Notify(" Diving Gear", "ON")
+        if remotes.oxygen then
+            SafeInvokeServer(remotes.oxygen, 105)
+        end
+    else
+        Notify(" Diving Gear", "OFF")
+        if remotes.oxygen then
+            SafeInvokeServer(remotes.oxygen)
+        end
+    end
+end
+
+-- ============================================
+-- 16. TELEPORT SYSTEM
+-- ============================================
+local islands = {
+    ["Spawn"] = Vector3.new(0, 5, 0),
+    ["Coral Island"] = Vector3.new(100, 5, 50),
+    ["Mermaid Lagoon"] = Vector3.new(-80, 5, 120),
+    ["Deep Sea"] = Vector3.new(500, 5, 500),
+    ["Frozen Fjord"] = Vector3.new(-300, 5, -300),
+    ["Volcanic Island"] = Vector3.new(800, 50, -200),
+    ["Ancient Ruins"] = Vector3.new(-600, 20, 400),
+    ["Crystal Caverns"] = Vector3.new(200, -20, -500),
+    ["Sky Islands"] = Vector3.new(0, 200, 800),
+    ["Mushroom Forest"] = Vector3.new(-800, 10, 200),
 }
 
-local function TeleportTo(position)
+local function teleportTo(pos)
     local root = GetRootPart()
     if root then
-        -- Safe teleport with velocity reset
-        root.AssemblyLinearVelocity = Vector3.zero
-        root.CFrame = CFrame.new(position + Vector3.new(0, 5, 0))
-        
-        -- Double check position
-        task.wait(0.1)
-        if (root.Position - position).Magnitude > 10 then
-            root.CFrame = CFrame.new(position)
-        end
-        
-        Notify(" Teleport", "Teleported to " .. tostring(position))
-    else
-        Notify(" Error", "Character not found!")
+        root.CFrame = CFrame.new(pos)
+        root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        Notify(" Teleport", "Success!")
     end
 end
 
 -- ============================================
--- 26. FPS BOOST (FIXED)
+-- 17. SERVER MANAGEMENT
 -- ============================================
-local OriginalSettings = {}
-
-local function EnableFPSBoost()
-    Features.FPSBoost = true
-    Notify(" FPS Boost", "ON")
-    
-    -- Save original settings
-    OriginalSettings.GlobalShadows = Lighting.GlobalShadows
-    OriginalSettings.Technology = Lighting.Technology
-    OriginalSettings.Brightness = Lighting.Brightness
-    
-    -- Apply optimizations
-    Lighting.GlobalShadows = false
-    Lighting.Technology = Enum.Technology.Compatibility
-    Lighting.Brightness = 2
-    
-    -- Optimize workspace
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            if not OriginalSettings[obj] then
-                OriginalSettings[obj] = obj.Material
-            end
-            obj.Material = Enum.Material.Plastic
-        elseif obj:IsA("Decal") or obj:IsA("Texture") then
-            obj:Destroy()
-        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
-            obj.Enabled = false
+local function startAutoRejoin()
+    features.autoRejoin = true
+    Notify(" Auto Rejoin", "ON")
+    player.OnTeleport:Connect(function()
+        if features.autoRejoin then
+            wait(5)
+            teleportService:Teleport(game.PlaceId)
         end
-    end
-    
-    -- Lower render quality
-    pcall(function()
-        settings().Rendering.QualityLevel = 1
     end)
 end
 
-local function DisableFPSBoost()
-    Features.FPSBoost = false
-    Notify(" FPS Boost", "OFF")
-    
-    -- Restore settings
-    Lighting.GlobalShadows = OriginalSettings.GlobalShadows or true
-    Lighting.Technology = OriginalSettings.Technology or Enum.Technology.ShadowMap
-    Lighting.Brightness = OriginalSettings.Brightness or 1
-    
-    pcall(function()
-        settings().Rendering.QualityLevel = 3
-    end)
-end
-
--- ============================================
--- 27. FULL BRIGHT (NEW)
--- ============================================
-local function ToggleFullBright()
-    Features.FullBright = not Features.FullBright
-    
-    if Features.FullBright then
-        Lighting.Brightness = 10
-        Lighting.ClockTime = 12
-        Lighting.FogEnd = 100000
-        Lighting.GlobalShadows = false
-        Notify(" Full Bright", "ON")
-    else
-        Lighting.Brightness = 2
-        Lighting.ClockTime = 14
-        Lighting.FogEnd = 1000
-        Lighting.GlobalShadows = true
-        Notify(" Full Bright", "OFF")
-    end
-end
-
--- ============================================
--- 28. AUTO COLLECT (NEW)
--- ============================================
-local function StartAutoCollect()
-    Features.AutoCollect = true
-    Notify(" Auto Collect", "ON")
-    
-    AddConnection("AutoCollect", RunService.Heartbeat:Connect(function()
-        if not Features.AutoCollect then return end
-        
-        local root = GetRootPart()
-        if not root then return end
-        
-        for _, obj in pairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") or obj:IsA("MeshPart") then
-                local name = obj.Name:lower()
-                if name:find("coin") or name:find("gem") or name:find("orb") or 
-                   name:find("drop") or name:find("loot") or name:find("collect") then
-                    if (obj.Position - root.Position).Magnitude < 50 then
-                        -- Tween to item
-                        pcall(function()
-                            obj.CFrame = root.CFrame
-                        end)
-                    end
-                end
-            end
-        end
-    end))
-end
-
-local function StopAutoCollect()
-    Features.AutoCollect = false
-    RemoveConnection("AutoCollect")
-    Notify(" Auto Collect", "OFF")
-end
-
--- ============================================
--- 29. SAVE & LOAD CONFIG (FIXED)
--- ============================================
-local ConfigFile = "FishIt_Mega_Config.json"
-
-local function SaveConfig()
-    local config = {
-        Features = {},
-        Settings = Settings
-    }
-    
-    for name, value in pairs(Features) do
-        config.Features[name] = value
-    end
-    
-    pcall(function()
-        writefile(ConfigFile, HttpService:JSONEncode(config))
-        Notify(" Config", "Saved successfully!")
-    end)
-end
-
-local function LoadConfig()
-    pcall(function()
-        if isfile(ConfigFile) then
-            local data = HttpService:JSONDecode(readfile(ConfigFile))
-            
-            if data.Settings then
-                for k, v in pairs(data.Settings) do
-                    Settings[k] = v
-                end
-            end
-            
-            Notify(" Config", "Loaded successfully!")
-        else
-            Notify(" Config", "No config file found")
+local function startAutoServerHop()
+    features.autoServerHop = true
+    Notify(" Server Hop", "ON")
+    spawn(function()
+        while features.autoServerHop do
+            wait(300)
+            teleportService:Teleport(game.PlaceId)
         end
     end)
 end
 
 -- ============================================
--- 30. AUTO SAVE (NEW)
--- ============================================
-local function StartAutoSave()
-    AddConnection("AutoSave", task.spawn(function()
-        while true do
-            task.wait(60) -- Save every minute
-            if Settings.AutoSave then
-                SaveConfig()
-            end
-        end
-    end))
-end
-
--- ============================================
--- UI CREATION - MODERN DESIGN
+-- WINDOW CREATION
 -- ============================================
 local Window = Library:Window({
-    Title = " FISH IT MEGA v4.0",
-    Footer = "Fixed & Enhanced | By AI Assistant"
+    Title = " ULTIMATE FISH-IT v5.0 COMPLETE",
+    Footer = "All Features from All 10 Links"
 })
 
--- ============================================
--- TAB 1: AUTOMATION
--- ============================================
-local AutoTab = Window:AddTab({ Name = " Auto", Icon = "bot" })
+local FishTab = Window:AddTab({ Name = " Fishing", Icon = "home" })
+local ToolTab = Window:AddTab({ Name = " Tools", Icon = "wrench" })
+local CharTab = Window:AddTab({ Name = " Character", Icon = "user" })
+local TPTab = Window:AddTab({ Name = " Teleport", Icon = "navigation" })
+local UtilTab = Window:AddTab({ Name = " Utility", Icon = "settings" })
 
-local FishingSection = AutoTab:AddSection(" Fishing")
+-- ============================================
+-- FISHING TAB UI
+-- ============================================
+local FishSection = FishTab:AddSection(" Auto Fishing")
 
-FishingSection:AddToggle({
+FishSection:AddToggle({
     Title = "Auto Fishing",
-    Description = "Catch fish automatically",
     Default = false,
     Callback = function(v)
-        if v then StartAutoFish() else StopAutoFish() end
+        if v then startAutoFish() else stopAutoFish() end
     end
 })
 
-FishingSection:AddDropdown({
+FishSection:AddDropdown({
     Title = "Fishing Mode",
-    Description = "Select fishing speed",
-    Options = {"Stable", "Blatant", "Extreme", "Instant"},
-    Default = "Stable",
+    Options = {"Legit", "Blatant", "Instant", "Extreme"},
+    Default = "Legit",
     Callback = function(v)
-        Settings.FishMode = v
-        if Features.AutoFish then
-            StopAutoFish()
-            task.wait(0.5)
-            StartAutoFish()
-        end
+        fishMode = v
     end
 })
 
-FishingSection:AddToggle({
-    Title = "Auto Re-Cast",
-    Description = "Automatically re-cast rod",
-    Default = true,
-    Callback = function(v)
-        Settings.AutoReCast = v
-    end
-})
-
-FishingSection:AddToggle({
-    Title = "Perfect Reel",
-    Description = "Always perfect reel timing",
+FishSection:AddToggle({
+    Title = "Auto Charge",
     Default = false,
     Callback = function(v)
-        Features.PerfectReel = v
+        features.autoCharge = v
+        Notify(" Auto Charge", v and "ON" or "OFF")
     end
 })
 
-local SellSection = AutoTab:AddSection(" Selling")
+local KaitunSection = FishTab:AddSection(" Kaitun System (Premium)")
+
+KaitunSection:AddToggle({
+    Title = "Enable Kaitun System",
+    Default = false,
+    Callback = function(v)
+        if v then startKaitun() else stopKaitun() end
+    end
+})
+
+KaitunSection:AddSlider({
+    Title = "Kaitun Delay",
+    Min = 0.1,
+    Max = 2,
+    Default = 0.35,
+    Callback = function(v)
+        kaitunDelay = v
+    end
+})
+
+local ReelSection = FishTab:AddSection(" Advanced Reel System")
+
+ReelSection:AddToggle({
+    Title = "Instant Reel (SimpleAJA)",
+    Default = false,
+    Callback = function(v)
+        if v then enableInstantReel() else disableInstantReel() end
+    end
+})
+
+ReelSection:AddToggle({
+    Title = "Fast Bobber",
+    Default = false,
+    Callback = function(v)
+        if v then enableFastBobber() else features.fastBobber = false end
+    end
+})
+
+ReelSection:AddToggle({
+    Title = "Instant Cast",
+    Default = false,
+    Callback = function(v)
+        if v then enableInstantCast() else features.instantCast = false end
+    end
+})
+
+ReelSection:AddToggle({
+    Title = "Auto Shake",
+    Default = false,
+    Callback = function(v)
+        features.autoShake = v
+    end
+})
+
+local SellSection = FishTab:AddSection(" Auto Sell")
 
 SellSection:AddToggle({
     Title = "Auto Sell",
-    Description = "Sell fish automatically",
     Default = false,
     Callback = function(v)
-        if v then StartAutoSell() else StopAutoSell() end
+        if v then startAutoSell() else stopAutoSell() end
     end
 })
 
@@ -1391,521 +1333,340 @@ SellSection:AddDropdown({
     Options = {"All", "Legendary", "Epic", "Rare", "Common"},
     Default = "All",
     Callback = function(v)
-        Settings.SellFilter = v
-        if Features.AutoSell then
-            StopAutoSell()
-            task.wait(0.5)
-            StartAutoSell()
+        sellFilter = v
+    end
+})
+
+local UpgradeSection = FishTab:AddSection(" Auto Upgrades")
+
+UpgradeSection:AddToggle({
+    Title = "Auto Enchant",
+    Default = false,
+    Callback = function(v)
+        if v then startAutoEnchant() else features.autoEnchant = false end
+    end
+})
+
+UpgradeSection:AddToggle({
+    Title = "Auto Open Crate",
+    Default = false,
+    Callback = function(v)
+        if v then startAutoOpenCrate() else features.autoOpenCrate = false end
+    end
+})
+
+UpgradeSection:AddToggle({
+    Title = "Auto Equip Skin",
+    Default = false,
+    Callback = function(v)
+        if v then startAutoEquipSkin() else features.autoEquipSkin = false end
+    end
+})
+
+UpgradeSection:AddToggle({
+    Title = "Auto Buy",
+    Default = false,
+    Callback = function(v)
+        if v then startAutoBuy() else features.autoBuy = false end
+    end
+})
+
+UpgradeSection:AddToggle({
+    Title = "Auto Totem",
+    Default = false,
+    Callback = function(v)
+        if v then startAutoTotem() else features.autoTotem = false end
+    end
+})
+
+local QuestSection = FishTab:AddSection(" Quest System")
+
+QuestSection:AddToggle({
+    Title = "Auto Quest",
+    Default = false,
+    Callback = function(v)
+        if v then startAutoQuest() else features.autoQuest = false end
+    end
+})
+
+local PerfectSection = FishTab:AddSection(" Perfect Catch (SkuyyHub)")
+
+PerfectSection:AddToggle({
+    Title = "Legacy Perfect Catch",
+    Default = false,
+    Callback = function(v)
+        if v then startLegitPerfect() else features.legacyPerfect = false end
+    end
+})
+
+local CollectSection = FishTab:AddSection(" Item Collection (SkuyyHub)")
+
+CollectSection:AddToggle({
+    Title = "Auto Collect Shells",
+    Default = false,
+    Callback = function(v)
+        if v then startAutoShell() else features.autoShell = false end
+    end
+})
+
+-- ============================================
+-- TOOLS TAB UI
+-- ============================================
+local MovementSection = ToolTab:AddSection(" Movement")
+
+MovementSection:AddToggle({
+    Title = "Fly",
+    Default = false,
+    Callback = function(v)
+        toggleFly()
+    end
+})
+
+MovementSection:AddSlider({
+    Title = "Fly Speed",
+    Min = 10,
+    Max = 500,
+    Default = 100,
+    Callback = function(v)
+        flySpeed = v
+    end
+})
+
+MovementSection:AddToggle({
+    Title = "Noclip",
+    Default = false,
+    Callback = function(v)
+        toggleNoclip()
+    end
+})
+
+MovementSection:AddToggle({
+    Title = "Speed Hack",
+    Default = false,
+    Callback = function(v)
+        toggleSpeedHack()
+    end
+})
+
+local VisualSection = ToolTab:AddSection(" Visual")
+
+VisualSection:AddToggle({
+    Title = "ESP Players",
+    Default = false,
+    Callback = function(v)
+        if v then enableESP() else features.espEnabled = false end
+    end
+})
+
+VisualSection:AddToggle({
+    Title = "FPS Boost",
+    Default = false,
+    Callback = function(v)
+        toggleFPSBoost()
+    end
+})
+
+VisualSection:AddToggle({
+    Title = "Black Screen",
+    Default = false,
+    Callback = function(v)
+        toggleBlackScreen()
+    end
+})
+
+VisualSection:AddToggle({
+    Title = "Disable Notifications",
+    Default = false,
+    Callback = function(v)
+        features.disableNotif = v
+    end
+})
+
+local SpecialSection = ToolTab:AddSection(" Special Features")
+
+SpecialSection:AddToggle({
+    Title = "Auto Radar",
+    Default = false,
+    Callback = function(v)
+        toggleAutoRadar()
+    end
+})
+
+SpecialSection:AddToggle({
+    Title = "Diving Gear",
+    Default = false,
+    Callback = function(v)
+        toggleDivingGear()
+    end
+})
+
+-- ============================================
+-- CHARACTER TAB UI
+-- ============================================
+local ProtectSection = CharTab:AddSection(" Protection")
+
+ProtectSection:AddToggle({
+    Title = "Anti-AFK",
+    Default = false,
+    Callback = function(v)
+        if v then startAntiAFK() else features.antiAFK = false end
+    end
+})
+
+ProtectSection:AddToggle({
+    Title = "Anti-Drown",
+    Default = false,
+    Callback = function(v)
+        if v then startAntiDrown() else features.antiDrown = false end
+    end
+})
+
+ProtectSection:AddToggle({
+    Title = "Auto Heal",
+    Default = false,
+    Callback = function(v)
+        if v then startAutoHeal() else features.autoHeal = false end
+    end
+})
+
+local EnhanceSection = CharTab:AddSection(" Enhancements")
+
+EnhanceSection:AddToggle({
+    Title = "Infinite Jump",
+    Default = false,
+    Callback = function(v)
+        toggleInfiniteJump()
+    end
+})
+
+EnhanceSection:AddToggle({
+    Title = "Freeze Character",
+    Default = false,
+    Callback = function(v)
+        toggleFreezeCharacter()
+    end
+})
+
+EnhanceSection:AddSlider({
+    Title = "Jump Power",
+    Min = 50,
+    Max = 500,
+    Default = 50,
+    Callback = function(v)
+        customJumpPower = v
+        if GetHumanoid() then
+            GetHumanoid().JumpPower = v
         end
     end
 })
 
-local ItemSection = AutoTab:AddSection(" Items")
+-- ============================================
+-- TELEPORT TAB UI
+-- ============================================
+local TPSection = TPTab:AddSection(" Island Teleport")
 
-ItemSection:AddToggle({
-    Title = "Auto Open Crate",
-    Description = "Open crates automatically",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoOpenCrate() else StopAutoOpenCrate() end
-    end
-})
+for name, pos in pairs(islands) do
+    TPSection:AddButton({
+        Title = "TP: " .. name,
+        Callback = function()
+            teleportTo(pos)
+        end
+    })
+end
 
-ItemSection:AddToggle({
-    Title = "Auto Enchant",
-    Description = "Enchant rod automatically",
-    Default = false,
+TPSection:AddInput({
+    Title = "Custom Teleport",
+    Default = "0,5,0",
     Callback = function(v)
-        if v then StartAutoEnchant() else StopAutoEnchant() end
-    end
-})
-
-ItemSection:AddToggle({
-    Title = "Auto Equip Skin",
-    Description = "Equip best skin automatically",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoEquipSkin() else StopAutoEquipSkin() end
-    end
-})
-
-ItemSection:AddToggle({
-    Title = "Auto Buy",
-    Description = "Buy items automatically",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoBuy() else StopAutoBuy() end
-    end
-})
-
-ItemSection:AddToggle({
-    Title = "Auto Collect Drops",
-    Description = "Collect nearby drops",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoCollect() else StopAutoCollect() end
+        local parts = {}
+        for num in v:gmatch("%-?%d+%.?%d*") do
+            table.insert(parts, tonumber(num))
+        end
+        if #parts >= 3 then
+            teleportTo(Vector3.new(parts[1], parts[2], parts[3]))
+        end
     end
 })
 
 -- ============================================
--- TAB 2: WORLD & QUESTS
+-- UTILITY TAB UI
 -- ============================================
-local WorldTab = Window:AddTab({ Name = " World", Icon = "globe" })
+local InfoSection = UtilTab:AddSection(" Script Info")
 
-local QuestSection = WorldTab:AddSection(" Quests")
+InfoSection:AddLabel(" Detected Remotes: " .. tostring(#detectedRemotes))
+InfoSection:AddLabel(" All 10 Links Features:  Integrated")
 
-QuestSection:AddToggle({
-    Title = "Auto Quest",
-    Description = "Complete quests automatically",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoQuest() else StopAutoQuest() end
+InfoSection:AddButton({
+    Title = "Show Detected Remotes",
+    Callback = function()
+        local txt = "DETECTED REMOTES:\n\n"
+        for i, r in pairs(detectedRemotes) do
+            txt = txt .. i .. ". " .. r.name .. " (" .. r.type .. ")\n"
+        end
+        print(txt)
+        Notify(" Remotes", "Printed to console! (" .. #detectedRemotes .. " found)")
     end
 })
 
-QuestSection:AddToggle({
-    Title = "Auto Artifact",
-    Description = "Collect artifacts automatically",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoArtifact() else StopAutoArtifact() end
-    end
-})
-
-QuestSection:AddToggle({
-    Title = "Auto Event",
-    Description = "Join events automatically",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoEvent() else StopAutoEvent() end
-    end
-})
-
-local WorldSection = WorldTab:AddSection(" World Control")
-
-WorldSection:AddToggle({
-    Title = "Auto Totem",
-    Description = "Place totems automatically",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoTotem() else StopAutoTotem() end
-    end
-})
-
-WorldSection:AddToggle({
-    Title = "Auto Weather",
-    Description = "Cycle weather automatically",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoWeather() else StopAutoWeather() end
-    end
-})
-
--- ============================================
--- TAB 3: TRADE & SERVER
--- ============================================
-local TradeTab = Window:AddTab({ Name = " Trade", Icon = "repeat" })
-
-local TradeSection = TradeTab:AddSection(" Trading")
-
-TradeSection:AddToggle({
-    Title = "Auto Trade",
-    Description = "Send trade requests automatically",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoTrade() else StopAutoTrade() end
-    end
-})
-
-TradeSection:AddToggle({
-    Title = "Auto Accept Trade",
-    Description = "Accept all trade requests",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoAcceptTrade() else StopAutoAcceptTrade() end
-    end
-})
-
-local ServerSection = TradeTab:AddSection(" Server")
+local ServerSection = UtilTab:AddSection(" Server Management")
 
 ServerSection:AddToggle({
     Title = "Auto Rejoin",
-    Description = "Rejoin on disconnect",
     Default = false,
     Callback = function(v)
-        if v then StartAutoRejoin() else StopAutoRejoin() end
+        if v then startAutoRejoin() else features.autoRejoin = false end
     end
 })
 
 ServerSection:AddToggle({
     Title = "Auto Server Hop",
-    Description = "Switch server every 5 min",
     Default = false,
     Callback = function(v)
-        if v then StartAutoServerHop() else StopAutoServerHop() end
+        if v then startAutoServerHop() else features.autoServerHop = false end
     end
 })
 
 ServerSection:AddButton({
     Title = "Server Hop Now",
     Callback = function()
-        pcall(function()
-            TeleportService:Teleport(game.PlaceId)
-        end)
-    end
-})
-
-ServerSection:AddButton({
-    Title = "Rejoin Server",
-    Callback = function()
-        pcall(function()
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId)
-        end)
+        teleportService:Teleport(game.PlaceId)
     end
 })
 
 -- ============================================
--- TAB 4: MOVEMENT
+-- KEYBINDS
 -- ============================================
-local MoveTab = Window:AddTab({ Name = " Movement", Icon = "zap" })
-
-local FlySection = MoveTab:AddSection(" Flight")
-
-FlySection:AddToggle({
-    Title = "Fly",
-    Description = "WASD + Space/Ctrl",
-    Default = false,
-    Callback = function(v)
-        if Features.Fly ~= v then
-            ToggleFly()
-        end
-    end
-})
-
-FlySection:AddSlider({
-    Title = "Fly Speed",
-    Min = 10,
-    Max = 500,
-    Default = 100,
-    Callback = function(v)
-        Settings.FlySpeed = v
-    end
-})
-
-local MoveSection = MoveTab:AddSection(" Movement")
-
-MoveSection:AddToggle({
-    Title = "Speed Hack",
-    Description = "Fast walk and jump",
-    Default = false,
-    Callback = function(v)
-        if Features.SpeedHack ~= v then
-            ToggleSpeedHack()
-        end
-    end
-})
-
-MoveSection:AddSlider({
-    Title = "Walk Speed",
-    Min = 16,
-    Max = 200,
-    Default = 50,
-    Callback = function(v)
-        Settings.WalkSpeed = v
-    end
-})
-
-MoveSection:AddSlider({
-    Title = "Jump Power",
-    Min = 50,
-    Max = 200,
-    Default = 100,
-    Callback = function(v)
-        Settings.JumpPower = v
-    end
-})
-
-MoveSection:AddToggle({
-    Title = "Noclip",
-    Description = "Walk through walls",
-    Default = false,
-    Callback = function(v)
-        if Features.Noclip ~= v then
-            ToggleNoclip()
-        end
-    end
-})
-
-MoveSection:AddToggle({
-    Title = "Infinite Jump",
-    Description = "Jump infinitely",
-    Default = false,
-    Callback = function(v)
-        if Features.InfiniteJump ~= v then
-            ToggleInfiniteJump()
-        end
-    end
-})
-
--- ============================================
--- TAB 5: VISUAL
--- ============================================
-local VisualTab = Window:AddTab({ Name = " Visual", Icon = "eye" })
-
-local ESPSection = VisualTab:AddSection(" ESP")
-
-ESPSection:AddToggle({
-    Title = "Player ESP",
-    Description = "See all players",
-    Default = false,
-    Callback = function(v)
-        if v then EnablePlayerESP() else DisablePlayerESP() end
-    end
-})
-
-ESPSection:AddToggle({
-    Title = "Fish ESP",
-    Description = "See fish locations",
-    Default = false,
-    Callback = function(v)
-        if v then EnableFishESP() else DisableFishESP() end
-    end
-})
-
-ESPSection:AddToggle({
-    Title = "NPC ESP",
-    Description = "See NPCs and shops",
-    Default = false,
-    Callback = function(v)
-        if v then EnableNPCESP() else DisableNPCESP() end
-    end
-})
-
-local VisualSection = VisualTab:AddSection(" Visual Effects")
-
-VisualSection:AddToggle({
-    Title = "FPS Boost",
-    Description = "Reduce graphics for FPS",
-    Default = false,
-    Callback = function(v)
-        if v then EnableFPSBoost() else DisableFPSBoost() end
-    end
-})
-
-VisualSection:AddToggle({
-    Title = "Full Bright",
-    Description = "Maximum brightness",
-    Default = false,
-    Callback = function(v)
-        ToggleFullBright()
-    end
-})
-
--- ============================================
--- TAB 6: PROTECTION
--- ============================================
-local ProtectTab = Window:AddTab({ Name = " Protect", Icon = "shield" })
-
-local ProtectSection = ProtectTab:AddSection(" Protection")
-
-ProtectSection:AddToggle({
-    Title = "Anti-AFK",
-    Description = "Prevent AFK kick",
-    Default = false,
-    Callback = function(v)
-        if v then StartAntiAFK() else StopAntiAFK() end
-    end
-})
-
-ProtectSection:AddToggle({
-    Title = "Anti-Drown",
-    Description = "Prevent drowning",
-    Default = false,
-    Callback = function(v)
-        if v then StartAntiDrown() else StopAntiDrown() end
-    end
-})
-
-ProtectSection:AddToggle({
-    Title = "Anti-Kick",
-    Description = "Block kick attempts",
-    Default = false,
-    Callback = function(v)
-        if v then StartAntiKick() end
-    end
-})
-
-ProtectSection:AddToggle({
-    Title = "Auto Heal",
-    Description = "Auto heal when low HP",
-    Default = false,
-    Callback = function(v)
-        if v then StartAutoHeal() else StopAutoHeal() end
-    end
-})
-
--- ============================================
--- TAB 7: TELEPORT
--- ============================================
-local TPTab = Window:AddTab({ Name = " Teleport", Icon = "map-pin" })
-
-local IslandSection = TPTab:AddSection(" Islands")
-
-for name, pos in pairs(Islands) do
-    IslandSection:AddButton({
-        Title = " " .. name,
-        Callback = function()
-            TeleportTo(pos)
-        end
-    })
-end
-
-local CustomTPSection = TPTab:AddSection(" Custom")
-
-CustomTPSection:AddInput({
-    Title = "Custom Position",
-    Description = "Format: X,Y,Z",
-    Default = "",
-    Callback = function(v)
-        local coords = {}
-        for num in v:gmatch("%-?%d+%.?%d*") do
-            table.insert(coords, tonumber(num))
-        end
-        
-        if #coords >= 3 then
-            TeleportTo(Vector3.new(coords[1], coords[2], coords[3]))
-        else
-            Notify(" Error", "Invalid coordinates!")
-        end
-    end
-})
-
-CustomTPSection:AddButton({
-    Title = "Teleport to Safe Zone",
-    Callback = function()
-        TeleportTo(CONFIG.SafePosition)
-    end
-})
-
-CustomTPSection:AddButton({
-    Title = "Teleport to Random Fishing Spot",
-    Callback = function()
-        local spot = CONFIG.FishingSpots[math.random(1, #CONFIG.FishingSpots)]
-        TeleportTo(spot)
-    end
-})
-
--- ============================================
--- TAB 8: SETTINGS
--- ============================================
-local SettingsTab = Window:AddTab({ Name = " Settings", Icon = "settings" })
-
-local ConfigSection = SettingsTab:AddSection(" Configuration")
-
-ConfigSection:AddToggle({
-    Title = "Auto Save",
-    Description = "Auto save settings",
-    Default = true,
-    Callback = function(v)
-        Settings.AutoSave = v
-    end
-})
-
-ConfigSection:AddButton({
-    Title = " Save Config",
-    Callback = SaveConfig
-})
-
-ConfigSection:AddButton({
-    Title = " Load Config",
-    Callback = LoadConfig
-})
-
-ConfigSection:AddButton({
-    Title = " Reset All Features",
-    Callback = function()
-        StopAllFeatures()
-    end
-})
-
-ConfigSection:AddButton({
-    Title = " Destroy UI",
-    Callback = function()
-        StopAllFeatures()
-        Library:Destroy()
-    end
-})
-
--- ============================================
--- KEYBINDS (FIXED)
--- ============================================
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
+userInput.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
     if input.KeyCode == Enum.KeyCode.F1 then
-        if Features.AutoFish then StopAutoFish() else StartAutoFish() end
+        if features.autoFish then stopAutoFish() else startAutoFish() end
     elseif input.KeyCode == Enum.KeyCode.F2 then
-        ToggleFly()
+        teleportTo(Vector3.new(0, 5, 0))
     elseif input.KeyCode == Enum.KeyCode.F3 then
-        if Features.AutoOpenCrate then StopAutoOpenCrate() else StartAutoOpenCrate() end
+        if features.autoOpenCrate then features.autoOpenCrate = false else startAutoOpenCrate() end
     elseif input.KeyCode == Enum.KeyCode.F4 then
-        ToggleSpeedHack()
+        toggleFly()
     elseif input.KeyCode == Enum.KeyCode.F5 then
-        if Features.ESP then DisablePlayerESP() else EnablePlayerESP() end
+        toggleSpeedHack()
     elseif input.KeyCode == Enum.KeyCode.F6 then
-        ToggleNoclip()
+        if features.espEnabled then features.espEnabled = false else enableESP() end
     elseif input.KeyCode == Enum.KeyCode.F7 then
-        TeleportTo(CONFIG.SafePosition)
-    elseif input.KeyCode == Enum.KeyCode.Insert then
-        -- Toggle UI visibility
-        pcall(function()
-            Library:Toggle()
-        end)
-    end
-end)
-
--- ============================================
--- CHARACTER HANDLING
--- ============================================
-player.CharacterAdded:Connect(function(char)
-    -- Re-apply active features on respawn
-    task.wait(1)
-    
-    if Features.SpeedHack then
-        ToggleSpeedHack()
-        ToggleSpeedHack()
-    end
-    
-    if Features.Noclip then
-        ToggleNoclip()
-        ToggleNoclip()
-    end
-    
-    if Features.Fly then
-        ToggleFly()
-        ToggleFly()
+        if features.autoSell then stopAutoSell() else startAutoSell() end
+    elseif input.KeyCode == Enum.KeyCode.F8 then
+        if features.kaitunMode then stopKaitun() else startKaitun() end
+    elseif input.KeyCode == Enum.KeyCode.F9 then
+        if features.instantReel then disableInstantReel() else enableInstantReel() end
+    elseif input.KeyCode == Enum.KeyCode.F10 then
+        toggleNoclip()
     end
 end)
 
 -- ============================================
 -- INITIALIZATION
 -- ============================================
-task.spawn(function()
-    -- Wait for game to load
-    repeat task.wait() until game:IsLoaded()
-    
-    -- Initialize remotes
-    InitializeRemotes()
-    
-    -- Start auto save
-    StartAutoSave()
-    
-    -- Load config
-    LoadConfig()
-    
-    -- Initialize UI
-    Library:Initialize()
-    
-    -- Welcome notification
-    Notify(" FISH IT MEGA", "v4.0 Loaded Successfully!", 5)
-end)
+wait(1)
+findAllRemotes()
+Library:Initialize()
+
+Notify(" ULTIMATE FISH-IT v5.0 COMPLETE", "Semua 10 Link Integrated!", 5)
