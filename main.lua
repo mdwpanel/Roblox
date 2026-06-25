@@ -76,6 +76,10 @@ _G.AutoWalkSpeed = 25
 _G.WallHack = false
 _G.GodMode = false  -- NEW: God Mode
 
+-- FIX: Tambahkan variabel yang hilang
+WeaponFixActive = false
+local WeaponFixActive = false  -- Deklarasi ulang untuk aman
+
 local Config = {
     WalkSpeedDefault = 16,
     JumpPowerDefault = 50,
@@ -83,6 +87,174 @@ local Config = {
     Theme = "Midnight", 
     FlySpeed = 100,
 }
+
+-- ==========================================
+-- FUNGSI YANG HILANG - DITAMBAHKAN
+-- ==========================================
+
+-- Fungsi AddLog
+function AddLog(message)
+    print("[FCAL] " .. message)
+end
+
+-- Fungsi FixTool
+function FixTool(tool)
+    if not tool or not tool:IsA("Tool") then return false end
+    
+    -- Tambahkan Handle jika tidak ada
+    if not tool:FindFirstChild("Handle") then
+        local handle = Instance.new("Part")
+        handle.Name = "Handle"
+        handle.Size = Vector3.new(1, 1, 2)
+        handle.Shape = Enum.PartType.Cylinder
+        handle.BrickColor = BrickColor.new("Bright red")
+        handle.Material = Enum.Material.Neon
+        handle.Transparency = 0.3
+        handle.Anchored = false
+        handle.CanCollide = true
+        handle.Parent = tool
+    end
+    
+    return true
+end
+
+-- Fungsi ListWeapons
+function ListWeapons()
+    local weapons = {}
+    for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            table.insert(weapons, tool.Name)
+        end
+    end
+    
+    if #weapons == 0 then
+        Library:MakeNotify({ 
+            Title = "📋 Weapons", 
+            Content = "Tidak ada senjata di backpack!", 
+            Duration = 3 
+        })
+        return
+    end
+    
+    local msg = "Senjata di backpack:\n"
+    for i, name in ipairs(weapons) do
+        msg = msg .. i .. ". " .. name .. "\n"
+    end
+    
+    Library:MakeNotify({ 
+        Title = "📋 " .. #weapons .. " Weapons", 
+        Content = msg, 
+        Duration = 5 
+    })
+    print(msg)
+end
+
+-- Fungsi ForceEquipWeapon
+function ForceEquipWeapon(weaponName)
+    local hum = GetHumanoid()
+    if not hum then
+        Library:MakeNotify({ 
+            Title = "❌ Error", 
+            Content = "Humanoid tidak ditemukan!", 
+            Duration = 2 
+        })
+        return false
+    end
+    
+    -- Jika nama diberikan, cari spesifik
+    if weaponName and weaponName ~= "" then
+        for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+            if tool:IsA("Tool") and tool.Name:lower():find(weaponName:lower()) then
+                hum:EquipTool(tool)
+                Library:MakeNotify({ 
+                    Title = "🔫 Equipped!", 
+                    Content = "Menggunakan: " .. tool.Name, 
+                    Duration = 2 
+                })
+                return true
+            end
+        end
+        Library:MakeNotify({ 
+            Title = "❌ Gagal", 
+            Content = "Senjata '" .. weaponName .. "' tidak ditemukan!", 
+            Duration = 2 
+        })
+        return false
+    end
+    
+    -- Jika tidak ada nama, equip yang pertama
+    for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            hum:EquipTool(tool)
+            Library:MakeNotify({ 
+                Title = "🔫 Equipped!", 
+                Content = "Menggunakan: " .. tool.Name, 
+                Duration = 2 
+            })
+            return true
+        end
+    end
+    
+    Library:MakeNotify({ 
+        Title = "❌ Gagal", 
+        Content = "Tidak ada senjata di backpack!", 
+        Duration = 2 
+    })
+    return false
+end
+
+-- Fungsi GetAndFixAllWeapons
+function GetAndFixAllWeapons()
+    local weapons = {}
+    local found = {}
+    local fixed = 0
+    local broken = 0
+    
+    -- Cari semua Tool di workspace
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Tool") then
+            local name = obj.Name:lower()
+            if not name:find("coin") and not name:find("money") and not name:find("gold") and
+               not name:find("currency") and not name:find("point") and not name:find("checkpoint") and
+               not name:find("humanoid") and not name:find("character") and not name:find("npc") then
+                if not found[obj.Name] then
+                    table.insert(weapons, obj)
+                    found[obj.Name] = true
+                end
+            end
+        end
+    end
+    
+    -- Clone dan perbaiki setiap senjata
+    local added = 0
+    
+    for _, tool in pairs(weapons) do
+        -- Cek apakah sudah ada di backpack
+        local exists = false
+        for _, item in pairs(LocalPlayer.Backpack:GetChildren()) do
+            if item:IsA("Tool") and item.Name == tool.Name then
+                exists = true
+                break
+            end
+        end
+        
+        if not exists then
+            local newTool = tool:Clone()
+            
+            -- Perbaiki jika perlu
+            if FixTool(newTool) then
+                fixed = fixed + 1
+            else
+                broken = broken + 1
+            end
+            
+            newTool.Parent = LocalPlayer.Backpack
+            added = added + 1
+        end
+    end
+    
+    return added, fixed, broken
+end
 
 -- ==========================================
 -- WINDOW CREATION
@@ -173,7 +345,6 @@ function UpdateESP()
                         objects.Line.Visible = false
                     end
                     
-                    -- Skeleton ESP
                     if _G.SkeletonESP then
                         UpdateSkeletonESP(player, objects)
                     else
@@ -466,25 +637,16 @@ local CoinMultiplier = 1
 local AutoCollectCoins = false
 local SpawnAllWeapons = false
 local ShieldTools = {"Shield", "Perisai", "Protector", "PrankShield"}
+
+-- FIX: Perbaiki fungsi IsWeaponComplete agar lebih robust
 local function IsWeaponComplete(tool)
     if not tool or not tool:IsA("Tool") then return false end
     
-    -- Cek Handle
     local handle = tool:FindFirstChild("Handle")
     if not handle or not handle:IsA("BasePart") then
         return false
     end
     
-    -- Cek apakah ada script (LocalScript atau Script)
-    local hasScript = false
-    for _, child in pairs(tool:GetChildren()) do
-        if child:IsA("LocalScript") or child:IsA("Script") then
-            hasScript = true
-            break
-        end
-    end
-    
-    -- Tool tetap dianggap lengkap meski tanpa script (beberapa tool hanya fisik)
     return true
 end
 
@@ -492,7 +654,6 @@ end
 local function RepairTool(tool)
     if not tool or not tool:IsA("Tool") then return false end
     
-    -- 1. Tambahkan Handle jika tidak ada
     if not tool:FindFirstChild("Handle") then
         local handle = Instance.new("Part")
         handle.Name = "Handle"
@@ -504,102 +665,6 @@ local function RepairTool(tool)
         handle.Anchored = false
         handle.CanCollide = true
         handle.Parent = tool
-        print("✅ Handle ditambahkan ke:", tool.Name)
-    end
-    
-    -- 2. Pastikan Handle adalah BasePart
-    local handle = tool:FindFirstChild("Handle")
-    if handle and not handle:IsA("BasePart") then
-        local newHandle = Instance.new("Part")
-        newHandle.Name = "Handle"
-        newHandle.Size = Vector3.new(1, 1, 2)
-        newHandle.Shape = Enum.PartType.Cylinder
-        newHandle.BrickColor = BrickColor.new("Bright red")
-        newHandle.Material = Enum.Material.Neon
-        newHandle.Transparency = 0.3
-        newHandle.Anchored = false
-        newHandle.CanCollide = true
-        newHandle.Parent = tool
-        handle:Destroy()
-        handle = newHandle
-        print("✅ Handle diganti di:", tool.Name)
-    end
-    
-    -- 3. Tambahkan script dasar jika tidak ada
-    if not tool:FindFirstChildWhichIsA("LocalScript") and not tool:FindFirstChildWhichIsA("Script") then
-        local script = Instance.new("LocalScript")
-        script.Name = "WeaponController"
-        script.Source = [[
-            local tool = script.Parent
-            local handle = tool:FindFirstChild("Handle")
-            local player = game:GetService("Players").LocalPlayer
-            local mouse = player:GetMouse()
-            
-            -- Efek equip
-            tool.Equipped:Connect(function()
-                print("🔫 " .. tool.Name .. " equipped!")
-                if handle then
-                    handle.Transparency = 0
-                    -- Efek cahaya
-                    local light = Instance.new("PointLight")
-                    light.Name = "WeaponLight"
-                    light.Range = 10
-                    light.Brightness = 2
-                    light.Color = Color3.new(1, 0.5, 0)
-                    light.Parent = handle
-                end
-            end)
-            
-            -- Efek unequip
-            tool.Unequipped:Connect(function()
-                if handle then
-                    handle.Transparency = 0.5
-                    local light = handle:FindFirstChild("WeaponLight")
-                    if light then light:Destroy() end
-                end
-            end)
-            
-            -- Fungsi utama saat diklik
-            tool.Activated:Connect(function()
-                if handle then
-                    -- Efek proyektil
-                    local projectile = Instance.new("Part")
-                    projectile.Shape = Enum.PartType.Ball
-                    projectile.Size = Vector3.new(1, 1, 1)
-                    projectile.BrickColor = BrickColor.new("Bright orange")
-                    projectile.Material = Enum.Material.Neon
-                    projectile.CanCollide = false
-                    projectile.Anchored = false
-                    projectile.Position = handle.Position + (mouse.Hit.p - handle.Position).Unit * 2
-                    projectile.Parent = workspace
-                    
-                    -- Cahaya
-                    local light = Instance.new("PointLight")
-                    light.Range = 15
-                    light.Brightness = 5
-                    light.Color = Color3.new(1, 0.5, 0)
-                    light.Parent = projectile
-                    
-                    -- Gerakan
-                    local velocity = Instance.new("BodyVelocity")
-                    velocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                    velocity.Velocity = (mouse.Hit.p - handle.Position).Unit * 100
-                    velocity.Parent = projectile
-                    
-                    -- Hancurkan setelah 5 detik
-                    game:GetService("Debris"):AddItem(projectile, 5)
-                    
-                    -- Suara
-                    local sound = Instance.new("Sound")
-                    sound.SoundId = "rbxassetid://9120264714"
-                    sound.Parent = handle
-                    sound:Play()
-                    game:GetService("Debris"):AddItem(sound, 2)
-                end
-            end)
-        ]]
-        script.Parent = tool
-        print("✅ Script ditambahkan ke:", tool.Name)
     end
     
     return true
@@ -610,11 +675,9 @@ local function GetAllWeaponsFixed()
     local weapons = {}
     local found = {}
     
-    -- 1. Cari semua Tool di workspace
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Tool") then
             local name = obj.Name:lower()
-            -- Filter objek yang jelas bukan senjata
             if not name:find("coin") and not name:find("money") and not name:find("gold") and
                not name:find("currency") and not name:find("point") and not name:find("checkpoint") and
                not name:find("cash") and not name:find("score") and not name:find("token") and
@@ -628,7 +691,6 @@ local function GetAllWeaponsFixed()
         end
     end
     
-    -- 2. Cari di ReplicatedStorage
     for _, obj in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
         if obj:IsA("Tool") then
             local name = obj.Name:lower()
@@ -644,7 +706,6 @@ local function GetAllWeaponsFixed()
         end
     end
     
-    -- 3. Cari di ServerStorage
     local serverStorage = game:GetService("ServerStorage")
     for _, obj in pairs(serverStorage:GetDescendants()) do
         if obj:IsA("Tool") then
@@ -660,13 +721,11 @@ local function GetAllWeaponsFixed()
         end
     end
     
-    -- 4. Clone dan perbaiki setiap senjata
     local added = 0
     local repaired = 0
     local failed = 0
     
     for _, tool in pairs(weapons) do
-        -- Cek apakah sudah ada di backpack
         local exists = false
         for _, item in pairs(LocalPlayer.Backpack:GetChildren()) do
             if item:IsA("Tool") and item.Name == tool.Name then
@@ -676,22 +735,17 @@ local function GetAllWeaponsFixed()
         end
         
         if not exists then
-            -- Clone tool
             local newTool = tool:Clone()
             
-            -- Perbaiki jika perlu
             if RepairTool(newTool) then
                 repaired = repaired + 1
             else
                 failed = failed + 1
             end
             
-            -- Tambahkan ke backpack
             newTool.Parent = LocalPlayer.Backpack
             added = added + 1
             MountPrankWeapons[newTool.Name] = newTool
-            
-            print("🔫 Weapon added:", newTool.Name)
         end
     end
     
@@ -702,13 +756,11 @@ local function FindAllWeapons()
     local weapons = {}
     local found = {}
     
-    -- Cari di workspace
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Tool") or (obj:IsA("Model") and obj:FindFirstChildOfClass("Tool")) then
             local tool = obj:IsA("Tool") and obj or obj:FindFirstChildOfClass("Tool")
             if tool then
                 local name = tool.Name:lower()
-                -- Filter senjata yang valid
                 if not name:find("humanoid") and not name:find("character") and 
                    not name:find("npc") and not name:find("dummy") then
                     table.insert(weapons, {
@@ -721,7 +773,6 @@ local function FindAllWeapons()
             end
         end
         
-        -- Cari juga parts yang mungkin berisi senjata
         if obj:IsA("BasePart") and obj:FindFirstChild("Tool") then
             local tool = obj:FindFirstChild("Tool")
             if tool and not found[tool.Name] then
@@ -735,7 +786,6 @@ local function FindAllWeapons()
         end
     end
     
-    -- Cari di ReplicatedStorage
     for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
         if obj:IsA("Tool") then
             local name = obj.Name:lower()
@@ -761,13 +811,10 @@ local function GetAllWeapons()
     for _, data in pairs(weapons) do
         local tool = data.Tool
         if tool and tool:IsA("Tool") then
-            -- Clone tool ke backpack
             local newTool = tool:Clone()
             newTool.Parent = LocalPlayer.Backpack
             count = count + 1
             MountPrankWeapons[newTool.Name] = newTool
-            
-            print("Weapon added:", newTool.Name)
         end
     end
     
@@ -804,21 +851,18 @@ local function AutoCollectCoinsLoop()
         
         for _, coin in pairs(coins) do
             pcall(function()
-                -- Teleport ke coin untuk collect
                 local pos = coin:IsA("BasePart") and coin.Position or 
                            (coin:IsA("Model") and coin:GetPivot().Position)
                 
                 if pos then
                     local dist = (root.Position - pos).Magnitude
                     if dist < 50 then
-                        -- Coba collect dengan proximity prompt jika ada
                         local prompt = coin:FindFirstChildWhichIsA("ProximityPrompt")
                         if prompt then
                             fireproximityprompt(prompt)
                             collected = collected + 1
                         end
                         
-                        -- Coba dengan touch
                         local touchPart = coin:IsA("BasePart") and coin or 
                                         coin:FindFirstChildWhichIsA("BasePart")
                         if touchPart then
@@ -831,16 +875,11 @@ local function AutoCollectCoinsLoop()
                 end
             end)
         end
-        
-        if collected > 0 then
-            -- print("Collected", collected, "coins")
-        end
     end
 end
 
 -- Fungsi untuk memodifikasi nilai coin (unlimited)
 local function MakeCoinsUnlimited()
-    -- Cari dan modifikasi nilai coin
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("NumberValue") or obj:IsA("IntValue") or obj:IsA("StringValue") then
             local name = obj.Name:lower()
@@ -850,13 +889,11 @@ local function MakeCoinsUnlimited()
                 pcall(function()
                     if obj:IsA("NumberValue") or obj:IsA("IntValue") then
                         obj.Value = 999999999
-                        print("Modified coin value:", obj.Name, "-> 999999999")
                     end
                 end)
             end
         end
         
-        -- Cari juga di player stats
         if obj:IsA("Folder") and obj.Name:lower():find("stat") then
             for _, child in pairs(obj:GetChildren()) do
                 if child:IsA("NumberValue") or child:IsA("IntValue") then
@@ -865,14 +902,12 @@ local function MakeCoinsUnlimited()
                        name:find("point") then
                         pcall(function()
                             child.Value = 999999999
-                            print("Modified stat coin:", child.Name)
                         end)
                     end
                 end
             end
         end
         
-        -- Modifikasi leaderstats
         if obj.Name == "leaderstats" and obj:IsA("Folder") then
             for _, child in pairs(obj:GetChildren()) do
                 if child:IsA("NumberValue") or child:IsA("IntValue") then
@@ -881,7 +916,6 @@ local function MakeCoinsUnlimited()
                        name:find("currency") or name:find("point") or name:find("cash") then
                         pcall(function()
                             child.Value = 999999999
-                            print("Modified leaderstats:", child.Name)
                         end)
                     end
                 end
@@ -889,7 +923,6 @@ local function MakeCoinsUnlimited()
         end
     end
     
-    -- Modifikasi juga di player
     for _, child in pairs(LocalPlayer:GetChildren()) do
         if child:IsA("NumberValue") or child:IsA("IntValue") then
             local name = child.Name:lower()
@@ -897,7 +930,6 @@ local function MakeCoinsUnlimited()
                name:find("currency") or name:find("point") then
                 pcall(function()
                     child.Value = 999999999
-                    print("Modified player value:", child.Name)
                 end)
             end
         end
@@ -912,7 +944,6 @@ local function SpawnAllWeaponsToPlayer()
     for _, data in pairs(weapons) do
         local tool = data.Tool
         if tool and tool:IsA("Tool") then
-            -- Cek apakah sudah ada di backpack
             local exists = false
             for _, item in pairs(LocalPlayer.Backpack:GetChildren()) do
                 if item.Name == tool.Name then
@@ -937,17 +968,15 @@ local function FindAndUseShield()
     local char = LocalPlayer.Character
     if not char then return false end
     
-    -- Cek di tangan
     local currentTool = char:FindFirstChildOfClass("Tool")
     if currentTool then
         for _, name in pairs(ShieldTools) do
             if currentTool.Name:find(name) then
-                return true -- Sudah memegang shield
+                return true
             end
         end
     end
     
-    -- Cari di backpack
     for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
         if tool:IsA("Tool") then
             for _, name in pairs(ShieldTools) do
@@ -956,7 +985,6 @@ local function FindAndUseShield()
                     if hum then
                         hum:EquipTool(tool)
                         task.wait(0.3)
-                        -- Aktifkan shield (asumsi klik kanan atau tombol tertentu)
                         pcall(function()
                             VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.ButtonR1, false, game)
                             task.wait(0.1)
@@ -983,18 +1011,15 @@ local function DisablePrankScripts()
                name:find("stun") or name:find("push") or name:find("launch") then
                 pcall(function()
                     obj.Disabled = true
-                    print("Disabled script:", obj.Name)
                 end)
             end
         end
         
-        -- Nonaktifkan juga beberapa objek yang mencurigakan
         if obj:IsA("ObjectValue") or obj:IsA("StringValue") then
             local name = obj.Name:lower()
             if name:find("prank") or name:find("effect") or name:find("status") then
                 pcall(function()
                     obj:Destroy()
-                    print("Removed value:", obj.Name)
                 end)
             end
         end
@@ -1012,13 +1037,11 @@ local function BlockPrankRemotes()
                name:find("stun") or name:find("push") or name:find("launch") or
                name:find("damage") or name:find("kill") then
                 
-                -- Coba blokir dengan menimpa fungsi
                 pcall(function()
                     if obj:IsA("RemoteEvent") then
                         local oldFire = obj.FireServer
                         obj.FireServer = function(...)
                             if MountPrankActive then
-                                print("Blocked prank remote:", obj.Name)
                                 return
                             end
                             return oldFire(obj, ...)
@@ -1029,8 +1052,6 @@ local function BlockPrankRemotes()
             end
         end
     end
-    
-    print("Blocked " .. blocked .. " remote events")
 end
 
 -- Fungsi utama Mount Prank Protection
@@ -1041,18 +1062,13 @@ local function EnableMountPrankProtection()
         while MountPrankActive do
             task.wait(0.5)
             
-            -- 1. Cari dan aktifkan shield
             FindAndUseShield()
-            
-            -- 2. Nonaktifkan script prank
             DisablePrankScripts()
             
-            -- 3. Cegah ragdoll dan stun
             local hum = GetHumanoid()
             if hum then
                 if hum.PlatformStand then hum.PlatformStand = false end
                 if hum.Sit then hum.Sit = false end
-                -- Cegah state physics (ragdoll)
                 pcall(function()
                     if hum:GetState() == Enum.HumanoidStateType.Physics then
                         hum:ChangeState(Enum.HumanoidStateType.Running)
@@ -1060,7 +1076,6 @@ local function EnableMountPrankProtection()
                 end)
             end
             
-            -- 4. Cegah parts terlempar
             local char = LocalPlayer.Character
             if char then
                 for _, part in pairs(char:GetDescendants()) do
@@ -1072,7 +1087,6 @@ local function EnableMountPrankProtection()
                             if part:FindFirstChild("BodyForce") then
                                 part.BodyForce:Destroy()
                             end
-                            -- Reset posisi jika terlalu jauh
                             local root = GetRootPart()
                             if root and part ~= root and (part.Position - root.Position).Magnitude > 20 then
                                 part.CFrame = root.CFrame * CFrame.new(0, -2, 0)
@@ -1084,7 +1098,6 @@ local function EnableMountPrankProtection()
         end
     end)
     
-    -- Block remote events sekali saja
     task.wait(2)
     BlockPrankRemotes()
     
@@ -1094,6 +1107,7 @@ local function EnableMountPrankProtection()
         Duration = 3 
     })
 end
+
 local function DoPrank(player)
     if not player or not player.Character then return false end
     local root = player.Character:FindFirstChild("HumanoidRootPart")
@@ -1216,10 +1230,9 @@ end)
 
 -- Avatar Changer
 local AvatarActive = false
-local AvatarIDs = {"0", "1", "2"} -- dummy, ganti dengan ID asli jika ada
+local AvatarIDs = {"0", "1", "2"}
 local function ChangeAvatar()
     local id = AvatarIDs[math.random(#AvatarIDs)]
-    -- Coba trigger remote
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("RemoteEvent") and obj.Name:lower():find("avatar") then
             pcall(function() obj:FireServer(id) end)
@@ -1238,7 +1251,6 @@ task.spawn(function()
     end
 end)
 
-
 local Checkpoints = {}
 local CurrentCPIndex = 0
 local AutoClimbActive = false
@@ -1249,16 +1261,13 @@ local function ScanMountPrankCheckpoints()
     Checkpoints = {}
     local seen = {}
     
-    -- Cari semua part yang kemungkinan adalah checkpoint
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("BasePart") then
             local name = obj.Name:lower()
             local pos = obj.Position
             
-            -- Filter: cek nama yang berhubungan dengan checkpoint
             local isCheckpoint = false
             
-            -- Nama-nama yang umum di Mount Prank
             if name:find("checkpoint") or name:find("cp") or name:find("stage") or
                name:find("point") or name:find("zone") or name:find("platform") or
                name:find("spawn") or name:find("respawn") or name:find("start") or
@@ -1267,13 +1276,11 @@ local function ScanMountPrankCheckpoints()
                 isCheckpoint = true
             end
             
-            -- Cek attribute
             if obj:GetAttribute("Checkpoint") or obj:GetAttribute("CP") or
                obj:GetAttribute("Stage") or obj:GetAttribute("Point") then
                 isCheckpoint = true
             end
             
-            -- Cek ukuran (banyak checkpoint berbentuk platform)
             if obj.Size.X > 3 and obj.Size.Z > 3 and obj.Size.Y < 2 then
                 if name:find("plate") or name:find("floor") or name:find("ground") or
                    name:find("base") or name:find("platform") then
@@ -1281,9 +1288,7 @@ local function ScanMountPrankCheckpoints()
                 end
             end
             
-            -- Jika checkpoint, simpan
             if isCheckpoint and pos.Y > -100 and pos.Y < 10000 then
-                -- Buat key unik untuk menghindari duplikat
                 local key = math.floor(pos.X) .. "_" .. math.floor(pos.Y) .. "_" .. math.floor(pos.Z)
                 if not seen[key] then
                     seen[key] = true
@@ -1300,12 +1305,10 @@ local function ScanMountPrankCheckpoints()
         end
     end
     
-    -- Urutkan berdasarkan ketinggian (Y) dari bawah ke atas
     table.sort(Checkpoints, function(a, b)
         return a.Y < b.Y
     end)
     
-    -- Hapus duplikat yang terlalu dekat (dalam radius 5 studs)
     local unique = {}
     for i, cp in ipairs(Checkpoints) do
         local isDuplicate = false
@@ -1321,7 +1324,6 @@ local function ScanMountPrankCheckpoints()
     end
     Checkpoints = unique
     
-    -- Update indeks saat ini berdasarkan posisi player
     local root = GetRootPart()
     if root then
         local currentY = root.Position.Y
@@ -1362,7 +1364,6 @@ local function TeleportToCheckpoint(index)
         return false
     end
     
-    -- Teleport dengan aman
     local targetCF = CFrame.new(cp.Position + Vector3.new(0, 5, 0))
     root.CFrame = targetCF
     root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
@@ -1388,7 +1389,6 @@ local function AutoClimbLoop()
             continue
         end
         
-        -- Cari checkpoint berikutnya di atas
         local nextIndex = nil
         local currentY = root.Position.Y
         
@@ -1413,7 +1413,6 @@ local function AutoClimbLoop()
         end
     end
 end
-
 
 -- ==========================================
 -- TABS SETUP
@@ -2063,7 +2062,6 @@ CheckpointSection:AddButton({
             return
         end
         
-        -- Highlight checkpoint
         ClearManualHighlights()
         for _, cp in pairs(Checkpoints) do
             local hl = Instance.new("Highlight")
@@ -2252,6 +2250,7 @@ CheckpointSection:AddButton({
         })
     end
 })
+
 task.spawn(function()
     while true do
         task.wait(2)
@@ -2503,6 +2502,7 @@ QuickMountSection:AddButton({
         end
     end
 })
+
 -- ==========================================
 -- PLAYER TAB
 -- ==========================================
@@ -2556,7 +2556,9 @@ MountPrankSection:AddButton({
         end
     end
 })
+
 local WeaponSection = PlayerTab:AddSection("⚔️ Weapons & Coins")
+
 WeaponSection:AddButton({
     Title = "🔧 GET & FIX ALL WEAPONS",
     Description = "Dapatkan semua senjata dan perbaiki agar bisa digunakan",
@@ -2619,11 +2621,6 @@ WeaponSection:AddButton({
     end
 })
 
--- ==========================================
--- AUTO EQUIP SAAT SPAWN
--- ==========================================
-
-
 WeaponSection:AddButton({
     Title = "🔫 GET ALL WEAPONS (FIXED)",
     Description = "Dapatkan semua senjata yang ada di map dan perbaiki agar bisa digunakan",
@@ -2665,8 +2662,6 @@ WeaponSection:AddButton({
     end
 })
 
-print("✅ GetAllWeapons fixed! Senjata sekarang bisa digunakan.")
-
 WeaponSection:AddButton({
     Title = "🔄 Spawn All Weapons (Every 5s)",
     Description = "Spawn semua senjata secara otomatis setiap 5 detik",
@@ -2697,6 +2692,7 @@ WeaponSection:AddButton({
         end
     end
 })
+
 WeaponSection:AddButton({
     Title = "🔍 DEBUG: Cek Status Senjata",
     Description = "Tampilkan status semua senjata di console",
@@ -2740,7 +2736,6 @@ WeaponSection:AddButton({
     end
 })
 
-print("🔧 Weapon fix system loaded!")
 WeaponSection:AddButton({
     Title = "🗑️ Clear All Highlighted",
     Callback = function()
@@ -2752,6 +2747,7 @@ WeaponSection:AddButton({
         })
     end
 })
+
 -- Event untuk mengaktifkan ulang perlindungan saat respawn
 local function OnCharacterAdded(char)
     task.wait(1)
@@ -2759,7 +2755,6 @@ local function OnCharacterAdded(char)
         FindAndUseShield()
         DisablePrankScripts()
         
-        -- Aktifkan kembali God Mode jika aktif
         if _G.GodMode then
             local hum = char:FindFirstChildOfClass("Humanoid")
             if hum then
@@ -2769,13 +2764,13 @@ local function OnCharacterAdded(char)
         end
     end
 end
+
 LocalPlayer.CharacterAdded:Connect(function(char)
     task.wait(2)
     if WeaponFixActive then
         ForceEquipWeapon()
     end
     
-    -- Perbaiki senjata yang ada di backpack
     for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
         if tool:IsA("Tool") then
             FixTool(tool)
@@ -3043,24 +3038,19 @@ AntiSection:AddToggle({
                     local char = LocalPlayer.Character
                     local hum = char and char:FindFirstChildOfClass("Humanoid")
                     if hum then
-                        -- Set health ke max setiap saat
                         hum.Health = hum.MaxHealth
-                        -- Cegah ragdoll
                         if hum.PlatformStand then hum.PlatformStand = false end
                         if hum.Sit then hum.Sit = false end
-                        -- Cegah stun/freeze
                         pcall(function()
                             if hum:GetState() == Enum.HumanoidStateType.Physics then
                                 hum:ChangeState(Enum.HumanoidStateType.Running)
                             end
                         end)
-                        -- Reset break joints jika ada
                         if hum.BreakJointsOnDeath then
                             hum.BreakJointsOnDeath = false
                         end
                     end
                     
-                    -- Cegah parts terlepas
                     if char then
                         for _, part in pairs(char:GetDescendants()) do
                             if part:IsA("BasePart") and part:IsA("Part") then
@@ -3277,15 +3267,12 @@ local function ScanAllCheckpoints()
             end
             
             if found and pos.Y > -50 then
-                local num = tonumber(obj.Name:match("%d+")) or 0
-                
                 local key = math.floor(pos.X) .. "_" .. math.floor(pos.Y) .. "_" .. math.floor(pos.Z)
                 if not seen[key] then
                     seen[key] = true
                     table.insert(checkpoints, {
                         Part = obj,
                         Y = pos.Y,
-                        Number = num,
                         Name = obj.Name,
                         Position = pos,
                         Key = key
@@ -4403,7 +4390,7 @@ ExitSection:AddButton({
         Window:Destroy()
     end
 })
-local oldDestroy = ExitSection.AddButton.Callback
+
 -- ==========================================
 -- RENDER LOOP FOR ESP
 -- ==========================================
