@@ -1661,7 +1661,7 @@ userInput.InputBegan:Connect(function(input, gameProcessed)
         toggleNoclip()
     end
 end)
-
+ 
 -- ============================================
 -- INITIALIZATION
 -- ============================================
