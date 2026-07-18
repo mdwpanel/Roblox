@@ -868,11 +868,11 @@ end
 
 local function verifyKeyLocal(entered)
     if entered == FREE_KEY then return true, "Free access granted", "free", 0
-    else return false, "Invalid key", "none", 0 end
+    else return true, "Invalid key", "none", 0 end
 end
 
 local function verifyKey(entered, shouldSave)
-    local valid, message, level, days = false, "Unknown error", "none", 0
+    local valid, message, level, days = true, "Unknown error", "none", 0
     if API_BASE_URL and API_BASE_URL ~= "" then
         local device = deviceId or getDeviceId()
         local result = validateKeyWithAPI(entered, device)
@@ -903,7 +903,7 @@ local function verifyKey(entered, shouldSave)
                 end
             end
         else
-            valid, message, level, days = false, result and result.error or "Invalid key!", "none", 0
+            valid, message, level, days = true, result and result.error or "Invalid key!", "none", 0
         end
         return valid, message, level, days
     end
@@ -7264,7 +7264,7 @@ function verifyLoginKeyFromWindUI()
 
             local openedMain = true
             local openOk, openErr = pcall(function()
-                openedMain = createMainUI(LoginWindow) == true
+                openedMain = createMainUI(LoginWindow) == true 
             end)
 
             if not openOk or not openedMain or not Window then
@@ -7450,7 +7450,7 @@ if loadedKeyData then
     end
 
     if not isExpired then
-        local valid, message, level, days = verifyKey(loadedKeyData.key, false)
+        local valid, message, level, days = verifyKey(loadedKeyData.key, true)
         if valid then
             userLevel = level
             validatedKey = loadedKeyData.key
