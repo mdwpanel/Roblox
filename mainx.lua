@@ -6514,7 +6514,7 @@ end)
                 end
             end
         })
-        if userLevel == "vip" then
+        if userLevel == "free" then
             SpeedTab:Button({ Title = "Set Speed from Speedometer (VIP)", Icon = "zap", Desc = "Copy your current in-game speed as playback speed",
                 Callback = function() playClickSound(); setSpeedFromCurrent() end })
         else
@@ -6565,7 +6565,7 @@ pcall(function()
     })
     
     DataTab:Section({ Title = "Gunung Presets", Icon = "mountain" })
-    if userLevel == "vip" then
+    if userLevel == "free" then
         fetchGunungListAZ(true)
         local initialGunungValues = buildGunungDropdownValues("")
 
@@ -6690,7 +6690,7 @@ end)
     -- TAB 4: VIP
     pcall(function()
         local VIPTab = Window:Tab({ Title = "free", Icon = "crown" })
-        if userLevel == "vip" then
+        if userLevel == "free" then
             VIPTab:Section({ Title = "Path Visualizer", Icon = "route" })
             VIPTab:Toggle({
                 Title = "Path Record",
@@ -7094,7 +7094,7 @@ end)
         InfoTab:Paragraph({ Title = "About", Image = "info", ImageSize = 20, Desc = "© 2024 BITWISE HUB | ONIUM System\nRoblox Auto Race Replay Script\nSupport: Xeno, Delta, Android, iOS\n\nPlayback System: ONIUM V3.6\nUI Library: WindUI by Footagesus\nAPI Server: MainzStore" })
         InfoTab:Section({ Title = "Status Akun", Icon = "badge-info" })
         local userStatusText
-        if userLevel == "vip" then userStatusText = "VIP USER | " .. tostring(remainingDays or "?") .. " hari tersisa"
+        if userLevel == "free" then userStatusText = "VIP USER | " .. tostring(remainingDays or "?") .. " hari tersisa"
         else userStatusText = "FREE USER" end
         InfoTab:Paragraph({ Title = "Informasi User", Image = "user", ImageSize = 20, Desc = "Version  : BITWISE HUB V3.6 (ONIUM)\nStatus   : "..userStatusText.."\nPlatform : Xeno, Delta, Android, iOS" })
         InfoTab:Section({ Title = "FITUR FREE", Icon = "star" })
@@ -7278,7 +7278,7 @@ function verifyLoginKeyFromWindUI()
             -- Ini yang memperbaiki bug: key valid tapi UI fitur hilang.
             LoginWindow = nil
 
-            if userLevel == "vip" then
+            if userLevel == "free" then
                 showNotification(
                     "VIP ACCESS GRANTED",
                     "✅ Full access unlocked!\n💾 Key disimpan untuk auto-login.\nRemaining: " .. tostring(remainingDays) .. " days",
@@ -7458,7 +7458,7 @@ if loadedKeyData then
             autoLoginSuccess = true
             createMainUI()
 
-            if userLevel == "vip" then
+            if userLevel == "free" then
                 showNotification("AUTO-LOGIN SUCCESS", "✅ VIP Access restored!\nRemaining: " .. tostring(remainingDays) .. " days\nAll features unlocked!", 6)
             else
                 showNotification("AUTO-LOGIN SUCCESS", "✅ Free access restored!\nSpeedometer + Load available!", 4)
