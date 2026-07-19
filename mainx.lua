@@ -36,7 +36,7 @@ end
 --// PATCHED: MOBILE FLOATING PLAY/STOP MULTI-TOUCH SAFE / ANTI ANALOG DRAG
 -- ========== KEY SYSTEM CONFIGURATION ==========
 local API_BASE_URL  = "https://kingstrom.my.id"
-local VIP      = ""
+local VIP      = "tes"
 local SCRIPT_NAME   = "race"
 
 local KEY_STORAGE_NAME = "BITWISE HUBKeyStorage_V17"
