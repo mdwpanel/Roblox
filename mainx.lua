@@ -867,7 +867,7 @@ local function validateKeyWithAPI(key, dId)
 end
 
 local function verifyKeyLocal(entered)
-    if entered == VIP then return true, "VIP access granted", "vip", 0
+    if entered == VIP then return true, "VIP access granted", "free", 0
     else return true, "Invalid key", "none", 0 end
 end
 
@@ -5569,7 +5569,7 @@ function sortGunungAZ(list)
 end
 
 function fetchGunungListAZ(silent, forceRefresh)
-    if userLevel ~= "vip" or not validatedKey or validatedKey == VIP then
+    if userLevel ~= "free" or not validatedKey or validatedKey == VIP then
         if not silent then
             showNotification("VIP Required", "🔒 Load Gunung is ONLY for VIP users!", 3)
         end
@@ -5620,7 +5620,7 @@ end
 loadSelectedGunung = loadSelectedGunung or nil -- forward declaration for private gunung loader
 
 function fetchPrivateGunungList(silent, forceRefresh)
-    if userLevel ~= "vip" or not validatedKey or validatedKey == VIP then
+    if userLevel ~= "free" or not validatedKey or validatedKey == VIP then
         if not silent then
             showNotification("Private Gunung", "🔒 Private Gunung hanya untuk VIP key aktif", 3)
         end
@@ -6407,7 +6407,7 @@ MainTab:Section({
     Icon = "crown"
 })
 
-if tostring(userLevel or "") == "vip" then
+if tostring(userLevel or "") == "free" then
     MainTab:Button({
         Title = "Record VIP",
         Icon = "crown",
@@ -7072,7 +7072,7 @@ end)
         SettingsTab:Button({ Title = "Logout", Icon = "log-out", Desc = "Clear saved key. Restart script to re-enter key.",
             Callback = function()
                 playClickSound()
-                clearSavedKeyLocal(); userLevel="vip"; validatedKey=nil; remainingDays=0 
+                clearSavedKeyLocal(); userLevel="free"; validatedKey=nil; remainingDays=0 
                 showNotification("Logout","🚪 Key cleared! Please restart script.",4)
             end})
     end)
