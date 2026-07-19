@@ -109,7 +109,7 @@ BITWISE_STABLE_MAX_RUN_HSPEED = 500
 BITWISE_STABLE_MAX_YSPEED = 220
 
 -- ========== KEY SYSTEM VARIABLES ==========
-local userLevel    = ""
+local userLevel    = "none"
 local validatedKey = nil
 local deviceId     = nil
 local apiConnected = false
