@@ -110,7 +110,7 @@ BITWISE_STABLE_MAX_YSPEED = 220
 
 -- ========== KEY SYSTEM VARIABLES ==========
 local userLevel    = "vip"
-local validatedKey = "MANUS-BYPASS-VIP"
+local validatedKey = nil
 local deviceId     = nil
 local apiConnected = false
 local remainingDays = 0
@@ -7050,7 +7050,7 @@ end)
             Icon = "palette",
             Values = { "Dark","Light","Rose","Violet","Amber","Red","Blue","Green","Cyan","Purple","Pink" },
             Value = uiSettings.theme or "Dark",
-            Callback = function(theme)
+            Callback = function(theme) 
                 playClickSound()
                 if type(theme) == "table" then theme = theme.Title or theme.Name or theme.Value or "Dark" end
                 theme = sanitizeThemeName(theme)
@@ -7072,7 +7072,7 @@ end)
         SettingsTab:Button({ Title = "Logout", Icon = "log-out", Desc = "Clear saved key. Restart script to re-enter key.",
             Callback = function()
                 playClickSound()
-                clearSavedKeyLocal(); userLevel="vip"; validatedKey="MANUS-BYPASS-VIP"; remainingDays=0 
+                clearSavedKeyLocal(); userLevel="vip"; validatedKey=nil; remainingDays=0 
                 showNotification("Logout","🚪 Key cleared! Please restart script.",4)
             end})
     end)
@@ -7153,7 +7153,7 @@ function updateLoginStatus(text, color)
         if LoginStatusParagraph and LoginStatusParagraph.SetColor then
             LoginStatusParagraph:SetColor(color or "Blue")
         end
-    end) 
+    end)
 end
 
 function setLoginInputValue(text)
@@ -7250,7 +7250,7 @@ function verifyLoginKeyFromWindUI()
     end
 
     loginBusy = true
-    updateLoginStatus("Memeriksa key: " .. maskKeyForStatus(enteredKey) .. "\nMohon tunggu sebentar...", "Yellow") 
+    updateLoginStatus("Memeriksa key: " .. maskKeyForStatus(enteredKey) .. "\nMohon tunggu sebentar...", "Yellow")
 
     task.spawn(function()
         local valid, message, level, days = verifyKey(enteredKey, true)
@@ -7278,7 +7278,7 @@ function verifyLoginKeyFromWindUI()
             -- Ini yang memperbaiki bug: key valid tapi UI fitur hilang.
             LoginWindow = nil
 
-            if userLevel == "vip" then
+            if userLevel == "free" then
                 showNotification(
                     "VIP ACCESS GRANTED",
                     "✅ Full access unlocked!\n💾 Key disimpan untuk auto-login.\nRemaining: " .. tostring(remainingDays) .. " days",
@@ -7437,7 +7437,7 @@ function initBitwiseHubRuntime()
 deviceId = getDeviceId()
 createTimerDisplay()
 
-autoLoginSuccess = true
+autoLoginSuccess = false
 loadedKeyData = loadKeyFromLocal()
 
 if loadedKeyData then
@@ -7458,7 +7458,7 @@ if loadedKeyData then
             autoLoginSuccess = true
             createMainUI()
 
-            if userLevel == "vip" then
+            if userLevel == "free" then
                 showNotification("AUTO-LOGIN SUCCESS", "✅ VIP Access restored!\nRemaining: " .. tostring(remainingDays) .. " days\nAll features unlocked!", 6)
             else
                 showNotification("AUTO-LOGIN SUCCESS", "✅ Free access restored!\nSpeedometer + Load available!", 4)
