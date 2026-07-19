@@ -36,7 +36,7 @@ end
 --// PATCHED: MOBILE FLOATING PLAY/STOP MULTI-TOUCH SAFE / ANTI ANALOG DRAG
 -- ========== KEY SYSTEM CONFIGURATION ==========
 local API_BASE_URL  = "https://kingstrom.my.id"
-local FREE_KEY      = ""
+local FREE_KEY      = "FREE-ACCESS-2026"
 local SCRIPT_NAME   = "race"
 
 local KEY_STORAGE_NAME = "BITWISE HUBKeyStorage_V17"
@@ -5599,7 +5599,7 @@ function fetchGunungListAZ(silent, forceRefresh)
     local ok, apiData = pcall(function()
         return HttpService:JSONDecode(response)
     end)
-
+ 
     if not ok or not apiData or not apiData.success or type(apiData.gunung) ~= "table" or #apiData.gunung <= 0 then
         if not silent then showNotification("Load Gunung", "❌ Data gunung kosong / invalid. Memakai cache lama.", 3) end
         return cache
