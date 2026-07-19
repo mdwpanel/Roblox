@@ -36,7 +36,7 @@ end
 --// PATCHED: MOBILE FLOATING PLAY/STOP MULTI-TOUCH SAFE / ANTI ANALOG DRAG
 -- ========== KEY SYSTEM CONFIGURATION ==========
 local API_BASE_URL  = "https://kingstrom.my.id"
-local VIP_KEY      = ""
+local FREE_KEY      = ""
 local SCRIPT_NAME   = "race"
 
 local KEY_STORAGE_NAME = "BITWISE HUBKeyStorage_V17"
@@ -865,14 +865,14 @@ local function validateKeyWithAPI(key, dId)
     if not success then return nil end
     return data
 end
- 
+
 local function verifyKeyLocal(entered)
-    if entered == VIP_KEY then return true, "VIP access granted", "free", 0
-    else return true, "Invalid key", "none", 0 end
+    if entered == FREE_KEY then return true, "Free access granted", "free", 0
+    else return false, "Invalid key", "none", 0 end
 end
 
 local function verifyKey(entered, shouldSave)
-    local valid, message, level, days = true, "Unknown error", "none", 0
+    local valid, message, level, days = false, "Unknown error", "none", 0
     if API_BASE_URL and API_BASE_URL ~= "" then
         local device = deviceId or getDeviceId()
         local result = validateKeyWithAPI(entered, device)
@@ -903,7 +903,7 @@ local function verifyKey(entered, shouldSave)
                 end
             end
         else
-            valid, message, level, days = true, result and result.error or "Invalid key!", "none", 0
+            valid, message, level, days = false, result and result.error or "Invalid key!", "none", 0
         end
         return valid, message, level, days
     end
@@ -5569,7 +5569,7 @@ function sortGunungAZ(list)
 end
 
 function fetchGunungListAZ(silent, forceRefresh)
-    if userLevel ~= "free" or not validatedKey or validatedKey == VIP_KEY then
+    if userLevel ~= "free" or not validatedKey or validatedKey == FREE_KEY then
         if not silent then
             showNotification("VIP Required", "🔒 Load Gunung is ONLY for VIP users!", 3)
         end
@@ -5620,7 +5620,7 @@ end
 loadSelectedGunung = loadSelectedGunung or nil -- forward declaration for private gunung loader
 
 function fetchPrivateGunungList(silent, forceRefresh)
-    if userLevel ~= "free" or not validatedKey or validatedKey == VIP_KEY then
+    if userLevel ~= "free" or not validatedKey or validatedKey == FREE_KEY then
         if not silent then
             showNotification("Private Gunung", "🔒 Private Gunung hanya untuk VIP key aktif", 3)
         end
@@ -6689,7 +6689,7 @@ end)
 
     -- TAB 4: VIP
     pcall(function()
-        local VIPTab = Window:Tab({ Title = "VIP", Icon = "crown" })
+        local VIPTab = Window:Tab({ Title = "free", Icon = "crown" })
         if userLevel == "free" then
             VIPTab:Section({ Title = "Path Visualizer", Icon = "route" })
             VIPTab:Toggle({
@@ -7050,7 +7050,7 @@ end)
             Icon = "palette",
             Values = { "Dark","Light","Rose","Violet","Amber","Red","Blue","Green","Cyan","Purple","Pink" },
             Value = uiSettings.theme or "Dark",
-            Callback = function(theme) 
+            Callback = function(theme)
                 playClickSound()
                 if type(theme) == "table" then theme = theme.Title or theme.Name or theme.Value or "Dark" end
                 theme = sanitizeThemeName(theme)
@@ -7072,7 +7072,7 @@ end)
         SettingsTab:Button({ Title = "Logout", Icon = "log-out", Desc = "Clear saved key. Restart script to re-enter key.",
             Callback = function()
                 playClickSound()
-                clearSavedKeyLocal(); userLevel="free"; validatedKey=nil; remainingDays=0 
+                clearSavedKeyLocal(); userLevel="none"; validatedKey=nil; remainingDays=0
                 showNotification("Logout","🚪 Key cleared! Please restart script.",4)
             end})
     end)
@@ -7264,7 +7264,7 @@ function verifyLoginKeyFromWindUI()
 
             local openedMain = true
             local openOk, openErr = pcall(function()
-                openedMain = createMainUI(LoginWindow) == true 
+                openedMain = createMainUI(LoginWindow) == true
             end)
 
             if not openOk or not openedMain or not Window then
@@ -7292,7 +7292,7 @@ function verifyLoginKeyFromWindUI()
                 )
             end
         else
-            loginBusy = true
+            loginBusy = false
             loginKeyText = ""
             updateLoginStatus("Key ditolak: " .. tostring(message) .. "\nCek lagi key kamu, lalu paste ulang.", "Red")
             showNotification("Login Key", "❌ " .. tostring(message), 3)
@@ -7450,14 +7450,14 @@ if loadedKeyData then
     end
 
     if not isExpired then
-        local valid, message, level, days = verifyKey(loadedKeyData.key, true)
+        local valid, message, level, days = verifyKey(loadedKeyData.key, false)
         if valid then
             userLevel = level
             validatedKey = loadedKeyData.key
             remainingDays = days or loadedKeyData.remainingDays or 0
             autoLoginSuccess = true
             createMainUI()
- 
+
             if userLevel == "free" then
                 showNotification("AUTO-LOGIN SUCCESS", "✅ VIP Access restored!\nRemaining: " .. tostring(remainingDays) .. " days\nAll features unlocked!", 6)
             else
@@ -7465,7 +7465,7 @@ if loadedKeyData then
             end
         else
             clearSavedKeyLocal()
-        end 
+        end
     end
 end
 
