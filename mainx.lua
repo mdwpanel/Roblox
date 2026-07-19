@@ -6689,8 +6689,7 @@ end)
 
     -- TAB 4: VIP
     pcall(function()
-        local VIPTab = Window:Tab({ Title = "free", Icon = "crown" })
-        if userLevel == "free" then
+        local VIPTab = Window:Tab({ Title = "VIP", Icon = "crown" })
             VIPTab:Section({ Title = "Path Visualizer", Icon = "route" })
             VIPTab:Toggle({
                 Title = "Path Record",
@@ -6918,26 +6917,6 @@ end)
                          else showNotification("VIP+","❌ Failed: "..tostring(err),3) end
                      end)
                  end})
-        else
-            VIPTab:Section({ Title = "VIP Features Locked", Icon = "lock" })
-            VIPTab:Paragraph({
-                Title = "Upgrade to VIP to unlock",
-                Image = "lock",
-                ImageSize = 20,
-                Desc = [[• Path Record Visualizer
-• Load Gunung API Routes
-• Set Speed from Speedometer
-• Ghost & Invisibility
-• ESP & Chams]],
-                Color = "Yellow",
-            })
-            VIPTab:Button({ Title = "Buy VIP Key", Icon = "shopping-cart", Desc = "Join Discord store to purchase VIP access",
-                Callback = function()
-                    playClickSound()
-                    pcall(function() setclipboard("https://discord.gg/fsNpvCCqxq") end)
-                    pcall(function() clipboard.set("https://discord.gg/fsNpvCCqxq") end)
-                    showNotification("VIP Store","Discord link copied!\ndiscord.gg/fsNpvCCqxq",4)
-                end})
         end
     end)
 
