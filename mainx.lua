@@ -109,7 +109,7 @@ BITWISE_STABLE_MAX_RUN_HSPEED = 500
 BITWISE_STABLE_MAX_YSPEED = 220
 
 -- ========== KEY SYSTEM VARIABLES ==========
-local userLevel    = "vip"
+local userLevel    = "free"
 local validatedKey = nil
 local deviceId     = nil
 local apiConnected = false
@@ -7457,7 +7457,7 @@ if loadedKeyData then
             remainingDays = days or loadedKeyData.remainingDays or 0
             autoLoginSuccess = true
             createMainUI()
-
+ 
             if userLevel == "free" then
                 showNotification("AUTO-LOGIN SUCCESS", "✅ VIP Access restored!\nRemaining: " .. tostring(remainingDays) .. " days\nAll features unlocked!", 6)
             else
