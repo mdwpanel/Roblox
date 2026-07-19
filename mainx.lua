@@ -5599,7 +5599,7 @@ function fetchGunungListAZ(silent, forceRefresh)
     local ok, apiData = pcall(function()
         return HttpService:JSONDecode(response)
     end)
- 
+
     if not ok or not apiData or not apiData.success or type(apiData.gunung) ~= "table" or #apiData.gunung <= 0 then
         if not silent then showNotification("Load Gunung", "❌ Data gunung kosong / invalid. Memakai cache lama.", 3) end
         return cache
@@ -7264,7 +7264,7 @@ function verifyLoginKeyFromWindUI()
 
             local openedMain = true
             local openOk, openErr = pcall(function()
-                openedMain = createMainUI(LoginWindow) == true
+                openedMain = createMainUI(LoginWindow) == true 
             end)
 
             if not openOk or not openedMain or not Window then
@@ -7292,7 +7292,7 @@ function verifyLoginKeyFromWindUI()
                 )
             end
         else
-            loginBusy = false
+            loginBusy = true
             loginKeyText = ""
             updateLoginStatus("Key ditolak: " .. tostring(message) .. "\nCek lagi key kamu, lalu paste ulang.", "Red")
             showNotification("Login Key", "❌ " .. tostring(message), 3)
@@ -7450,14 +7450,14 @@ if loadedKeyData then
     end
 
     if not isExpired then
-        local valid, message, level, days = verifyKey(loadedKeyData.key, false)
+        local valid, message, level, days = verifyKey(loadedKeyData.key, true)
         if valid then
             userLevel = level
             validatedKey = loadedKeyData.key
             remainingDays = days or loadedKeyData.remainingDays or 0
             autoLoginSuccess = true
             createMainUI()
-
+ 
             if userLevel == "free" then
                 showNotification("AUTO-LOGIN SUCCESS", "✅ VIP Access restored!\nRemaining: " .. tostring(remainingDays) .. " days\nAll features unlocked!", 6)
             else
@@ -7465,7 +7465,7 @@ if loadedKeyData then
             end
         else
             clearSavedKeyLocal()
-        end
+        end 
     end
 end
 
