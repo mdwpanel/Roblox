@@ -35,7 +35,7 @@ end
 --// - Hard remove grass dimatikan agar HP/Delta tidak spike/patah-patah.
 --// PATCHED: MOBILE FLOATING PLAY/STOP MULTI-TOUCH SAFE / ANTI ANALOG DRAG
 -- ========== KEY SYSTEM CONFIGURATION ==========
-local API_BASE_URL  = "https://kingstrom.my.id"
+local API_BASE_URL  = "https://new-mdw--mdwx.replit.app"
 local FREE_KEY      = "FREE-ACCESS-2026"
 local SCRIPT_NAME   = "race"
 
@@ -565,7 +565,7 @@ end
 local function getNotificationIcon(title, content)
     local blob = string.lower(tostring(title or "") .. " " .. tostring(content or ""))
 
-    if blob:find("free") then
+    if blob:find("vip") then
         return "crown"
     elseif blob:find("login") or blob:find("key") then
         return "key-round"
@@ -886,7 +886,7 @@ local function verifyKey(entered, shouldSave)
                         "Key ini untuk script " .. keyScript .. "! Tidak bisa digunakan di BITWISE HUB RACE.",
                         "none", 0
                 else
-                    local keyType = result.key_type or "free"
+                    local keyType = result.key_type or "vip"
                     if keyType == "free" then
                         valid, message, level, days = true,
                             "FREE ACCESS GRANTED! Remaining: " .. (result.remainingDays or 0) .. " days",
@@ -894,7 +894,7 @@ local function verifyKey(entered, shouldSave)
                     else
                         valid, message, level, days = true,
                             "VIP ACCESS GRANTED! Remaining: " .. (result.remainingDays or 0) .. " days",
-                            "free", result.remainingDays or 0
+                            "vip", result.remainingDays or 0
                     end
                     if valid and shouldSave then
                         saveKeyToLocal(entered, level, result.remainingDays or 0,
@@ -1988,7 +1988,7 @@ local function showPathRecord()
 end
 
 local function togglePathRecord()
-    if userLevel ~= "free" then
+    if userLevel ~= "vip" then
         showNotification("VIP Required", "🔒 Path Record is ONLY for VIP users!", 3)
         return
     end
@@ -5144,7 +5144,7 @@ end
 
 -- ========== SET SPEED FROM CURRENT (VIP) ==========
 local function setSpeedFromCurrent()
-    if userLevel ~= "free" then
+    if userLevel ~= "vip" then
         showNotification("VIP Required", "🔒 Set Speed feature is ONLY for VIP users!", 3); return
     end
     if not speedometerActive then
@@ -5355,7 +5355,7 @@ local function clearPlayerSpeedTags(silent)
 end
 
 local function enablePlayerSpeedTags()
-    if userLevel ~= "free" then
+    if userLevel ~= "vip" then
         showNotification("VIP Required", "🔒 Player Speed Tags hanya untuk VIP!", 3)
         return
     end
@@ -5569,7 +5569,7 @@ function sortGunungAZ(list)
 end
 
 function fetchGunungListAZ(silent, forceRefresh)
-    if userLevel ~= "free" or not validatedKey or validatedKey == FREE_KEY then
+    if userLevel ~= "vip" or not validatedKey or validatedKey == FREE_KEY then
         if not silent then
             showNotification("VIP Required", "🔒 Load Gunung is ONLY for VIP users!", 3)
         end
@@ -5620,7 +5620,7 @@ end
 loadSelectedGunung = loadSelectedGunung or nil -- forward declaration for private gunung loader
 
 function fetchPrivateGunungList(silent, forceRefresh)
-    if userLevel ~= "free" or not validatedKey or validatedKey == FREE_KEY then
+    if userLevel ~= "vip" or not validatedKey or validatedKey == FREE_KEY then
         if not silent then
             showNotification("Private Gunung", "🔒 Private Gunung hanya untuk VIP key aktif", 3)
         end
@@ -6134,8 +6134,8 @@ _G.BITWISE_TOPBAR_TAGS = _G.BITWISE_TOPBAR_TAGS or {
 
 function getTopbarAccessLabel()
     local level = tostring(userLevel or "none"):lower()
-    if level == "free" then
-        return "free"
+    if level == "vip" then
+        return "VIP"
     elseif level == "free" then
         return "FREE"
     end
@@ -6301,7 +6301,7 @@ function createMainUI(reuseWindowObj)
     clickSoundReady = false
     local windowTitle = buildTopbarTitle()
 
-    local reusedLoginWindow = reuseWindowObj ~= nil 
+    local reusedLoginWindow = reuseWindowObj ~= nil
     local winSuccess, winErr = true, nil
 
     if reusedLoginWindow then
@@ -6407,7 +6407,7 @@ MainTab:Section({
     Icon = "crown"
 })
 
-if tostring(userLevel or "") == "free" then
+if tostring(userLevel or "") == "vip" then
     MainTab:Button({
         Title = "Record VIP",
         Icon = "crown",
@@ -6514,7 +6514,7 @@ end)
                 end
             end
         })
-        if userLevel == "free" then
+        if userLevel == "vip" then
             SpeedTab:Button({ Title = "Set Speed from Speedometer (VIP)", Icon = "zap", Desc = "Copy your current in-game speed as playback speed",
                 Callback = function() playClickSound(); setSpeedFromCurrent() end })
         else
@@ -6565,7 +6565,7 @@ pcall(function()
     })
     
     DataTab:Section({ Title = "Gunung Presets", Icon = "mountain" })
-    if userLevel == "free" then
+    if userLevel == "vip" then
         fetchGunungListAZ(true)
         local initialGunungValues = buildGunungDropdownValues("")
 
@@ -6689,8 +6689,8 @@ end)
 
     -- TAB 4: VIP
     pcall(function()
-        local VIPTab = Window:Tab({ Title = "free", Icon = "crown" })
-        if userLevel == "free" then
+        local VIPTab = Window:Tab({ Title = "VIP", Icon = "crown" })
+        if userLevel == "vip" then
             VIPTab:Section({ Title = "Path Visualizer", Icon = "route" })
             VIPTab:Toggle({
                 Title = "Path Record",
@@ -7087,14 +7087,111 @@ end)
 
     setupPlayStopHotkeys()
 
+
+    -- TAB LICENSE (MDW Panel)
+    pcall(function()
+        local LicenseTab = Window:Tab({ Title = "License", Icon = "key-round" })
+
+        -- Status header berdasarkan userLevel
+        if userLevel == "vip" then
+            LicenseTab:Section({ Title = "✦ STATUS: VIP AKTIF ✦", Icon = "crown" })
+            LicenseTab:Paragraph({
+                Title = "VIP License",
+                Image = "crown",
+                ImageSize = 20,
+                Desc = "KEY    : " .. (validatedKey and (string.sub(tostring(validatedKey), 1, 8) .. "••••••••") or "---") ..
+                       "\nSTATUS : VIP (Premium)" ..
+                       "\nSISA   : " .. tostring(remainingDays or "?") .. " hari" ..
+                       "\nAKSES  : Full Feature Unlocked"
+            })
+        else
+            LicenseTab:Section({ Title = "STATUS: FREE", Icon = "star" })
+            LicenseTab:Paragraph({
+                Title = "Free License",
+                Image = "star",
+                ImageSize = 20,
+                Desc = "KEY    : " .. (validatedKey and (validatedKey == FREE_KEY and "FREE-ACCESS (Built-in)" or string.sub(tostring(validatedKey), 1, 8) .. "••••••••") or "---") ..
+                       "\nSTATUS : FREE" ..
+                       "\nAKSES  : Fitur Dasar"
+            })
+        end
+
+        -- Fitur FREE
+        LicenseTab:Section({ Title = "FITUR FREE", Icon = "star" })
+        LicenseTab:Paragraph({
+            Title = "Tersedia untuk Semua User",
+            Image = "star",
+            ImageSize = 20,
+            Desc = "• Playback Recording" ..
+                   "\n• Stop Playback" ..
+                   "\n• Hotkey Play/Stop & Minimize" ..
+                   "\n• Loop Mode" ..
+                   "\n• Speedometer (tampilan)" ..
+                   "\n• FPS Boost Map" ..
+                   "\n• Load Recording JSON/URL" ..
+                   "\n• UI Customization (6+ tema)"
+        })
+
+        -- Fitur VIP
+        LicenseTab:Section({ Title = "FITUR VIP", Icon = "gem" })
+        if userLevel == "vip" then
+            LicenseTab:Paragraph({
+                Title = "VIP Access - AKTIF",
+                Image = "crown",
+                ImageSize = 20,
+                Desc = "• Path Visualizer 3D" ..
+                       "\n• Load Gunung Routes (API)" ..
+                       "\n• Set Speed dari Speedometer" ..
+                       "\n• Ghost & Invisibility" ..
+                       "\n• Noclip" ..
+                       "\n• ESP Chams (Rainbow/Red)" ..
+                       "\n• ESP Name Tags" ..
+                       "\n• Unlock Emotes"
+            })
+        else
+            LicenseTab:Paragraph({
+                Title = "VIP Access - TERKUNCI",
+                Image = "lock",
+                ImageSize = 20,
+                Desc = "• Path Visualizer 3D" ..
+                       "\n• Load Gunung Routes (API)" ..
+                       "\n• Set Speed dari Speedometer" ..
+                       "\n• Ghost & Invisibility" ..
+                       "\n• Noclip" ..
+                       "\n• ESP Chams (Rainbow/Red)" ..
+                       "\n• ESP Name Tags" ..
+                       "\n• Unlock Emotes" ..
+                       "\n\n>> Upgrade ke VIP untuk unlock semua!"
+            })
+            LicenseTab:Section({ Title = "CARA UPGRADE VIP", Icon = "crown" })
+            LicenseTab:Paragraph({
+                Title = "Dapatkan VIP Key",
+                Image = "crown",
+                ImageSize = 20,
+                Desc = "Hubungi admin untuk mendapatkan VIP key." ..
+                       "\nPanel: new-mdw--mdwx.replit.app"
+            })
+            LicenseTab:Button({
+                Title = "Copy Link Panel",
+                Icon = "copy",
+                Desc = "Copy link panel MDW ke clipboard",
+                Callback = function()
+                    playClickSound()
+                    pcall(function() setclipboard("https://new-mdw--mdwx.replit.app") end)
+                    showNotification("License", "Link panel MDW disalin ke clipboard!", 3)
+                end
+            })
+        end
+    end)
+
     -- TAB 6: INFO
     pcall(function()
         local InfoTab = Window:Tab({ Title = "Info", Icon = "info" })
         InfoTab:Section({ Title = "BITWISE HUB REPLAY V3.6", Icon = "crown" })
-        InfoTab:Paragraph({ Title = "About", Image = "info", ImageSize = 20, Desc = "© 2024 BITWISE HUB | ONIUM System\nRoblox Auto Race Replay Script\nSupport: Xeno, Delta, Android, iOS\n\nPlayback System: ONIUM V3.6\nUI Library: WindUI by Footagesus\nAPI Server: MainzStore" })
+        InfoTab:Paragraph({ Title = "About", Image = "info", ImageSize = 20, Desc = "© 2024 BITWISE HUB | ONIUM System\nRoblox Auto Race Replay Script\nSupport: Xeno, Delta, Android, iOS\n\nPlayback System: ONIUM V3.6\nUI Library: WindUI by Footagesus\nAPI Server: MDW Panel" })
         InfoTab:Section({ Title = "Status Akun", Icon = "badge-info" })
         local userStatusText
-        if userLevel == "free" then userStatusText = "VIP USER | " .. tostring(remainingDays or "?") .. " hari tersisa"
+        if userLevel == "vip" then userStatusText = "VIP USER | " .. tostring(remainingDays or "?") .. " hari tersisa"
         else userStatusText = "FREE USER" end
         InfoTab:Paragraph({ Title = "Informasi User", Image = "user", ImageSize = 20, Desc = "Version  : BITWISE HUB V3.6 (ONIUM)\nStatus   : "..userStatusText.."\nPlatform : Xeno, Delta, Android, iOS" })
         InfoTab:Section({ Title = "FITUR FREE", Icon = "star" })
@@ -7102,7 +7199,7 @@ InfoTab:Paragraph({ Title = "Free Access", Image = "star", ImageSize = 20, Desc 
         InfoTab:Section({ Title = "FITUR VIP", Icon = "gem" })
         InfoTab:Paragraph({ Title = "VIP Access", Image = "crown", ImageSize = 20, Desc = "• Path Visualizer 3D\n• Load Gunung Routes (API)\n• Set Speed dari Speedometer\n• Ghost & Invisibility\n• Noclip\n• ESP Chams (Rainbow/Red)\n• ESP Name Tags\n• Unlock Emotes" })
         InfoTab:Section({ Title = "Credits", Icon = "heart" })
-        InfoTab:Paragraph({ Title = "Main Credits", Image = "heart", ImageSize = 20, Desc = "Script By : BITWISE HUB Team\nPlayback System : ONIUM V3.6\nUI Library : WindUI by Footagesus\nAPI Server : MainzStore\nDiscord : discord.gg/fsNpvCCqxq" })
+        InfoTab:Paragraph({ Title = "Main Credits", Image = "heart", ImageSize = 20, Desc = "Script By : BITWISE HUB Team\nPlayback System : ONIUM V3.6\nUI Library : WindUI by Footagesus\nAPI Server : MDW Panel\nDiscord : discord.gg/fsNpvCCqxq" })
     end)
 
     pcall(function()
@@ -7262,13 +7359,13 @@ function verifyLoginKeyFromWindUI()
             updateLoginStatus("Key valid. Membuka UI fitur di tab Main...", "Green")
             task.wait(0.35)
 
-            local openedMain = true
+            local openedMain = false
             local openOk, openErr = pcall(function()
-                openedMain = createMainUI(LoginWindow) == true 
+                openedMain = createMainUI(LoginWindow) == true
             end)
 
             if not openOk or not openedMain or not Window then
-                loginBusy = true
+                loginBusy = false
                 updateLoginStatus("Key valid, tapi UI fitur gagal dibuka: " .. tostring(openErr or "Window nil") .. "\nCoba tekan Verify lagi atau restart script.", "Red")
                 showNotification("Login Key", "❌ UI utama gagal dibuka setelah key valid", 4)
                 return
@@ -7278,7 +7375,7 @@ function verifyLoginKeyFromWindUI()
             -- Ini yang memperbaiki bug: key valid tapi UI fitur hilang.
             LoginWindow = nil
 
-            if userLevel == "free" then
+            if userLevel == "vip" then
                 showNotification(
                     "VIP ACCESS GRANTED",
                     "✅ Full access unlocked!\n💾 Key disimpan untuk auto-login.\nRemaining: " .. tostring(remainingDays) .. " days",
@@ -7292,7 +7389,7 @@ function verifyLoginKeyFromWindUI()
                 )
             end
         else
-            loginBusy = true
+            loginBusy = false
             loginKeyText = ""
             updateLoginStatus("Key ditolak: " .. tostring(message) .. "\nCek lagi key kamu, lalu paste ulang.", "Red")
             showNotification("Login Key", "❌ " .. tostring(message), 3)
@@ -7450,22 +7547,22 @@ if loadedKeyData then
     end
 
     if not isExpired then
-        local valid, message, level, days = verifyKey(loadedKeyData.key, true)
+        local valid, message, level, days = verifyKey(loadedKeyData.key, false)
         if valid then
             userLevel = level
             validatedKey = loadedKeyData.key
             remainingDays = days or loadedKeyData.remainingDays or 0
             autoLoginSuccess = true
             createMainUI()
- 
-            if userLevel == "free" then
+
+            if userLevel == "vip" then
                 showNotification("AUTO-LOGIN SUCCESS", "✅ VIP Access restored!\nRemaining: " .. tostring(remainingDays) .. " days\nAll features unlocked!", 6)
             else
                 showNotification("AUTO-LOGIN SUCCESS", "✅ Free access restored!\nSpeedometer + Load available!", 4)
             end
         else
             clearSavedKeyLocal()
-        end 
+        end
     end
 end
 
