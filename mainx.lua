@@ -35,7 +35,8 @@ end
 --// - Hard remove grass dimatikan agar HP/Delta tidak spike/patah-patah.
 --// PATCHED: MOBILE FLOATING PLAY/STOP MULTI-TOUCH SAFE / ANTI ANALOG DRAG
 -- ========== KEY SYSTEM CONFIGURATION ==========
-local API_BASE_URL  = "https://new-mdw--mdwx.replit.app"
+local KEY_API_URL   = "https://new-mdw--mdwx.replit.app" -- MDW Panel (key auth)
+local API_BASE_URL  = "https://kingstrom.my.id"              -- Game features API
 local FREE_KEY      = "FREE-ACCESS-2026"
 local SCRIPT_NAME   = "race"
 
@@ -832,9 +833,9 @@ end
 
 -- ========== VALIDATE KEY ==========
 local function validateKeyWithAPI(key, dId)
-    if not API_BASE_URL or API_BASE_URL == "" then return nil end
+    if not KEY_API_URL or KEY_API_URL == "" then return nil end
 
-    local url = API_BASE_URL .. "/api.php"
+    local url = KEY_API_URL .. "/api.php"
 
     local username = player and player.Name or "Unknown"
     local userId = player and tostring(player.UserId) or "0"
@@ -7092,14 +7093,13 @@ end)
     pcall(function()
         local LicenseTab = Window:Tab({ Title = "License", Icon = "key-round" })
 
-        -- Status header berdasarkan userLevel
         if userLevel == "vip" then
-            LicenseTab:Section({ Title = "✦ STATUS: VIP AKTIF ✦", Icon = "crown" })
+            LicenseTab:Section({ Title = "STATUS: VIP AKTIF", Icon = "crown" })
             LicenseTab:Paragraph({
                 Title = "VIP License",
                 Image = "crown",
                 ImageSize = 20,
-                Desc = "KEY    : " .. (validatedKey and (string.sub(tostring(validatedKey), 1, 8) .. "••••••••") or "---") ..
+                Desc = "KEY    : " .. (validatedKey and (string.sub(tostring(validatedKey), 1, 8) .. "...") or "---") ..
                        "\nSTATUS : VIP (Premium)" ..
                        "\nSISA   : " .. tostring(remainingDays or "?") .. " hari" ..
                        "\nAKSES  : Full Feature Unlocked"
@@ -7110,66 +7110,41 @@ end)
                 Title = "Free License",
                 Image = "star",
                 ImageSize = 20,
-                Desc = "KEY    : " .. (validatedKey and (validatedKey == FREE_KEY and "FREE-ACCESS (Built-in)" or string.sub(tostring(validatedKey), 1, 8) .. "••••••••") or "---") ..
+                Desc = "KEY    : " .. (validatedKey and (validatedKey == FREE_KEY and "FREE-ACCESS (Built-in)" or string.sub(tostring(validatedKey), 1, 8) .. "...") or "---") ..
                        "\nSTATUS : FREE" ..
                        "\nAKSES  : Fitur Dasar"
             })
         end
 
-        -- Fitur FREE
         LicenseTab:Section({ Title = "FITUR FREE", Icon = "star" })
         LicenseTab:Paragraph({
             Title = "Tersedia untuk Semua User",
             Image = "star",
             ImageSize = 20,
-            Desc = "• Playback Recording" ..
-                   "\n• Stop Playback" ..
-                   "\n• Hotkey Play/Stop & Minimize" ..
-                   "\n• Loop Mode" ..
-                   "\n• Speedometer (tampilan)" ..
-                   "\n• FPS Boost Map" ..
-                   "\n• Load Recording JSON/URL" ..
-                   "\n• UI Customization (6+ tema)"
+            Desc = "Playback Recording\nStop Playback\nHotkey Play/Stop & Minimize\nLoop Mode\nSpeedometer (tampilan)\nFPS Boost Map\nLoad Recording JSON/URL\nUI Customization (6+ tema)"
         })
 
-        -- Fitur VIP
         LicenseTab:Section({ Title = "FITUR VIP", Icon = "gem" })
         if userLevel == "vip" then
             LicenseTab:Paragraph({
                 Title = "VIP Access - AKTIF",
                 Image = "crown",
                 ImageSize = 20,
-                Desc = "• Path Visualizer 3D" ..
-                       "\n• Load Gunung Routes (API)" ..
-                       "\n• Set Speed dari Speedometer" ..
-                       "\n• Ghost & Invisibility" ..
-                       "\n• Noclip" ..
-                       "\n• ESP Chams (Rainbow/Red)" ..
-                       "\n• ESP Name Tags" ..
-                       "\n• Unlock Emotes"
+                Desc = "Path Visualizer 3D\nLoad Gunung Routes (API)\nSet Speed dari Speedometer\nGhost & Invisibility\nNoclip\nESP Chams (Rainbow/Red)\nESP Name Tags\nUnlock Emotes\nRecord VIP"
             })
         else
             LicenseTab:Paragraph({
                 Title = "VIP Access - TERKUNCI",
                 Image = "lock",
                 ImageSize = 20,
-                Desc = "• Path Visualizer 3D" ..
-                       "\n• Load Gunung Routes (API)" ..
-                       "\n• Set Speed dari Speedometer" ..
-                       "\n• Ghost & Invisibility" ..
-                       "\n• Noclip" ..
-                       "\n• ESP Chams (Rainbow/Red)" ..
-                       "\n• ESP Name Tags" ..
-                       "\n• Unlock Emotes" ..
-                       "\n\n>> Upgrade ke VIP untuk unlock semua!"
+                Desc = "Path Visualizer 3D\nLoad Gunung Routes (API)\nSet Speed dari Speedometer\nGhost & Invisibility\nNoclip\nESP Chams (Rainbow/Red)\nESP Name Tags\nUnlock Emotes\nRecord VIP\n\n>> Upgrade ke VIP untuk unlock semua!"
             })
             LicenseTab:Section({ Title = "CARA UPGRADE VIP", Icon = "crown" })
             LicenseTab:Paragraph({
                 Title = "Dapatkan VIP Key",
                 Image = "crown",
                 ImageSize = 20,
-                Desc = "Hubungi admin untuk mendapatkan VIP key." ..
-                       "\nPanel: new-mdw--mdwx.replit.app"
+                Desc = "Hubungi admin MDW Panel untuk mendapatkan VIP key.\nPanel: new-mdw--mdwx.replit.app"
             })
             LicenseTab:Button({
                 Title = "Copy Link Panel",
@@ -7178,7 +7153,7 @@ end)
                 Callback = function()
                     playClickSound()
                     pcall(function() setclipboard("https://new-mdw--mdwx.replit.app") end)
-                    showNotification("License", "Link panel MDW disalin ke clipboard!", 3)
+                    showNotification("License", "Link panel MDW disalin!", 3)
                 end
             })
         end
