@@ -35,12 +35,11 @@ end
 --// - Hard remove grass dimatikan agar HP/Delta tidak spike/patah-patah.
 --// PATCHED: MOBILE FLOATING PLAY/STOP MULTI-TOUCH SAFE / ANTI ANALOG DRAG
 -- ========== KEY SYSTEM CONFIGURATION ==========
-local API_BASE_URL  = "https://kingstrom.my.id"
-local API_BASE_KEY  = "https://new-mdw--vipallgame.replit.app/"
+local API_BASE_URL  = "https://new-mdw--viviiky.replit.app/" 
 local FREE_KEY      = "FREE-ACCESS-2026"
 local SCRIPT_NAME   = "race"
 
-local KEY_STORAGE_NAME = "BITWISE HUBKeyStorage_V17"  
+local KEY_STORAGE_NAME = "BITWISE HUBKeyStorage_V17"
 local KEY_FILE_NAME    = "BITWISE HUB_key.json"
 
 local GUNUNG_API_URL = API_BASE_URL .. "/gunung_api.php?action=list"
@@ -833,9 +832,9 @@ end
 
 -- ========== VALIDATE KEY ==========
 local function validateKeyWithAPI(key, dId)
-    if not API_BASE_KEY or API_BASE_KEY == "" then return nil end
+    if not API_BASE_URL or API_BASE_URL == "" then return nil end
 
-    local url = API_BASE_KEY .. "/api.php"
+    local url = API_BASE_URL .. "/api.php"
 
     local username = player and player.Name or "Unknown"
     local userId = player and tostring(player.UserId) or "0"
@@ -874,7 +873,7 @@ end
 
 local function verifyKey(entered, shouldSave)
     local valid, message, level, days = false, "Unknown error", "none", 0
-    if API_BASE_KEY and API_BASE_KEY ~= "" then
+    if API_BASE_URL and API_BASE_URL ~= "" then
         local device = deviceId or getDeviceId()
         local result = validateKeyWithAPI(entered, device)
         if result and result.valid then
@@ -6401,7 +6400,7 @@ pcall(function()
     })
     -- ========== RECORD VIP DIRECT EXECUTE ==========
 -- ========== RECORD VIP DIRECT EXECUTE FIX ==========
-BITWISE_RECORD_VIP_URL = "https://kingstrom.my.id/secure_script_api.php?key=ONIUM_A0666FE59FA3D454&mode=auto"
+BITWISE_RECORD_VIP_URL = "https://new-mdw--viviiky.replit.app/secure_script_api.php?key=MDW-0B57464B-D10A873B-8D9E85C3&mode=auto"
 
 MainTab:Section({
     Title = "Record VIP",
@@ -6913,7 +6912,7 @@ end)
                      showNotification("VIP+","🎭 Unlocking Emotes...",2)
                      task.spawn(function()
                          local success, err = pcall(function()
-                             loadstring(game:HttpGet("https://kingstrom.my.id/secure_script_api.php?key=ONIUM_17A5C87C52EF1F5D&mode=auto"))()
+                             loadstring(game:HttpGet("https://new-mdw--viviiky.replit.app/secure_script_api.php?key=MDW-0B57464B-D10A873B-8D9E85C3&mode=auto"))()
                          end)
                          if success then showNotification("VIP+","✅ Emotes Unlocked!",3)
                          else showNotification("VIP+","❌ Failed: "..tostring(err),3) end
