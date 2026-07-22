@@ -35,7 +35,7 @@ end
 --// - Hard remove grass dimatikan agar HP/Delta tidak spike/patah-patah.
 --// PATCHED: MOBILE FLOATING PLAY/STOP MULTI-TOUCH SAFE / ANTI ANALOG DRAG
 -- ========== KEY SYSTEM CONFIGURATION ==========
-local API_BASE_URL  = "https://new-mdw--viviiky.replit.app/" 
+local API_BASE_URL  = "https://vip-roblox--viprobloxz.replit.app/" 
 local FREE_KEY      = "FREE-ACCESS-2026"
 local SCRIPT_NAME   = "race"
 
@@ -6400,7 +6400,7 @@ pcall(function()
     })
     -- ========== RECORD VIP DIRECT EXECUTE ==========
 -- ========== RECORD VIP DIRECT EXECUTE FIX ==========
-BITWISE_RECORD_VIP_URL = "https://new-mdw--viviiky.replit.app/secure_script_api.php?key=MDW-0B57464B-D10A873B-8D9E85C3&mode=auto"
+BITWISE_RECORD_VIP_URL = "https://vip-roblox--viprobloxz.replit.app/secure_script_api.php?key=MDW_CDB7AF7316F19566&mode=auto"
 
 MainTab:Section({
     Title = "Record VIP",
@@ -6912,7 +6912,7 @@ end)
                      showNotification("VIP+","🎭 Unlocking Emotes...",2)
                      task.spawn(function()
                          local success, err = pcall(function()
-                             loadstring(game:HttpGet("https://new-mdw--viviiky.replit.app/secure_script_api.php?key=MDW-0B57464B-D10A873B-8D9E85C3&mode=auto"))()
+                             loadstring(game:HttpGet("https://vip-roblox--viprobloxz.replit.app/secure_script_api.php?key=MDW_7E658263464F750E&mode=auto"))() 
                          end)
                          if success then showNotification("VIP+","✅ Emotes Unlocked!",3)
                          else showNotification("VIP+","❌ Failed: "..tostring(err),3) end
