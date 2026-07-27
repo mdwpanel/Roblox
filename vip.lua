@@ -539,13 +539,6 @@ if not _G.BITWISE_Invis_Active     then _G.BITWISE_Invis_Active     = false end
 if not _G.BITWISE_GhostSpeed_Active then _G.BITWISE_GhostSpeed_Active = false end
 if not _G.BITWISE_Noclip_Active    then _G.BITWISE_Noclip_Active    = false end
 if not _G.BITWISE_PlayerSpeedTag_Active then _G.BITWISE_PlayerSpeedTag_Active = false end
-if not _G.BITWISE_InfiniteJump_Active then _G.BITWISE_InfiniteJump_Active = false end
-if not _G.BITWISE_Fly_Active then _G.BITWISE_Fly_Active = false end
-_G.BITWISE_SpeedBoost_Value = _G.BITWISE_SpeedBoost_Value or 0
-_G.BITWISE_Fly_Speed = _G.BITWISE_Fly_Speed or 80
-_G.BITWISE_Fly_Connection = _G.BITWISE_Fly_Connection or nil
-_G.BITWISE_SpeedBoost_Connection = _G.BITWISE_SpeedBoost_Connection or nil
-_G.BITWISE_InfiniteJump_Connection = _G.BITWISE_InfiniteJump_Connection or nil
 
 -- ========== NOTIFICATION ==========
 local function sanitizeNotificationText(text)
@@ -5500,46 +5493,6 @@ RunService.Heartbeat:Connect(function(dt)
         end
     end
 end)
--- Cleanup helper for movement features
-local function cleanupMovementFeatures()
-    -- Cleanup Fly
-    if _G.BITWISE_Fly_Connection then
-        pcall(function() _G.BITWISE_Fly_Connection:Disconnect() end)
-        _G.BITWISE_Fly_Connection = nil
-    end
-    local char = player.Character
-    if char then
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            pcall(function()
-                local bv = hrp:FindFirstChild("BITWISE_Fly_BodyVelocity")
-                if bv then bv:Destroy() end
-                local bg = hrp:FindFirstChild("BITWISE_Fly_BodyGyro")
-                if bg then bg:Destroy() end
-            end)
-            local _, hum = getChar()
-            if hum then
-                pcall(function() hum.PlatformStand = false end)
-            end
-        end
-    end
-    _G.BITWISE_Fly_Active = false
-
-    -- Cleanup SpeedBoost
-    if _G.BITWISE_SpeedBoost_Connection then
-        pcall(function() _G.BITWISE_SpeedBoost_Connection:Disconnect() end)
-        _G.BITWISE_SpeedBoost_Connection = nil
-    end
-    _G.BITWISE_SpeedBoost_Value = 0
-
-    -- Cleanup InfiniteJump
-    if _G.BITWISE_InfiniteJump_Connection then
-        pcall(function() _G.BITWISE_InfiniteJump_Connection:Disconnect() end)
-        _G.BITWISE_InfiniteJump_Connection = nil
-    end
-    _G.BITWISE_InfiniteJump_Active = false
-end
-
 -- Respawn
 player.CharacterAdded:Connect(function(character)
     stopPlayback()
@@ -5553,7 +5506,6 @@ player.CharacterAdded:Connect(function(character)
     lastKnownPosition     = nil
     lastKnownPlaybackTime = 0
     if timerFrame then timerFrame.Visible = false end
-    cleanupMovementFeatures()
     showNotification("Character", "Character respawned - Playback reset", 1)
 end)
 
@@ -6833,6 +6785,128 @@ end)
                         end
                     end)
                 end})
+            VIPTab:Section({ Title = "Movement", Icon = "person-running" })
+            VIPTab:Toggle({ Title = "Infinite Jump", Icon = "arrow-up", Desc = "Jump unlimited times while in the air", Value = false,
+                Callback = function(Value)
+                    playClickSound()
+                    task.spawn(function()
+                        local desired = Value == true
+                        if _G.BITWISE_InfJump_Active == desired then return end
+
+                        _G.BITWISE_InfJump_Active = desired
+                        if not desired then
+                            pcall(function() UserInputService.JumpRequest:Disconnect() end)
+                            showNotification("Movement","⬆️ Infinite Jump OFF",3)
+                        else
+                            task.spawn(function()
+                                while _G.BITWISE_InfJump_Active do
+                                    pcall(function()
+                                        local char = player.Character
+                                        if char and char:FindFirstChild("Humanoid") then
+                                            local hrp = char:FindFirstChild("HumanoidRootPart")
+                                            if hrp and hrp.Parent then
+                                                if hrp.Velocity.Y < 0 or math.abs(hrp.Velocity.Y) < 0.1 then
+                                                    local hum = char:FindFirstChild("Humanoid")
+                                                    if hum and hum.Parent then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+                                                end
+                                            end
+                                        end
+                                    end)
+                                    task.wait(0.1)
+                                end
+                            end)
+                            showNotification("Movement","⬆️ Infinite Jump ON",3)
+                        end
+                    end)
+                end})
+            VIPTab:Slider({ Title = "Speed", Icon = "gauge", Desc = "Set player walk speed (8 - 200 studs/s)",
+                Min = 8, Max = 200, Default = 16,
+                Callback = function(Value)
+                    local _, hum = getChar()
+                    if not hum then return end
+                    local speed = math.floor(Value)
+                    hum.WalkSpeed = speed
+                end})
+            VIPTab:Toggle({ Title = "Fly", Icon = "plane", Desc = "Fly freely around the map", Value = false,
+                Callback = function(Value)
+                    playClickSound()
+                    task.spawn(function()
+                        local desired = Value == true
+                        if _G.BITWISE_Fly_Active == desired then return end
+
+                        _G.BITWISE_Fly_Active = desired
+                        if not desired then
+                            pcall(function()
+                                local char = player.Character
+                                if char then
+                                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                                    local bodyV = hrp and hrp:FindFirstChild("BITWISE_BodyVelocity")
+                                    if bodyV then bodyV:Destroy() end
+                                    local bodyG = hrp and hrp:FindFirstChild("BITWISE_BodyGyro")
+                                    if bodyG then bodyG:Destroy() end
+                                    -- Restore normal state
+                                    local hum = char:FindFirstChild("Humanoid")
+                                    if hum then hum.PlatformStand = false; hum:ChangeState(Enum.HumanoidStateType.GettingUp) end
+                                    if hrp then hrp.CanCollide = true end
+                                end
+                                if _G.BITWISE_Fly_InputConn then _G.BITWISE_Fly_InputConn:Disconnect() end
+                            end)
+                            showNotification("Movement","🛫 Fly OFF",3)
+                        else
+                            pcall(function()
+                                local char = player.Character
+                                if not char then showNotification("Movement","❌ Character not found!",3); _G.BITWISE_Fly_Active=false; return end
+                                local hrp = char:FindFirstChild("HumanoidRootPart")
+                                local hum = char:FindFirstChild("Humanoid")
+                                if not hrp or not hum then showNotification("Movement","❌ Character not found!",3); _G.BITWISE_Fly_Active=false; return end
+
+                                hum.PlatformStand = true
+                                hrp.CanCollide = false
+
+                                local bodyV = Instance.new("BodyVelocity", hrp)
+                                bodyV.Name = "BITWISE_BodyVelocity"
+                                bodyV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                                bodyV.Velocity = Vector3.new(0, 0, 0)
+
+                                local bodyG = Instance.new("BodyGyro", hrp)
+                                bodyG.Name = "BITWISE_BodyGyro"
+                                bodyG.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+                                bodyG.P = 9e4
+                                bodyG.CFrame = hrp.CFrame
+
+                                local flySpeed = 1
+                                _G.BITWISE_Fly_InputConn = UserInputService.InputBegan:Connect(function(input)
+                                    if not _G.BITWISE_Fly_Active then return end
+                                    if input.KeyCode == Enum.KeyCode.W then
+                                        flySpeed = math.min(flySpeed + 5, 150)
+                                    elseif input.KeyCode == Enum.KeyCode.S then
+                                        flySpeed = math.max(flySpeed - 5, 5)
+                                    end
+                                end)
+
+                                task.spawn(function()
+                                    while _G.BITWISE_Fly_Active do
+                                        pcall(function()
+                                            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and
+                                               player.Character:FindFirstChild("Humanoid") then
+                                                hrp = player.Character.HumanoidRootPart
+                                                hum = player.Character.Humanoid
+                                                local camera = workspace.CurrentCamera
+                                                if camera and camera.CFrame then
+                                                    local lookVec = camera.CFrame.LookVector
+                                                    bodyV.Velocity = lookVec * flySpeed
+                                                    if bodyG then bodyG.CFrame = camera.CFrame end
+                                                end
+                                            end
+                                        end)
+                                        task.wait()
+                                    end
+                                end)
+                                showNotification("Movement","🛫 Fly ON | W/S = Speed",3)
+                            end)
+                        end
+                    end)
+                end})
             VIPTab:Section({ Title = "ESP & Chams", Icon = "palette" })
             VIPTab:Toggle({ Title = "ESP Chams (Rainbow)", Icon = "rainbow", Desc = "Highlight all players with rainbow color", Value = false,
                 Callback = function(Value)
@@ -6954,159 +7028,6 @@ end)
             --             togglePlayerSpeedTags()
             --         end)
             --     end})
-             VIPTab:Section({ Title = "Movement", Icon = "move" })
-             VIPTab:Toggle({ Title = "Infinite Jump", Icon = "arrow-up", Desc = "Bisa lompat berkali-kali tanpa menyentuh tanah", Value = false,
-                 Callback = function(Value)
-                     playClickSound()
-                     task.spawn(function()
-                         local desired = Value == true
-                         if _G.BITWISE_InfiniteJump_Active == desired then return end
-                         _G.BITWISE_InfiniteJump_Active = desired
-
-                         -- Disconnect old connection first
-                         if _G.BITWISE_InfiniteJump_Connection then
-                             pcall(function() _G.BITWISE_InfiniteJump_Connection:Disconnect() end)
-                             _G.BITWISE_InfiniteJump_Connection = nil
-                         end
-
-                         if not desired then
-                             showNotification("Movement","Jump biasa kembali",3)
-                         else
-                             _G.BITWISE_InfiniteJump_Connection = RunService.Heartbeat:Connect(function()
-                                 local c, hum, hrp = getChar()
-                                 if not hum or not hrp then return end
-                                 if hum.FloorMaterial ~= Enum.Material.Air then
-                                     pcall(function() hum:ChangeState(Enum.HumanoidStateType.Jumping) end)
-                                 end
-                             end)
-                             showNotification("Movement","Infinite Jump ON",3)
-                         end
-                     end)
-                 end})
-             VIPTab:Toggle({ Title = "Fly", Icon = "plane", Desc = "Terbang bebas dengan WASD. Tekan Space naik, Shift turun.", Value = false,
-                 Callback = function(Value)
-                     playClickSound()
-                     task.spawn(function()
-                         local desired = Value == true
-                         if _G.BITWISE_Fly_Active == desired then return end
-
-                         local char = player.Character
-                         if not char then showNotification("Movement","Character not found!",3); return end
-                         local hum = char:FindFirstChildOfClass("Humanoid")
-                         local hrp = char:FindFirstChild("HumanoidRootPart")
-                         if not hum or not hrp then showNotification("Movement","Character not ready!",3); return end
-
-                         _G.BITWISE_Fly_Active = desired
-
-                         -- Cleanup existing fly
-                         if _G.BITWISE_Fly_Connection then
-                             pcall(function() _G.BITWISE_Fly_Connection:Disconnect() end)
-                             _G.BITWISE_Fly_Connection = nil
-                         end
-                         pcall(function()
-                             local bv = hrp:FindFirstChild("BITWISE_Fly_BodyVelocity")
-                             if bv then bv:Destroy() end
-                             local bg = hrp:FindFirstChild("BITWISE_Fly_BodyGyro")
-                             if bg then bg:Destroy() end
-                         end)
-
-                         if not desired then
-                             pcall(function() hum.PlatformStand = false end)
-                             pcall(function() hum.WalkSpeed = 16 end)
-                             showNotification("Movement","Fly OFF",3)
-                         else
-                             pcall(function() hum.PlatformStand = true end)
-                             local flySpeed = _G.BITWISE_Fly_Speed or 80
-
-                             _G.BITWISE_Fly_Connection = RunService.Heartbeat:Connect(function()
-                                 local c, h, hr = getChar()
-                                 if not h or not hr then return end
-
-                                 -- Remove old body movers
-                                 pcall(function()
-                                     local oldBV = hr:FindFirstChild("BITWISE_Fly_BodyVelocity")
-                                     if oldBV then oldBV:Destroy() end
-                                     local oldBG = hr:FindFirstChild("BITWISE_Fly_BodyGyro")
-                                     if oldBG then oldBG:Destroy() end
-                                 end)
-
-                                 -- Create BodyVelocity
-                                 local bv = Instance.new("BodyVelocity")
-                                 bv.Name = "BITWISE_Fly_BodyVelocity"
-                                 bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                                 bv.Velocity = Vector3.new(0, 0, 0)
-                                 bv.Parent = hr
-
-                                 -- Create BodyGyro
-                                 local bg = Instance.new("BodyGyro")
-                                 bg.Name = "BITWISE_Fly_BodyGyro"
-                                 bg.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                                 bg.CFrame = hr.CFrame
-                                 bg.Parent = hr
-
-                                 local direction = Vector3.new(0, 0, 0)
-                                 local cam = workspace.CurrentCamera
-                                 if cam then
-                                     local camLook = cam.CFrame.LookVector
-                                     local camRight = cam.CFrame.RightVector
-
-                                     local fwd = UserInputService:IsKeyDown(Enum.KeyCode.W)
-                                     local bwd = UserInputService:IsKeyDown(Enum.KeyCode.S)
-                                     local left = UserInputService:IsKeyDown(Enum.KeyCode.A)
-                                     local right = UserInputService:IsKeyDown(Enum.KeyCode.D)
-                                     local up = UserInputService:IsKeyDown(Enum.KeyCode.Space)
-                                     local down = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
-
-                                     if fwd then direction = direction + camLook end
-                                     if bwd then direction = direction - camLook end
-                                     if left then direction = direction - camRight end
-                                     if right then direction = direction + camRight end
-                                     if up then direction = direction + Vector3.new(0, 1, 0) end
-                                     if down then direction = direction - Vector3.new(0, 1, 0) end
-
-                                     if direction.Magnitude > 0 then
-                                         direction = direction.Unit * flySpeed
-                                     end
-                                 end
-
-                                 bv.Velocity = direction
-                                 bg.CFrame = hr.CFrame
-                             end)
-                             showNotification("Movement","Fly ON (Speed: " .. flySpeed .. ")",3)
-                         end
-                     end)
-                 end})
-             VIPTab:Slider({ Title = "Fly Speed", Icon = "plane", Desc = "Atur kecepatan terbang (20-300)", Min = 20, Max = 300, Default = _G.BITWISE_Fly_Speed or 80, Increment = 5,
-                 Callback = function(Value)
-                     _G.BITWISE_Fly_Speed = math.floor(Value)
-                 end})
-             VIPTab:Section({ Title = "Speed Boost", Icon = "zap" })
-             VIPTab:Slider({ Title = "Walk Speed", Icon = "zap", Desc = "Atur kecepatan jalan (0 = OFF)", Min = 0, Max = 500, Default = 0, Increment = 5,
-                 Callback = function(Value)
-                     playClickSound()
-                     local speedVal = math.floor(Value)
-                     _G.BITWISE_SpeedBoost_Value = speedVal
-
-                     -- Disconnect old connection
-                     if _G.BITWISE_SpeedBoost_Connection then
-                         pcall(function() _G.BITWISE_SpeedBoost_Connection:Disconnect() end)
-                         _G.BITWISE_SpeedBoost_Connection = nil
-                     end
-
-                     if speedVal <= 0 then
-                         local _, hum = getChar()
-                         if hum then pcall(function() hum.WalkSpeed = 16 end)
-                         showNotification("Speed Boost","Walk Speed OFF",2)
-                     else
-                         _G.BITWISE_SpeedBoost_Connection = RunService.Heartbeat:Connect(function()
-                             local _, hum = getChar()
-                             if hum and _G.BITWISE_SpeedBoost_Value > 0 then
-                                 pcall(function() hum.WalkSpeed = _G.BITWISE_SpeedBoost_Value end)
-                             end
-                         end)
-                         showNotification("Speed Boost","Walk Speed: " .. speedVal,2)
-                     end
-                 end})
              VIPTab:Section({ Title = "Emotes & Fun", Icon = "smile" })
              VIPTab:Button({ Title = "UNLOCK EMOTES", Icon = "smile-plus", Desc = "Unlock all emotes in-game",
                  Callback = function()
@@ -7130,10 +7051,10 @@ end)
 • Load Gunung API Routes
 • Set Speed from Speedometer
 • Ghost & Invisibility
-• ESP & Chams
 • Infinite Jump
+• Speed Slider
 • Fly
-• Speed Boost]],
+• ESP & Chams]],
                 Color = "Yellow",
             })
             VIPTab:Button({ Title = "Buy VIP Key", Icon = "shopping-cart", Desc = "Join Discord store to purchase VIP access",
