@@ -6785,128 +6785,248 @@ end)
                         end
                     end)
                 end})
-            VIPTab:Section({ Title = "Movement", Icon = "person-running" })
-            VIPTab:Toggle({ Title = "Infinite Jump", Icon = "arrow-up", Desc = "Jump unlimited times while in the air", Value = false,
-                Callback = function(Value)
-                    playClickSound()
-                    task.spawn(function()
-                        local desired = Value == true
-                        if _G.BITWISE_InfJump_Active == desired then return end
+            VIPTab:Section({ Title = "Kontrol Pemain", Icon = "gamepad-2" })
 
-                        _G.BITWISE_InfJump_Active = desired
-                        if not desired then
-                            pcall(function() UserInputService.JumpRequest:Disconnect() end)
-                            showNotification("Movement","⬆️ Infinite Jump OFF",3)
-                        else
-                            task.spawn(function()
-                                while _G.BITWISE_InfJump_Active do
-                                    pcall(function()
-                                        local char = player.Character
-                                        if char and char:FindFirstChild("Humanoid") then
-                                            local hrp = char:FindFirstChild("HumanoidRootPart")
-                                            if hrp and hrp.Parent then
-                                                if hrp.Velocity.Y < 0 or math.abs(hrp.Velocity.Y) < 0.1 then
-                                                    local hum = char:FindFirstChild("Humanoid")
-                                                    if hum and hum.Parent then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
-                                                end
-                                            end
-                                        end
-                                    end)
-                                    task.wait(0.1)
-                                end
-                            end)
-                            showNotification("Movement","⬆️ Infinite Jump ON",3)
+        -- Variabel global untuk menyimpan state fitur
+        _G.BITWISE_MOBILE_INFINITE_JUMP = false
+        _G.BITWISE_MOBILE_FLY = false
+        _G.BITWISE_MOBILE_FLY_SPEED = 50
+        _G.BITWISE_MOBILE_SPRINT_SPEED = 50
+        _G.BITWISE_MOBILE_SPRINT_ENABLED = false
+        _G.BITWISE_MOBILE_FLY_CONNECTION = nil
+        _G.BITWISE_MOBILE_ORIGINAL_GRAVITY = nil
+
+        -- Fungsi untuk mendapatkan karakter dan humanoid dengan aman
+        local function getMobileChar()
+            local char = player.Character
+            if not char or not char.Parent then return nil, nil end
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not hum then return nil, nil end
+            return char, hum
+        end
+
+        -- ===== INFINITE JUMP =====
+        VIPTab:Toggle({
+            Title = "Infinite Jump",
+            Icon = "arrow-up-circle",
+            Desc = "Bisa melompat berkali-kali di udara",
+            Value = false,
+            Callback = function(Value)
+                playClickSound()
+                _G.BITWISE_MOBILE_INFINITE_JUMP = Value
+                if Value then
+                    showNotification("Mobile", "🦘 Infinite Jump: ON", 2)
+                else
+                    showNotification("Mobile", "🦘 Infinite Jump: OFF", 2)
+                end
+            end
+        })
+
+        -- ===== SPRINT SPEED =====
+        VIPTab:Slider({
+            Title = "Sprint Speed",
+            Icon = "zap",
+            Desc = "Kecepatan lari (16 ~ 250)",
+            Min = 16,
+            Max = 250,
+            Default = 50,
+            Increment = 1,
+            Callback = function(Value)
+                _G.BITWISE_MOBILE_SPRINT_SPEED = math.floor(Value)
+                -- Update speed langsung jika sprint aktif
+                if _G.BITWISE_MOBILE_SPRINT_ENABLED then
+                    local _, hum = getMobileChar()
+                    if hum then
+                        pcall(function() hum.WalkSpeed = _G.BITWISE_MOBILE_SPRINT_SPEED end)
+                    end
+                end
+                showNotification("Speed", "⚡ Sprint Speed: " .. _G.BITWISE_MOBILE_SPRINT_SPEED, 1)
+            end
+        })
+
+        VIPTab:Toggle({
+            Title = "Enable Sprint",
+            Icon = "footprints",
+            Desc = "Aktifkan kecepatan lari sesuai slider di atas",
+            Value = false,
+            Callback = function(Value)
+                playClickSound()
+                _G.BITWISE_MOBILE_SPRINT_ENABLED = Value
+                local _, hum = getMobileChar()
+                if hum then
+                    if Value then
+                        pcall(function() hum.WalkSpeed = _G.BITWISE_MOBILE_SPRINT_SPEED end)
+                        showNotification("Mobile", "🏃 Sprint: ON (" .. _G.BITWISE_MOBILE_SPRINT_SPEED .. ")", 2)
+                    else
+                        pcall(function() hum.WalkSpeed = 16 end)
+                        showNotification("Mobile", "🏃 Sprint: OFF", 2)
+                    end
+                else
+                    showNotification("Mobile", "❌ Karakter tidak ditemukan!", 2)
+                end
+            end
+        })
+
+        -- ===== FLY =====
+        VIPTab:Slider({
+            Title = "Fly Speed",
+            Icon = "rocket",
+            Desc = "Kecepatan terbang (10 ~ 250)",
+            Min = 10,
+            Max = 250,
+            Default = 50,
+            Increment = 1,
+            Callback = function(Value)
+                _G.BITWISE_MOBILE_FLY_SPEED = math.floor(Value)
+                showNotification("Speed", "✈️ Fly Speed: " .. _G.BITWISE_MOBILE_FLY_SPEED, 1)
+            end
+        })
+
+        VIPTab:Toggle({
+            Title = "Enable Fly",
+            Icon = "plane",
+            Desc = "Terbang bebas di udara (aktifkan No Clip juga)",
+            Value = false,
+            Callback = function(Value)
+                playClickSound()
+                local newState = Value
+                local oldState = _G.BITWISE_MOBILE_FLY
+
+                -- Jika mematikan fly
+                if oldState and not newState then
+                    _G.BITWISE_MOBILE_FLY = false
+                    if _G.BITWISE_MOBILE_FLY_CONNECTION then
+                        pcall(function() _G.BITWISE_MOBILE_FLY_CONNECTION:Disconnect() end)
+                        _G.BITWISE_MOBILE_FLY_CONNECTION = nil
+                    end
+                    -- Kembalikan gravitasi
+                    if _G.BITWISE_MOBILE_ORIGINAL_GRAVITY then
+                        pcall(function() workspace.Gravity = _G.BITWISE_MOBILE_ORIGINAL_GRAVITY end)
+                        _G.BITWISE_MOBILE_ORIGINAL_GRAVITY = nil
+                    end
+                    -- Aktifkan kembali collision
+                    local char, _ = getMobileChar()
+                    if char then
+                        for _, part in ipairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                pcall(function() part.CanCollide = true end)
+                            end
                         end
-                    end)
-                end})
-            VIPTab:Slider({ Title = "Speed", Icon = "gauge", Desc = "Set player walk speed (8 - 200 studs/s)",
-                Min = 8, Max = 200, Default = 16,
-                Callback = function(Value)
-                    local _, hum = getChar()
-                    if not hum then return end
-                    local speed = math.floor(Value)
-                    hum.WalkSpeed = speed
-                end})
-            VIPTab:Toggle({ Title = "Fly", Icon = "plane", Desc = "Fly freely around the map", Value = false,
-                Callback = function(Value)
-                    playClickSound()
-                    task.spawn(function()
-                        local desired = Value == true
-                        if _G.BITWISE_Fly_Active == desired then return end
+                    end
+                    showNotification("Mobile", "✈️ Fly: OFF", 2)
+                    return
+                end
 
-                        _G.BITWISE_Fly_Active = desired
-                        if not desired then
+                -- Jika mengaktifkan fly
+                if not oldState and newState then
+                    local char, hum = getMobileChar()
+                    if not char or not hum then
+                        showNotification("Mobile", "❌ Karakter tidak ditemukan!", 2)
+                        return
+                    end
+
+                    -- Simpan gravitasi asli
+                    if not _G.BITWISE_MOBILE_ORIGINAL_GRAVITY then
+                        _G.BITWISE_MOBILE_ORIGINAL_GRAVITY = workspace.Gravity
+                    end
+
+                    -- Matikan gravitasi
+                    pcall(function() workspace.Gravity = 0 end)
+
+                    -- Matikan collision agar bisa menembus
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            pcall(function() part.CanCollide = false end)
+                        end
+                    end
+
+                    _G.BITWISE_MOBILE_FLY = true
+
+                    -- Hapus koneksi lama jika ada
+                    if _G.BITWISE_MOBILE_FLY_CONNECTION then
+                        pcall(function() _G.BITWISE_MOBILE_FLY_CONNECTION:Disconnect() end)
+                        _G.BITWISE_MOBILE_FLY_CONNECTION = nil
+                    end
+
+                    -- Buat koneksi untuk mengontrol fly
+                    _G.BITWISE_MOBILE_FLY_CONNECTION = RunService.Heartbeat:Connect(function()
+                        if not _G.BITWISE_MOBILE_FLY then
+                            return
+                        end
+
+                        local c, h = getMobileChar()
+                        if not c or not h then return end
+
+                        local hrp = c:FindFirstChild("HumanoidRootPart")
+                        if not hrp then return end
+
+                        local speed = _G.BITWISE_MOBILE_FLY_SPEED or 50
+                        local moveDir = Vector3.new(0, 0, 0)
+
+                        -- Kontrol arah terbang
+                        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                            moveDir = moveDir + hrp.CFrame.LookVector
+                        end
+                        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                            moveDir = moveDir - hrp.CFrame.LookVector
+                        end
+                        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                            moveDir = moveDir - hrp.CFrame.RightVector
+                        end
+                        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                            moveDir = moveDir + hrp.CFrame.RightVector
+                        end
+                        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                            moveDir = moveDir + Vector3.new(0, 1, 0)
+                        end
+                        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) or UserInputService:IsKeyDown(Enum.KeyCode.RightShift) then
+                            moveDir = moveDir - Vector3.new(0, 1, 0)
+                        end
+
+                        if moveDir.Magnitude > 0 then
+                            moveDir = moveDir.Unit * speed
                             pcall(function()
-                                local char = player.Character
-                                if char then
-                                    local hrp = char:FindFirstChild("HumanoidRootPart")
-                                    local bodyV = hrp and hrp:FindFirstChild("BITWISE_BodyVelocity")
-                                    if bodyV then bodyV:Destroy() end
-                                    local bodyG = hrp and hrp:FindFirstChild("BITWISE_BodyGyro")
-                                    if bodyG then bodyG:Destroy() end
-                                    -- Restore normal state
-                                    local hum = char:FindFirstChild("Humanoid")
-                                    if hum then hum.PlatformStand = false; hum:ChangeState(Enum.HumanoidStateType.GettingUp) end
-                                    if hrp then hrp.CanCollide = true end
-                                end
-                                if _G.BITWISE_Fly_InputConn then _G.BITWISE_Fly_InputConn:Disconnect() end
+                                hrp.AssemblyLinearVelocity = moveDir
                             end)
-                            showNotification("Movement","🛫 Fly OFF",3)
                         else
                             pcall(function()
-                                local char = player.Character
-                                if not char then showNotification("Movement","❌ Character not found!",3); _G.BITWISE_Fly_Active=false; return end
-                                local hrp = char:FindFirstChild("HumanoidRootPart")
-                                local hum = char:FindFirstChild("Humanoid")
-                                if not hrp or not hum then showNotification("Movement","❌ Character not found!",3); _G.BITWISE_Fly_Active=false; return end
-
-                                hum.PlatformStand = true
-                                hrp.CanCollide = false
-
-                                local bodyV = Instance.new("BodyVelocity", hrp)
-                                bodyV.Name = "BITWISE_BodyVelocity"
-                                bodyV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                                bodyV.Velocity = Vector3.new(0, 0, 0)
-
-                                local bodyG = Instance.new("BodyGyro", hrp)
-                                bodyG.Name = "BITWISE_BodyGyro"
-                                bodyG.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-                                bodyG.P = 9e4
-                                bodyG.CFrame = hrp.CFrame
-
-                                local flySpeed = 1
-                                _G.BITWISE_Fly_InputConn = UserInputService.InputBegan:Connect(function(input)
-                                    if not _G.BITWISE_Fly_Active then return end
-                                    if input.KeyCode == Enum.KeyCode.W then
-                                        flySpeed = math.min(flySpeed + 5, 150)
-                                    elseif input.KeyCode == Enum.KeyCode.S then
-                                        flySpeed = math.max(flySpeed - 5, 5)
-                                    end
-                                end)
-
-                                task.spawn(function()
-                                    while _G.BITWISE_Fly_Active do
-                                        pcall(function()
-                                            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and
-                                               player.Character:FindFirstChild("Humanoid") then
-                                                hrp = player.Character.HumanoidRootPart
-                                                hum = player.Character.Humanoid
-                                                local camera = workspace.CurrentCamera
-                                                if camera and camera.CFrame then
-                                                    local lookVec = camera.CFrame.LookVector
-                                                    bodyV.Velocity = lookVec * flySpeed
-                                                    if bodyG then bodyG.CFrame = camera.CFrame end
-                                                end
-                                            end
-                                        end)
-                                        task.wait()
-                                    end
-                                end)
-                                showNotification("Movement","🛫 Fly ON | W/S = Speed",3)
+                                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                             end)
                         end
+
+                        -- Stabilkan rotasi
+                        pcall(function()
+                            local currentCF = hrp.CFrame
+                            local newCF = CFrame.new(currentCF.Position, currentCF.Position + currentCF.LookVector)
+                            hrp.CFrame = newCF
+                        end)
                     end)
-                end})
+
+                    showNotification("Mobile", "✈️ Fly: ON (Speed: " .. _G.BITWISE_MOBILE_FLY_SPEED .. ")", 3)
+                end
+            end
+        })
+
+        -- ===== NO CLIP (tambahan) =====
+        VIPTab:Toggle({
+            Title = "No Clip",
+            Icon = "door-open",
+            Desc = "Tembus dinding (otomatis aktif saat Fly)",
+            Value = false,
+            Callback = function(Value)
+                playClickSound()
+                _G.BITWISE_Noclip_Active = Value
+                local char, _ = getMobileChar()
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            pcall(function() part.CanCollide = not Value end)
+                        end
+                    end
+                end
+                showNotification("Mobile", "🚪 No Clip: " .. (Value and "ON" or "OFF"), 2)
+            end
+        })
             VIPTab:Section({ Title = "ESP & Chams", Icon = "palette" })
             VIPTab:Toggle({ Title = "ESP Chams (Rainbow)", Icon = "rainbow", Desc = "Highlight all players with rainbow color", Value = false,
                 Callback = function(Value)
@@ -7051,9 +7171,6 @@ end)
 • Load Gunung API Routes
 • Set Speed from Speedometer
 • Ghost & Invisibility
-• Infinite Jump
-• Speed Slider
-• Fly
 • ESP & Chams]],
                 Color = "Yellow",
             })
